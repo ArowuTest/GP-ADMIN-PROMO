@@ -1,13 +1,16 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
     "jsx": "react-jsx",
     "moduleResolution": "node",
-    "module": "ESNext",
-    "target": "ES2017",
-    "lib": ["ESNext", "DOM"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "types": ["vite/client", "react", "react-dom"]
   },
   "include": ["src"]
