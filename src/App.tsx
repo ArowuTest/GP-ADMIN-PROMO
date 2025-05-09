@@ -1,20 +1,21 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage'; // Placeholder
-import AdminDashboardPage from './pages/AdminDashboardPage'; // Placeholder
-import DrawManagementPage from './pages/DrawManagementPage'; // Placeholder
-import PrizeStructuresPage from './pages/PrizeStructuresPage'; // Placeholder
-import UserManagementPage from './pages/UserManagementPage'; // Placeholder
-import AuditLogsPage from './pages/AuditLogsPage'; // Placeholder
-import AdminLayout from './components/layout/AdminLayout'; // Placeholder
-import { AuthProvider } from './contexts/AuthContext'; // Placeholder for AuthContext
+/// <reference types="react/jsx-runtime" />
+import { Routes, Route, Navigate } from "react-router-dom";
+import LoginPage from "./pages/LoginPage"; // Placeholder
+import AdminDashboardPage from "./pages/AdminDashboardPage"; // Placeholder
+import DrawManagementPage from "./pages/DrawManagementPage"; // Placeholder
+import PrizeStructuresPage from "./pages/PrizeStructuresPage"; // Placeholder
+import UserManagementPage from "./pages/UserManagementPage"; // Placeholder
+import AuditLogsPage from "./pages/AuditLogsPage"; // Placeholder
+import AdminLayout from "./components/layout/AdminLayout"; // Placeholder
+import { AuthProvider } from "./contexts/AuthContext"; // Placeholder for AuthContext
 
 // Placeholder for a ProtectedRoute component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   // const auth = useAuth(); // This would come from your AuthContext - Removed as auth is not used
   // In a real app, you would check auth.isAuthenticated or similar
-  // For now, let's assume if there's a token (even a dummy one), it's protected
+  // For now, let"s assume if there"s a token (even a dummy one), it"s protected
   // This needs to be properly implemented with actual auth state
-  const isAuthenticated = localStorage.getItem('authToken'); // Simple check for demo
+  const isAuthenticated = localStorage.getItem("authToken"); // Simple check for demo
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

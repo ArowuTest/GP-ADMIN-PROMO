@@ -1,10 +1,10 @@
-import axios from 'axios';
-import type { useAuth } from '../contexts/AuthContext'; // To get the token
+import axios from "axios";
+// import type { useAuth } from "../contexts/AuthContext"; // To get the token - Removed as useAuth is not used
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const API_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 // TODO: Define proper types for PrizeStructure and PrizeTier based on backend models
-// For now, using 'any' as placeholders.
+// For now, using "any" as placeholders.
 
 export interface PrizeTierData {
   id?: string;
@@ -41,18 +41,18 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to fetch prize structures due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to fetch prize structures due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch prize structures due to an unexpected error.');
+      throw new Error(error.message || "Failed to fetch prize structures due to an unexpected error.");
     } else {
-      throw new Error('Failed to fetch prize structures due to an unexpected error.');
+      throw new Error("Failed to fetch prize structures due to an unexpected error.");
     }
   }
 };
 
 // Create a new prize structure
-const createPrizeStructure = async (data: Omit<PrizeStructureData, 'id' | 'createdAt' | 'updatedAt'>, token: string | null): Promise<PrizeStructureData> => {
+const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">, token: string | null): Promise<PrizeStructureData> => {
   try {
     const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures`, data, {
       headers: getAuthHeaders(token),
@@ -61,12 +61,12 @@ const createPrizeStructure = async (data: Omit<PrizeStructureData, 'id' | 'creat
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to create prize structure due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to create prize structure due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to create prize structure due to an unexpected error.');
+      throw new Error(error.message || "Failed to create prize structure due to an unexpected error.");
     } else {
-      throw new Error('Failed to create prize structure due to an unexpected error.');
+      throw new Error("Failed to create prize structure due to an unexpected error.");
     }
   }
 };
@@ -81,19 +81,19 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to fetch prize structure due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to fetch prize structure due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch prize structure due to an unexpected error.');
+      throw new Error(error.message || "Failed to fetch prize structure due to an unexpected error.");
     } else {
-      throw new Error('Failed to fetch prize structure due to an unexpected error.');
+      throw new Error("Failed to fetch prize structure due to an unexpected error.");
     }
   }
 };
 
 // Update a prize structure
-const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, 'id' | 'createdAt' | 'updatedAt' | 'prizeTiers'>>, token: string | null): Promise<PrizeStructureData> => {
-  // Note: Backend currently doesn't support updating tiers via this endpoint directly.
+const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt" | "prizeTiers">>, token: string | null): Promise<PrizeStructureData> => {
+  // Note: Backend currently doesn"t support updating tiers via this endpoint directly.
   try {
     const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}`, data, {
       headers: getAuthHeaders(token),
@@ -102,12 +102,12 @@ const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructur
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to update prize structure due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to update prize structure due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to update prize structure due to an unexpected error.');
+      throw new Error(error.message || "Failed to update prize structure due to an unexpected error.");
     } else {
-      throw new Error('Failed to update prize structure due to an unexpected error.');
+      throw new Error("Failed to update prize structure due to an unexpected error.");
     }
   }
 };
@@ -122,12 +122,12 @@ const activatePrizeStructure = async (id: string, isActive: boolean, token: stri
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to update prize structure status due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to update prize structure status due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to update prize structure status due to an unexpected error.');
+      throw new Error(error.message || "Failed to update prize structure status due to an unexpected error.");
     } else {
-      throw new Error('Failed to update prize structure status due to an unexpected error.');
+      throw new Error("Failed to update prize structure status due to an unexpected error.");
     }
   }
 };
@@ -142,12 +142,12 @@ const deletePrizeStructure = async (id: string, token: string | null): Promise<{
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to delete prize structure due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+      const defaultMessage = "Failed to delete prize structure due to server error.";
+      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
     } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to delete prize structure due to an unexpected error.');
+      throw new Error(error.message || "Failed to delete prize structure due to an unexpected error.");
     } else {
-      throw new Error('Failed to delete prize structure due to an unexpected error.');
+      throw new Error("Failed to delete prize structure due to an unexpected error.");
     }
   }
 };
