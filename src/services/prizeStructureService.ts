@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext'; // To get the token
+import type { useAuth } from '../contexts/AuthContext'; // To get the token
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -38,11 +38,16 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch prize structures');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to fetch prize structures due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch prize structures due to an unexpected error.');
+    } else {
+      throw new Error('Failed to fetch prize structures due to an unexpected error.');
     }
-    throw new Error('Failed to fetch prize structures due to an unexpected error.');
   }
 };
 
@@ -53,11 +58,16 @@ const createPrizeStructure = async (data: Omit<PrizeStructureData, 'id' | 'creat
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to create prize structure');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to create prize structure due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to create prize structure due to an unexpected error.');
+    } else {
+      throw new Error('Failed to create prize structure due to an unexpected error.');
     }
-    throw new Error('Failed to create prize structure due to an unexpected error.');
   }
 };
 
@@ -68,11 +78,16 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch prize structure');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to fetch prize structure due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch prize structure due to an unexpected error.');
+    } else {
+      throw new Error('Failed to fetch prize structure due to an unexpected error.');
     }
-    throw new Error('Failed to fetch prize structure due to an unexpected error.');
   }
 };
 
@@ -84,11 +99,16 @@ const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructur
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to update prize structure');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to update prize structure due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to update prize structure due to an unexpected error.');
+    } else {
+      throw new Error('Failed to update prize structure due to an unexpected error.');
     }
-    throw new Error('Failed to update prize structure due to an unexpected error.');
   }
 };
 
@@ -99,11 +119,16 @@ const activatePrizeStructure = async (id: string, isActive: boolean, token: stri
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to update prize structure status');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to update prize structure status due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to update prize structure status due to an unexpected error.');
+    } else {
+      throw new Error('Failed to update prize structure status due to an unexpected error.');
     }
-    throw new Error('Failed to update prize structure status due to an unexpected error.');
   }
 };
 
@@ -114,11 +139,16 @@ const deletePrizeStructure = async (id: string, token: string | null): Promise<{
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete prize structure');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to delete prize structure due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to delete prize structure due to an unexpected error.');
+    } else {
+      throw new Error('Failed to delete prize structure due to an unexpected error.');
     }
-    throw new Error('Failed to delete prize structure due to an unexpected error.');
   }
 };
 

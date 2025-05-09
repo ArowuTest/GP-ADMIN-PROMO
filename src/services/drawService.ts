@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext'; // To get the token
+import type { useAuth } from '../contexts/AuthContext'; // To get the token
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -51,11 +51,16 @@ const executeDraw = async (data: ExecuteDrawRequestData, token: string | null): 
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to execute draw');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to execute draw due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to execute draw due to an unexpected error.');
+    } else {
+      throw new Error('Failed to execute draw due to an unexpected error.');
     }
-    throw new Error('Failed to execute draw due to an unexpected error.');
   }
 };
 
@@ -66,11 +71,16 @@ const listDraws = async (token: string | null): Promise<DrawData[]> => {
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch draws');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to fetch draws due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch draws due to an unexpected error.');
+    } else {
+      throw new Error('Failed to fetch draws due to an unexpected error.');
     }
-    throw new Error('Failed to fetch draws due to an unexpected error.');
   }
 };
 
@@ -81,11 +91,16 @@ const getDrawDetails = async (id: string, token: string | null): Promise<DrawDat
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch draw details');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to fetch draw details due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch draw details due to an unexpected error.');
+    } else {
+      throw new Error('Failed to fetch draw details due to an unexpected error.');
     }
-    throw new Error('Failed to fetch draw details due to an unexpected error.');
   }
 };
 
@@ -101,11 +116,16 @@ const listWinners = async (token: string | null, drawId?: string): Promise<Winne
       headers: getAuthHeaders(token),
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch winners');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to fetch winners due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch winners due to an unexpected error.');
+    } else {
+      throw new Error('Failed to fetch winners due to an unexpected error.');
     }
-    throw new Error('Failed to fetch winners due to an unexpected error.');
   }
 };
 
@@ -119,11 +139,16 @@ const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string
       }
     );
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to update winner payment status');
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to update winner payment status due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to update winner payment status due to an unexpected error.');
+    } else {
+      throw new Error('Failed to update winner payment status due to an unexpected error.');
     }
-    throw new Error('Failed to update winner payment status due to an unexpected error.');
   }
 };
 

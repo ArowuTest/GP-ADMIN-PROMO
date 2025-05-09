@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { prizeStructureService, PrizeStructureData } from '../services/prizeStructureService';
-import { drawService, ExecuteDrawRequestData, DrawData } from '../services/drawService';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { prizeStructureService } from "../services/prizeStructureService";
+import type { PrizeStructureData } from "../services/prizeStructureService";
+import { drawService } from "../services/drawService";
+import type { ExecuteDrawRequestData, DrawData } from "../services/drawService";
 
 // Basic styling for now, can be moved to CSS modules or a UI library
 const styles = {
-  container: { padding: '20px', fontFamily: 'Arial, sans-serif' },
-  formSection: { marginBottom: '30px', padding: '20px', border: '1px solid #eee', borderRadius: '8px' },
-  label: { display: 'block', marginBottom: '5px', fontWeight: 'bold' },
-  input: { width: '100%', padding: '10px', marginBottom: '15px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' as 'border-box' },
-  select: { width: '100%', padding: '10px', marginBottom: '15px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' as 'border-box' }, 
-  button: { padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' },
-  error: { color: 'red', marginBottom: '15px' },
-  resultsSection: { marginTop: '30px', padding: '20px', border: '1px solid #eee', borderRadius: '8px' },
-  winnerList: { listStyleType: 'none', paddingLeft: 0 },
-  winnerItem: { marginBottom: '8px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' },
+  container: { padding: "20px", fontFamily: "Arial, sans-serif" },
+  formSection: { marginBottom: "30px", padding: "20px", border: "1px solid #eee", borderRadius: "8px" },
+  label: { display: "block", marginBottom: "5px", fontWeight: "bold" },
+  input: { width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", borderRadius: "4px", boxSizing: "border-box" as "border-box" },
+  select: { width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", borderRadius: "4px", boxSizing: "border-box" as "border-box" }, 
+  button: { padding: "10px 20px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "16px" },
+  error: { color: "red", marginBottom: "15px" },
+  resultsSection: { marginTop: "30px", padding: "20px", border: "1px solid #eee", borderRadius: "8px" },
+  winnerList: { listStyleType: "none", paddingLeft: 0 },
+  winnerItem: { marginBottom: "8px", padding: "8px", backgroundColor: "#f9f9f9", borderRadius: "4px" },
   animationPlaceholder: {
-    width: '100%',
-    height: '150px',
-    backgroundColor: '#222',
-    color: 'yellow',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    textAlign: 'center' as 'center',
-    fontSize: '20px',
+    width: "100%",
+    height: "150px",
+    backgroundColor: "#222",
+    color: "yellow",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "8px",
+    marginBottom: "20px",
+    textAlign: "center" as "center",
+    fontSize: "20px",
   },
 };
 
 const DrawManagementPage: React.FC = () => {
   const { token } = useAuth();
-  const [drawDate, setDrawDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [drawDate, setDrawDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>([]);
-  const [selectedPrizeStructureId, setSelectedPrizeStructureId] = useState<string>('');
+  const [selectedPrizeStructureId, setSelectedPrizeStructureId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [drawResult, setDrawResult] = useState<DrawData | null>(null);
@@ -56,7 +58,7 @@ const DrawManagementPage: React.FC = () => {
           }
           setError(null);
         } catch (err: any) {
-          setError(err.message || 'Failed to load prize structures.');
+          setError(err.message || "Failed to load prize structures.");
         }
         setLoading(false);
       }
@@ -66,11 +68,11 @@ const DrawManagementPage: React.FC = () => {
 
   const handleExecuteDraw = async () => {
     if (!selectedPrizeStructureId || !drawDate) {
-      setError('Please select a draw date and a prize structure.');
+      setError("Please select a draw date and a prize structure.");
       return;
     }
     if (!token) {
-      setError('Authentication token not found. Please log in again.');
+      setError("Authentication token not found. Please log in again.");
       return;
     }
 
@@ -80,7 +82,7 @@ const DrawManagementPage: React.FC = () => {
     setDrawResult(null);
 
     const requestData: ExecuteDrawRequestData = {
-      drawDate: new Date(drawDate).toISOString(), // Ensure it's full ISO string for backend
+      drawDate: new Date(drawDate).toISOString(), // Ensure it"s full ISO string for backend
       prizeStructureID: selectedPrizeStructureId,
     };
 
@@ -91,7 +93,7 @@ const DrawManagementPage: React.FC = () => {
       const result = await drawService.executeDraw(requestData, token);
       setDrawResult(result.draw);
     } catch (err: any) {
-      setError(err.message || 'Failed to execute draw.');
+      setError(err.message || "Failed to execute draw.");
     }
     setIsExecuting(false);
     setLoading(false);
@@ -132,14 +134,14 @@ const DrawManagementPage: React.FC = () => {
             style={styles.select}
             disabled={loading || prizeStructures.length === 0}
           >
-            <option value="">{prizeStructures.length === 0 ? 'No active structures found' : 'Select a Prize Structure'}</option>
+            <option value="">{prizeStructures.length === 0 ? "No active structures found" : "Select a Prize Structure"}</option>
             {prizeStructures.map(ps => (
-              ps.id && <option key={ps.id} value={ps.id}>{ps.name} (Valid: {new Date(ps.validFrom).toLocaleDateString()}{ps.validTo ? ` - ${new Date(ps.validTo).toLocaleDateString()}` : ''})</option>
+              ps.id && <option key={ps.id} value={ps.id}>{ps.name} (Valid: {new Date(ps.validFrom).toLocaleDateString()}{ps.validTo ? ` - ${new Date(ps.validTo).toLocaleDateString()}` : ""})</option>
             ))}
           </select>
         </div>
         <button onClick={handleExecuteDraw} disabled={loading || isExecuting} style={styles.button}>
-          {isExecuting ? 'Executing...' : (loading ? 'Loading...' : 'Execute Draw')}
+          {isExecuting ? "Executing..." : (loading ? "Loading..." : "Execute Draw")}
         </button>
       </div>
 

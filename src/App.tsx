@@ -6,11 +6,11 @@ import PrizeStructuresPage from './pages/PrizeStructuresPage'; // Placeholder
 import UserManagementPage from './pages/UserManagementPage'; // Placeholder
 import AuditLogsPage from './pages/AuditLogsPage'; // Placeholder
 import AdminLayout from './components/layout/AdminLayout'; // Placeholder
-import { AuthProvider, useAuth } from './contexts/AuthContext'; // Placeholder for AuthContext
+import { AuthProvider } from './contexts/AuthContext'; // Placeholder for AuthContext
 
 // Placeholder for a ProtectedRoute component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const auth = useAuth(); // This would come from your AuthContext
+  // const auth = useAuth(); // This would come from your AuthContext - Removed as auth is not used
   // In a real app, you would check auth.isAuthenticated or similar
   // For now, let's assume if there's a token (even a dummy one), it's protected
   // This needs to be properly implemented with actual auth state
