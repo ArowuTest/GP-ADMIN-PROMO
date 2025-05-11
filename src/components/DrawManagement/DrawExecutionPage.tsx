@@ -2,7 +2,7 @@
 // This component will allow Super Admins to select a date, view draw details, and execute the draw.
 
 import React, { useState, useEffect } from 'react';
-import { useAuth, type UserRole } from '../../contexts/AuthContext'; // Adjusted path assuming contexts is at src/contexts
+import { useAuth } from '../../contexts/AuthContext'; // Removed unused UserRole import
 
 // Mock data types - replace with actual types from API/models
 interface Prize {
@@ -65,7 +65,6 @@ const DrawExecutionPage = () => {
   };
 
   const handleExecuteDraw = () => {
-    // Corrected role comparison to use SCREAMING_SNAKE_CASE
     if (!drawDetails || userRole !== 'SUPER_ADMIN') return; 
 
     setIsExecuting(true);
@@ -84,7 +83,6 @@ const DrawExecutionPage = () => {
     }, 5000);
   };
 
-  // Corrected role comparisons to use SCREAMING_SNAKE_CASE
   if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN' && userRole !== 'SENIOR_USER') { 
     return <p>You do not have permission to view this page.</p>;
   }
@@ -120,13 +118,11 @@ const DrawExecutionPage = () => {
               ))}
             </ul>
           )}
-          {/* Corrected role comparison to use SCREAMING_SNAKE_CASE */}
           {userRole === 'SUPER_ADMIN' && (
             <button onClick={handleExecuteDraw} disabled={isExecuting || isLoading}>
               {isExecuting ? 'Executing...' : 'Execute Draw'}
             </button>
           )}
-          {/* Corrected role comparisons to use SCREAMING_SNAKE_CASE */}
           {(userRole === 'ADMIN' || userRole === 'SENIOR_USER') && (
             <p><i>Draw execution is reserved for Super Admins.</i></p>
           )}
@@ -178,5 +174,3 @@ const DrawExecutionPage = () => {
 };
 
 export default DrawExecutionPage;
-
-

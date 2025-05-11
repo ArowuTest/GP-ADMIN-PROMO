@@ -2,7 +2,7 @@
 // This component will display a list of prize structures and allow management.
 
 import { useState, useEffect } from "react";
-import { useAuth, type UserRole } from "../../contexts/AuthContext"; // Adjusted path
+import { useAuth } from "../../contexts/AuthContext"; // Removed unused UserRole import
 
 // Mock data types - replace with actual types from API/models
 interface Prize {
@@ -26,7 +26,6 @@ const PrizeStructureListComponent = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   // Add state for showing create/edit modal/form
 
-  // Corrected role comparisons to use SCREAMING_SNAKE_CASE
   const canManagePrizeStructures = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
 
   useEffect(() => {
@@ -110,5 +109,3 @@ const PrizeStructureListComponent = () => {
 };
 
 export default PrizeStructureListComponent;
-
-
