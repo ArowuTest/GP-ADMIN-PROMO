@@ -33,7 +33,7 @@ const styles = {
 };
 
 const DrawManagementPage: React.FC = () => {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [drawDate, setDrawDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>([]);
   const [selectedPrizeStructureId, setSelectedPrizeStructureId] = useState<string>("");
@@ -44,7 +44,8 @@ const DrawManagementPage: React.FC = () => {
 
   useEffect(() => {
     const fetchPrizeStructures = async () => {
-      if (token) {
+      const token = localStorage.getItem("authToken");
+      if (token && isAuthenticated) { // Check isAuthenticated as well
         try {
           setLoading(true);
           const structures = await prizeStructureService.listPrizeStructures(token);
@@ -64,13 +65,14 @@ const DrawManagementPage: React.FC = () => {
       }
     };
     fetchPrizeStructures();
-  }, [token]);
+  }, [isAuthenticated]); // Depend on isAuthenticated to re-check if token becomes available
 
   const handleExecuteDraw = async () => {
     if (!selectedPrizeStructureId || !drawDate) {
       setError("Please select a draw date and a prize structure.");
       return;
     }
+    const token = localStorage.getItem("authToken");
     if (!token) {
       setError("Authentication token not found. Please log in again.");
       return;

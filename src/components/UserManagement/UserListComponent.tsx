@@ -1,14 +1,14 @@
 // Placeholder for User List Component
 // This component will display a list of admin users and provide options to manage them.
 
-import React, { useState, useEffect } from "react";
-import { useAuth, UserRole } from "../../contexts/AuthContext"; // Adjusted path
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext"; // Adjusted path
 
 // Mock data types - replace with actual types from API/models
 interface User {
   id: number;
   username: string;
-  role: UserRole;
+  role: any; // Using any for now as UserRole was removed, ideally define roles here or import from a shared types file if still needed elsewhere
 }
 
 const UserListComponent = () => {

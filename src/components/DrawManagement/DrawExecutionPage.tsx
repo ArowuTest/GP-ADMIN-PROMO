@@ -2,7 +2,7 @@
 // This component will allow Super Admins to select a date, view draw details, and execute the draw.
 
 import React, { useState, useEffect } from 'react';
-import { useAuth, type UserRole } from '../../contexts/AuthContext'; // Adjusted path assuming contexts is at src/contexts
+import { useAuth } from '../../contexts/AuthContext'; // Adjusted path assuming contexts is at src/contexts
 
 // Mock data types - replace with actual types from API/models
 interface Prize {
@@ -88,9 +88,8 @@ const DrawExecutionPage = () => {
     // For now, let's restrict access to the page for roles not allowed to even view draw setup
     // Based on requirements, Admin and SeniorUser can view/manage some aspects, but not execute.
     // WinnerReportsUser and AllReportUser should not see this page.
-    if (userRole !== 'SuperAdmin' && userRole !== 'Admin' && userRole !== 'SeniorUser') {
-        return <p>You do not have permission to view this page.</p>;
-    }
+    // The outer condition is sufficient.
+    return <p>You do not have permission to view this page.</p>;
   }
 
   return (

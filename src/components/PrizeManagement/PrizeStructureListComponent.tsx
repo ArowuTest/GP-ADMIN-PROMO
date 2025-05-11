@@ -1,8 +1,8 @@
 // Placeholder for Prize Structure List Component
 // This component will display a list of prize structures and allow management.
 
-import React, { useState, useEffect } from "react";
-import { useAuth, UserRole } from "../../contexts/AuthContext"; // Adjusted path
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext"; // Adjusted path
 
 // Mock data types - replace with actual types from API/models
 interface Prize {

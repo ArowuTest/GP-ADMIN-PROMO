@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
     try {
       // authService.login should return an object like { token: "...", user: { ... } } or just { token: "..." }
       // The AuthContext expects only the token for its login method.
-      const response = await authService.login({ username: email, password }); // Assuming backend uses username, adjust if it's email
+      const response = await authService.login({ email: email, password }); // Corrected to send email field
       
       if (response && response.token) {
         auth.login(response.token); // Pass only the token to AuthContext
