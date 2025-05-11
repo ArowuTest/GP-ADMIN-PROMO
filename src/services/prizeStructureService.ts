@@ -34,7 +34,7 @@ const getAuthHeaders = (token: string | null) => {
 // Fetch all prize structures
 const listPrizeStructures = async (token: string | null): Promise<PrizeStructureData[]> => {
   try {
-    const response = await axios.get<PrizeStructureData[]>(`${API_URL}/admin/prize-structures`, {
+    const response = await axios.get<PrizeStructureData[]>(`${API_URL}/admin/prize-structures/`, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -54,7 +54,7 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
 // Create a new prize structure
 const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">, token: string | null): Promise<PrizeStructureData> => {
   try {
-    const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures`, data, {
+    const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures/`, data, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -74,7 +74,7 @@ const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "creat
 // Get a single prize structure by ID
 const getPrizeStructure = async (id: string, token: string | null): Promise<PrizeStructureData> => {
   try {
-    const response = await axios.get<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}`, {
+    const response = await axios.get<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -95,7 +95,7 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
 const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt" | "prizeTiers">>, token: string | null): Promise<PrizeStructureData> => {
   // Note: Backend currently doesn"t support updating tiers via this endpoint directly.
   try {
-    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}`, data, {
+    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, data, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -115,7 +115,7 @@ const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructur
 // Activate/Deactivate a prize structure
 const activatePrizeStructure = async (id: string, isActive: boolean, token: string | null): Promise<PrizeStructureData> => {
   try {
-    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/activate`, { isActive }, {
+    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/activate/`, { isActive }, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -135,7 +135,7 @@ const activatePrizeStructure = async (id: string, isActive: boolean, token: stri
 // Delete a prize structure
 const deletePrizeStructure = async (id: string, token: string | null): Promise<{ message: string }> => {
   try {
-    const response = await axios.delete<{ message: string }>(`${API_URL}/admin/prize-structures/${id}`, {
+    const response = await axios.delete<{ message: string }>(`${API_URL}/admin/prize-structures/${id}/`, {
       headers: getAuthHeaders(token),
     });
     return response.data;
