@@ -3,7 +3,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode'; // Ensure you have jwt-decode installed: npm install jwt-decode
 
-export type UserRole = 'SuperAdmin' | 'Admin' | 'SeniorUser' | 'WinnerReportsUser' | 'AllReportUser' | null;
+// Updated UserRole type to match backend and AdminLayout.tsx usage
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'SENIOR_USER' | 'WINNER_REPORTS_USER' | 'ALL_REPORT_USER' | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,7 +16,7 @@ interface AuthContextType {
 
 interface DecodedToken {
   username: string;
-  role: UserRole;
+  role: UserRole; // This should now correctly align if backend sends roles in SCREAMING_SNAKE_CASE
   exp: number;
   // Add other claims if present in your JWT
 }
@@ -34,7 +35,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const decodedToken = jwtDecode<DecodedToken>(token);
         if (decodedToken.exp * 1000 > Date.now()) {
           setIsAuthenticated(true);
-          setUserRole(decodedToken.role);
+          setUserRole(decodedToken.role); // Role from token should be in SCREAMING_SNAKE_CASE
           setUsername(decodedToken.username);
         } else {
           // Token expired
@@ -52,7 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const decodedToken = jwtDecode<DecodedToken>(token);
       localStorage.setItem('authToken', token);
       setIsAuthenticated(true);
-      setUserRole(decodedToken.role);
+      setUserRole(decodedToken.role); // Role from token should be in SCREAMING_SNAKE_CASE
       setUsername(decodedToken.username);
       // console.log('Logged in. Role:', decodedToken.role, 'Username:', decodedToken.username);
     } catch (error) {
