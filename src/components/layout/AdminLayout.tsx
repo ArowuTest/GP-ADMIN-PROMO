@@ -1,7 +1,7 @@
 // src/components/layout/AdminLayout.tsx
 import React from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { useAuth, UserRole } from "../../contexts/AuthContext"; // Adjusted path
+import { useAuth, type UserRole } from "../../contexts/AuthContext"; // Adjusted path
 
 // Define navigation items with required roles
 interface NavItem {

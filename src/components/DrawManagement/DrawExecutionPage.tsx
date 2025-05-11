@@ -2,7 +2,7 @@
 // This component will allow Super Admins to select a date, view draw details, and execute the draw.
 
 import React, { useState, useEffect } from 'react';
-import { useAuth, UserRole } from '../../contexts/AuthContext'; // Adjusted path assuming contexts is at src/contexts
+import { useAuth, type UserRole } from '../../contexts/AuthContext'; // Adjusted path assuming contexts is at src/contexts
 
 // Mock data types - replace with actual types from API/models
 interface Prize {
@@ -139,14 +139,14 @@ const DrawExecutionPage = () => {
         <div style={{ margin: '15px 0' }}>
           <p><strong>Executing Draw... Please wait for animation to complete (5 seconds).</strong></p>
           <div style={{
-            width: '100px',
-            height: '100px',
-            backgroundColor: 'lightblue',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '10px auto'
-          }}>
+                width: '100px',
+                height: '100px',
+                backgroundColor: 'lightblue',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '10px auto'
+              }}>
             Spinning...
           </div>
         </div>

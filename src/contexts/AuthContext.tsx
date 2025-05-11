@@ -1,5 +1,6 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode'; // Ensure you have jwt-decode installed: npm install jwt-decode
 
 export type UserRole = 'SuperAdmin' | 'Admin' | 'SeniorUser' | 'WinnerReportsUser' | 'AllReportUser' | null;

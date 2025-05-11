@@ -1,5 +1,6 @@
 // src/App.tsx
-import React from 'react'; // Ensure React is imported for JSX
+import React from 'react';
+import type { JSX } from 'react'; // Explicitly import JSX type if needed by verbatimModuleSyntax
 import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 import LoginPage from "./pages/LoginPage"; 
 import AdminDashboardPage from "./pages/AdminDashboardPage";

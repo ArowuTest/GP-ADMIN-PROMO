@@ -70,7 +70,7 @@ const LoginPage: React.FC = () => {
       {/* Developer notes can be removed or kept for development purposes */}
       <p style={{ marginTop: "20px", fontSize: "0.8em", textAlign: "center", maxWidth: "400px" }}>
         Note: Ensure backend is running. The backend login endpoint expects `username` and `password`.
-        The frontend expects the API at <code>{process.env.REACT_APP_API_BASE_URL || "/api/v1"}</code>.
+        The frontend expects the API at <code>{import.meta.env.VITE_API_BASE_URL || "/api/v1"}</code>.
         For local development, create a <code>.env.local</code> file in the frontend root with <code>REACT_APP_API_BASE_URL=http://localhost:8080/api/v1</code> (or your backend URL).
       </p>
     </div>
