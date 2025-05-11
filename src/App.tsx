@@ -1,6 +1,6 @@
 // src/App.tsx
 import type { JSX } from 'react'; // Explicitly import JSX type if needed by verbatimModuleSyntax
-import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom"; // Removed BrowserRouter from here
 import LoginPage from "./pages/LoginPage"; 
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DrawManagementPage from "./pages/DrawManagementPage"; 
@@ -46,14 +46,12 @@ function AppRoutes() { // Renamed to avoid conflict with App component if any
   );
 }
 
-// Main App component that includes the AuthProvider and BrowserRouter
+// Main App component that includes the AuthProvider
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
