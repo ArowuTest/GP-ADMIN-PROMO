@@ -1,32 +1,38 @@
 // src/App.tsx
-import type { JSX } from 'react'; // Explicitly import JSX type if needed by verbatimModuleSyntax
-import { Routes, Route, Navigate } from "react-router-dom"; // Removed BrowserRouter from here
-import LoginPage from "./pages/LoginPage"; 
+import React from 'react';
+import { Routes, Route, Navigate } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
-import DrawManagementPage from "./pages/DrawManagementPage"; 
-import PrizeStructuresPage from "./pages/PrizeStructuresPage"; 
-import UserManagementPage from "./pages/UserManagementPage"; 
-import AuditLogsPage from "./pages/AuditLogsPage"; 
-import AdminLayout from "./components/layout/AdminLayout"; 
-import { AuthProvider, useAuth } from "./contexts/AuthContext"; 
+import DrawManagementPage from "./pages/DrawManagementPage";
+// Removed: import PrizeStructuresPage from "./pages/PrizeStructuresPage";
+// Removed: import UserManagementPage from "./pages/UserManagementPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
+import AdminLayout from "./components/layout/AdminLayout";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+
+// Import the functional components
+import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
+import UserListComponent from "./components/UserManagement/UserListComponent";
 
 // ProtectedRoute component using AuthContext
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const auth = useAuth();
 
   if (!auth.isAuthenticated) {
+    // If not authenticated, redirect to login page
+    // You might want to pass the intended location to redirect back after login
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
-function AppRoutes() { // Renamed to avoid conflict with App component if any
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route 
         path="/admin"
-        element={ 
+        element={
           <ProtectedRoute>
             <AdminLayout />
           </ProtectedRoute>
@@ -35,8 +41,9 @@ function AppRoutes() { // Renamed to avoid conflict with App component if any
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="draw-management" element={<DrawManagementPage />} />
-        <Route path="prize-structures" element={<PrizeStructuresPage />} />
-        <Route path="user-management" element={<UserManagementPage />} />
+        {/* Updated routes to functional components */}
+        <Route path="prize-structures" element={<PrizeStructureListComponent />} />
+        <Route path="user-management" element={<UserListComponent />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
         {/* Add more admin routes here as needed */}
       </Route>
@@ -56,4 +63,5 @@ function App() {
 }
 
 export default App;
+
 
