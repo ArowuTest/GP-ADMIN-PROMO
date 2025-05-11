@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { useAuth } from '../contexts/AuthContext'; // To get the token
+// import type { useAuth } from '../contexts/AuthContext'; // To get the token - Removed as useAuth is not used
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 

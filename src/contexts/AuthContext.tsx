@@ -1,59 +1,75 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
+// src/contexts/AuthContext.tsx
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode'; // Ensure you have jwt-decode installed: npm install jwt-decode
+
+export type UserRole = 'SuperAdmin' | 'Admin' | 'SeniorUser' | 'WinnerReportsUser' | 'AllReportUser' | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: any; // Replace 'any' with a proper User type/interface
-  token: string | null;
-  login: (token: string, userData: any) => void; // userData should also have a proper type
+  userRole: UserRole;
+  username: string | null;
+  login: (token: string) => void;
   logout: () => void;
+}
+
+interface DecodedToken {
+  username: string;
+  role: UserRole;
+  exp: number;
+  // Add other claims if present in your JWT
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
+  const [userRole, setUserRole] = useState<UserRole>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if token exists in localStorage on initial load
-    const storedToken = localStorage.getItem('authToken');
-    const storedUser = localStorage.getItem('authUser');
-    if (storedToken && storedUser) {
+    const token = localStorage.getItem('authToken');
+    if (token) {
       try {
-        // You might want to validate the token with the backend here
-        // For now, just assume it's valid if it exists
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
+        const decodedToken = jwtDecode<DecodedToken>(token);
+        if (decodedToken.exp * 1000 > Date.now()) {
+          setIsAuthenticated(true);
+          setUserRole(decodedToken.role);
+          setUsername(decodedToken.username);
+        } else {
+          // Token expired
+          localStorage.removeItem('authToken');
+        }
       } catch (error) {
-        console.error("Error parsing stored user data:", error);
+        console.error('Error decoding token on initial load:', error);
         localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
       }
     }
   }, []);
 
-  const login = (newToken: string, userData: any) => {
-    localStorage.setItem('authToken', newToken);
-    localStorage.setItem('authUser', JSON.stringify(userData));
-    setToken(newToken);
-    setUser(userData);
-    setIsAuthenticated(true);
+  const login = (token: string) => {
+    try {
+      const decodedToken = jwtDecode<DecodedToken>(token);
+      localStorage.setItem('authToken', token);
+      setIsAuthenticated(true);
+      setUserRole(decodedToken.role);
+      setUsername(decodedToken.username);
+      // console.log('Logged in. Role:', decodedToken.role, 'Username:', decodedToken.username);
+    } catch (error) {
+      console.error('Error decoding token on login:', error);
+      // Handle login error (e.g., invalid token format)
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
-    setToken(null);
-    setUser(null);
     setIsAuthenticated(false);
-    // Optionally redirect to login page or make an API call to invalidate session on backend
+    setUserRole(null);
+    setUsername(null);
+    // console.log('Logged out');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, username, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

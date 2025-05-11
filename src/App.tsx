@@ -1,50 +1,59 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage'; // Placeholder
-import AdminDashboardPage from './pages/AdminDashboardPage'; // Placeholder
-import DrawManagementPage from './pages/DrawManagementPage'; // Placeholder
-import PrizeStructuresPage from './pages/PrizeStructuresPage'; // Placeholder
-import UserManagementPage from './pages/UserManagementPage'; // Placeholder
-import AuditLogsPage from './pages/AuditLogsPage'; // Placeholder
-import AdminLayout from './components/layout/AdminLayout'; // Placeholder
-import { AuthProvider } from './contexts/AuthContext'; // Placeholder for AuthContext
+// src/App.tsx
+import React from 'react'; // Ensure React is imported for JSX
+import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
+import LoginPage from "./pages/LoginPage"; 
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import DrawManagementPage from "./pages/DrawManagementPage"; 
+import PrizeStructuresPage from "./pages/PrizeStructuresPage"; 
+import UserManagementPage from "./pages/UserManagementPage"; 
+import AuditLogsPage from "./pages/AuditLogsPage"; 
+import AdminLayout from "./components/layout/AdminLayout"; 
+import { AuthProvider, useAuth } from "./contexts/AuthContext"; 
 
-// Placeholder for a ProtectedRoute component
+// ProtectedRoute component using AuthContext
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  // const auth = useAuth(); // This would come from your AuthContext - Removed as auth is not used
-  // In a real app, you would check auth.isAuthenticated or similar
-  // For now, let's assume if there's a token (even a dummy one), it's protected
-  // This needs to be properly implemented with actual auth state
-  const isAuthenticated = localStorage.getItem('authToken'); // Simple check for demo
+  const auth = useAuth();
 
-  if (!isAuthenticated) {
+  if (!auth.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
+function AppRoutes() { // Renamed to avoid conflict with App component if any
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route 
+        path="/admin"
+        element={ 
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="draw-management" element={<DrawManagementPage />} />
+        <Route path="prize-structures" element={<PrizeStructuresPage />} />
+        <Route path="user-management" element={<UserManagementPage />} />
+        <Route path="audit-logs" element={<AuditLogsPage />} />
+        {/* Add more admin routes here as needed */}
+      </Route>
+      {/* Redirect any other path to login or a specific admin page if authenticated */}
+      <Route path="*" element={<Navigate to="/login" replace />} /> 
+    </Routes>
+  );
+}
+
+// Main App component that includes the AuthProvider and BrowserRouter
 function App() {
   return (
-    <AuthProvider> {/* AuthProvider should wrap your app */}
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route 
-          path="/admin" 
-          element={ 
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="draw-management" element={<DrawManagementPage />} />
-          <Route path="prize-structures" element={<PrizeStructuresPage />} />
-          <Route path="user-management" element={<UserManagementPage />} />
-          <Route path="audit-logs" element={<AuditLogsPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} /> {/* Default route */} 
-      </Routes>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
