@@ -2,13 +2,13 @@
 // This component will display a list of admin users and provide options to manage them.
 
 import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext"; // Adjusted path
+import { useAuth, type UserRole } from "../../contexts/AuthContext"; // Adjusted path
 
 // Mock data types - replace with actual types from API/models
 interface User {
   id: number;
   username: string;
-  role: any; // Using any for now as UserRole was removed, ideally define roles here or import from a shared types file if still needed elsewhere
+  role: UserRole; // Using UserRole type from AuthContext
 }
 
 const UserListComponent = () => {
@@ -17,24 +17,27 @@ const UserListComponent = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    if (userRole !== "SuperAdmin") return; // Only SuperAdmin can list users
+    // Corrected role comparison to use SCREAMING_SNAKE_CASE
+    if (userRole !== "SUPER_ADMIN") return; // Only SuperAdmin can list users
 
     setIsLoading(true);
     // Mock API call to fetch users
     console.log("Fetching users...");
     setTimeout(() => {
       setUsers([
-        { id: 1, username: "superadmin", role: "SuperAdmin" },
-        { id: 2, username: "admin_user", role: "Admin" },
-        { id: 3, username: "reporter", role: "WinnerReportsUser" },
-        { id: 4, username: "senior_user", role: "SeniorUser" },
-        { id: 5, username: "all_reports_user", role: "AllReportUser" },
+        // Corrected mock data roles to use SCREAMING_SNAKE_CASE
+        { id: 1, username: "superadmin", role: "SUPER_ADMIN" },
+        { id: 2, username: "admin_user", role: "ADMIN" },
+        { id: 3, username: "reporter", role: "WINNER_REPORTS_USER" },
+        { id: 4, username: "senior_user", role: "SENIOR_USER" },
+        { id: 5, username: "all_reports_user", role: "ALL_REPORT_USER" },
       ]);
       setIsLoading(false);
     }, 1000);
   }, [userRole]);
 
-  if (userRole !== "SuperAdmin") {
+  // Corrected role comparison to use SCREAMING_SNAKE_CASE
+  if (userRole !== "SUPER_ADMIN") {
     return <p>You do not have permission to manage users.</p>;
   }
 
@@ -74,4 +77,5 @@ const UserListComponent = () => {
 };
 
 export default UserListComponent;
+
 
