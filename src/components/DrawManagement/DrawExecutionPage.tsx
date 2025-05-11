@@ -138,16 +138,17 @@ const DrawExecutionPage = () => {
       {isExecuting && (
         <div style={{ margin: '15px 0' }}>
           <p><strong>Executing Draw... Please wait for animation to complete (5 seconds).</strong></p>
-          <div style={{ width: '100px
-', height: '100px
-', backgroundColor: 'lightblue
-', display: 'flex
-', alignItems: 'center
-', justifyContent: 'center
-', margin: '10px auto
-' }}>
+          <div style={{
+            width: '100px',
+            height: '100px',
+            backgroundColor: 'lightblue',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '10px auto'
+          }}>
             Spinning...
-          </div> 
+          </div>
         </div>
       )}
 
