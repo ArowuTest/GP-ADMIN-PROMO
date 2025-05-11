@@ -7,15 +7,15 @@ import { useAuth, type UserRole } from "../../contexts/AuthContext"; // Adjusted
 interface NavItem {
   path: string;
   label: string;
-  allowedRoles: UserRole[];
+  allowedRoles: UserRole[]; // UserRole should ideally be a union of string literals like 'SUPER_ADMIN' | 'ADMIN' etc.
 }
 
 const navItems: NavItem[] = [
-  { path: "/admin/dashboard", label: "Dashboard", allowedRoles: ["SuperAdmin", "Admin", "SeniorUser", "WinnerReportsUser", "AllReportUser"] },
-  { path: "/admin/draw-management", label: "Draw Management", allowedRoles: ["SuperAdmin", "Admin", "SeniorUser"] }, // SuperAdmin executes, Admin/SeniorUser might view/prep
-  { path: "/admin/prize-structures", label: "Prize Structures", allowedRoles: ["SuperAdmin", "Admin"] },
-  { path: "/admin/user-management", label: "User Management", allowedRoles: ["SuperAdmin"] },
-  { path: "/admin/audit-logs", label: "Audit Logs", allowedRoles: ["SuperAdmin", "Admin", "AllReportUser"] }, // Assuming AllReportUser can see audit logs too
+  { path: "/admin/dashboard", label: "Dashboard", allowedRoles: ["SUPER_ADMIN", "ADMIN", "SENIOR_USER", "WINNER_REPORTS_USER", "ALL_REPORT_USER"] },
+  { path: "/admin/draw-management", label: "Draw Management", allowedRoles: ["SUPER_ADMIN", "ADMIN", "SENIOR_USER"] },
+  { path: "/admin/prize-structures", label: "Prize Structures", allowedRoles: ["SUPER_ADMIN", "ADMIN"] },
+  { path: "/admin/user-management", label: "User Management", allowedRoles: ["SUPER_ADMIN"] },
+  { path: "/admin/audit-logs", label: "Audit Logs", allowedRoles: ["SUPER_ADMIN", "ADMIN", "ALL_REPORT_USER"] },
   // Add other navigation items like specific report pages if needed
 ];
 
@@ -34,7 +34,8 @@ const Sidebar: React.FC = () => {
       <nav style={{ flexGrow: 1 }}>
         <ul>
           {navItems.map(item => {
-            if (userRole && item.allowedRoles.includes(userRole)) {
+            // Ensure userRole is not null or undefined before checking includes
+            if (userRole && item.allowedRoles.includes(userRole as UserRole)) { // Added 'as UserRole' for type safety if UserRole is more specific
               return (
                 <li key={item.path}>
                   <Link to={item.path}>{item.label}</Link>
@@ -77,4 +78,5 @@ const AdminLayout: React.FC = () => {
 };
 
 export default AdminLayout;
+
 
