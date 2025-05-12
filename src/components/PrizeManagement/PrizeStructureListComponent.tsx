@@ -3,33 +3,35 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm"; // Import the form component
 
+// Mock data types - ensure these are consistent with PrizeStructureForm.tsx
 export interface PrizeTierData {
-  id?: number; 
+  id?: number; // Or string, depending on backend
   name: string;
   value: string;
   quantity: number;
-  prizeType: string; 
-  order: number;     
+  prizeType: string; // Added for consistency with form
+  order: number;     // Added for consistency with form
 }
 
 export interface PrizeStructureData {
-  id: number; 
+  id: number; // Or string
   name: string;
-  description: string; 
+  description: string; // Added for consistency with form
   isActive: boolean;
-  prizes: PrizeTierData[]; 
+  prizes: PrizeTierData[]; // Ensure this matches the form's expectation (e.g., 'prizes' vs 'prizeTiers')
   createdAt: string;
-  validFrom: string; 
-  validTo?: string | null; 
+  validFrom: string; // Added for consistency with form
+  validTo?: string | null; // Added for consistency with form
 }
 
+// Mock initial data - this would typically come from an API
 const initialMockStructures: PrizeStructureData[] = [
   {
     id: 1,
     name: "Daily Draw Week 1",
     description: "Standard daily draw for the first week.",
     isActive: true,
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), 
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
     validFrom: new Date(Date.now() - 86400000 * 7).toISOString(),
     prizes: [
       { id: 1, name: "Jackpot", value: "N1,000,000", quantity: 1, prizeType: "Cash", order: 0 },
@@ -41,7 +43,7 @@ const initialMockStructures: PrizeStructureData[] = [
     name: "Weekend Special",
     description: "Special draw for weekend participants.",
     isActive: false,
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
     validFrom: new Date(Date.now() - 86400000 * 2).toISOString(),
     prizes: [
       { id: 3, name: "Grand Weekend Prize", value: "N5,000,000", quantity: 1, prizeType: "Cash", order: 0 },
@@ -52,19 +54,26 @@ const initialMockStructures: PrizeStructureData[] = [
 const PrizeStructureListComponent = () => {
   const { userRole } = useAuth();
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>(initialMockStructures);
-  const [isLoading, setIsLoading] = useState<boolean>(false); 
+  // const [isLoading, setIsLoading] = useState<boolean>(false); // TS6133: 'setIsLoading' is declared but its value is never read. - REMOVED
+  const [isLoading] = useState<boolean>(false); // Kept for potential API integration later, but setIsLoading removed
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<PrizeStructureData | null>(null);
   const [viewingStructure, setViewingStructure] = useState<PrizeStructureData | null>(null);
 
   const canManagePrizeStructures = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
 
+  // Simulate fetching data (already initialized with mock data)
   useEffect(() => {
     if (!canManagePrizeStructures) return;
+    // setIsLoading(true); // This would be used if we were actually loading
+    // setTimeout(() => {
+    //   setPrizeStructures(initialMockStructures);
+    //   setIsLoading(false);
+    // }, 500); // Simulate API delay
   }, [canManagePrizeStructures]);
 
   const handleAddStructure = () => {
-    setEditingStructure(null); 
+    setEditingStructure(null); // Ensure no initial data for new structure
     setIsFormOpen(true);
   };
 
@@ -76,6 +85,7 @@ const PrizeStructureListComponent = () => {
   const handleDeleteStructure = (id: number) => {
     if (window.confirm("Are you sure you want to delete this prize structure?")) {
       setPrizeStructures(prizeStructures.filter(ps => ps.id !== id));
+      // TODO: Add API call for actual deletion later
       console.log(`Mock delete structure with id: ${id}`);
     }
   };
@@ -86,11 +96,13 @@ const PrizeStructureListComponent = () => {
 
   const handleFormSubmit = (formData: Omit<PrizeStructureData, 'id' | 'createdAt'>) => {
     if (editingStructure) {
+      // Update existing structure
       setPrizeStructures(prizeStructures.map(ps => 
         ps.id === editingStructure.id ? { ...editingStructure, ...formData, prizes: formData.prizes } : ps
       ));
       console.log("Mock update structure:", { ...editingStructure, ...formData });
     } else {
+      // Add new structure
       const newId = prizeStructures.length > 0 ? Math.max(...prizeStructures.map(ps => ps.id)) + 1 : 1;
       const newStructure: PrizeStructureData = {
         ...formData,
@@ -104,7 +116,8 @@ const PrizeStructureListComponent = () => {
     setEditingStructure(null);
   };
 
-  if (!canManagePrizeStructures && userRole !== "SUPER_ADMIN" && userRole !== "ADMIN") {
+  // Corrected permission check: if user is not SUPER_ADMIN or ADMIN, they don't have permission.
+  if (!canManagePrizeStructures) {
     return <p>You do not have permission to manage prize structures.</p>;
   }
 
@@ -115,9 +128,8 @@ const PrizeStructureListComponent = () => {
   return (
     <div>
       <h2>Prize Structure Management</h2>
-      {canManagePrizeStructures && (
-        <button onClick={handleAddStructure} style={{ marginBottom: "15px" }}>Add New Prize Structure</button>
-      )}
+      {/* Button to add new structure is already guarded by canManagePrizeStructures implicitly by being inside the main return block that's guarded */}
+      <button onClick={handleAddStructure} style={{ marginBottom: "15px" }}>Add New Prize Structure</button>
       
       <table>
         <thead>
@@ -140,12 +152,9 @@ const PrizeStructureListComponent = () => {
               <td>{new Date(ps.createdAt).toLocaleDateString()}</td>
               <td>
                 <button onClick={() => handleViewStructure(ps)} style={{ marginRight: "5px" }}>View</button>
-                {canManagePrizeStructures && (
-                  <>
-                    <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
-                    <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
-                  </>
-                )}
+                {/* Edit and Delete buttons are also implicitly guarded by the main permission check */}
+                <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
+                <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
               </td>
             </tr>
           ))}
@@ -189,6 +198,7 @@ const PrizeStructureListComponent = () => {
   );
 };
 
+// Basic styles for modal - consider moving to a CSS file or using a styling library
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
