@@ -1,38 +1,36 @@
 // src/App.tsx
-import React from 'react';
+import type { JSX } from 'react'; // Explicitly import JSX type if needed by verbatimModuleSyntax
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
+import LoginPage from "./pages/LoginPage"; 
 import AdminDashboardPage from "./pages/AdminDashboardPage";
-import DrawManagementPage from "./pages/DrawManagementPage";
-// Removed: import PrizeStructuresPage from "./pages/PrizeStructuresPage";
-// Removed: import UserManagementPage from "./pages/UserManagementPage";
-import AuditLogsPage from "./pages/AuditLogsPage";
-import AdminLayout from "./components/layout/AdminLayout";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import DrawManagementPage from "./pages/DrawManagementPage"; 
+// Removed: import PrizeStructuresPage from "./pages/PrizeStructuresPage"; 
+// Removed: import UserManagementPage from "./pages/UserManagementPage"; 
+import AuditLogsPage from "./pages/AuditLogsPage"; 
+import AdminLayout from "./components/layout/AdminLayout"; 
+import { AuthProvider, useAuth } from "./contexts/AuthContext"; 
 
 // Import the functional components
 import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
 import UserListComponent from "./components/UserManagement/UserListComponent";
 
 // ProtectedRoute component using AuthContext
-const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const auth = useAuth();
 
   if (!auth.isAuthenticated) {
-    // If not authenticated, redirect to login page
-    // You might want to pass the intended location to redirect back after login
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
-function AppRoutes() {
+function AppRoutes() { // Renamed to avoid conflict with App component if any
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route 
         path="/admin"
-        element={
+        element={ 
           <ProtectedRoute>
             <AdminLayout />
           </ProtectedRoute>
@@ -63,5 +61,6 @@ function App() {
 }
 
 export default App;
+
 
 
