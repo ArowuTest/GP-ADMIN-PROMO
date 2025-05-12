@@ -1,8 +1,9 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import type { ReactNode } from "react"; // Changed to type-only import for ReactNode
+import { jwtDecode } from "jwt-decode";
 
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'SENIOR_USER' | 'WINNER_REPORTS_USER' | 'ALL_REPORT_USER' | null;
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SENIOR_USER" | "WINNER_REPORTS_USER" | "ALL_REPORT_USER" | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -28,7 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); // Initialize as true
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (token) {
       try {
         const decodedToken = jwtDecode<DecodedToken>(token);
@@ -37,11 +38,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUserRole(decodedToken.role);
           setUsername(decodedToken.username);
         } else {
-          localStorage.removeItem('authToken');
+          localStorage.removeItem("authToken");
         }
       } catch (error) {
-        console.error('Error decoding token on initial load:', error);
-        localStorage.removeItem('authToken');
+        console.error("Error decoding token on initial load:", error);
+        localStorage.removeItem("authToken");
       }
     }
     setIsLoadingAuth(false); // Set to false after check is complete
@@ -50,14 +51,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = (token: string) => {
     try {
       const decodedToken = jwtDecode<DecodedToken>(token);
-      localStorage.setItem('authToken', token);
+      localStorage.setItem("authToken", token);
       setIsAuthenticated(true);
       setUserRole(decodedToken.role);
       setUsername(decodedToken.username);
       setIsLoadingAuth(false); // Ensure loading is false after login attempt
     } catch (error) {
-      console.error('Error decoding token on login:', error);
-      localStorage.removeItem('authToken'); // Clear token if decoding fails
+      console.error("Error decoding token on login:", error);
+      localStorage.removeItem("authToken"); // Clear token if decoding fails
       setIsAuthenticated(false);
       setUserRole(null);
       setUsername(null);
@@ -66,7 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
     setIsAuthenticated(false);
     setUserRole(null);
     setUsername(null);
@@ -83,7 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
