@@ -1,5 +1,5 @@
 // src/App.tsx
-import type { JSX } from 'react';
+import type { JSX } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage"; 
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -10,17 +10,14 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
 import UserListComponent from "./components/UserManagement/UserListComponent";
+import ParticipantUploadComponent from "./components/ParticipantManagement/ParticipantUploadComponent"; // Import the new component
 
 // ProtectedRoute component using AuthContext
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const auth = useAuth();
 
-  // Wait for the authentication check to complete
   if (auth.isLoadingAuth) {
-    // You can return a loading spinner or null here
-    // For simplicity, returning null, so nothing is rendered until auth check is done.
-    // Consider adding a global loading indicator for better UX.
-    return <p>Loading authentication...</p>; // Or a spinner component
+    return <p>Loading authentication...</p>; 
   }
 
   if (!auth.isAuthenticated) {
@@ -46,6 +43,7 @@ function AppRoutes() {
         <Route path="draw-management" element={<DrawManagementPage />} />
         <Route path="prize-structures" element={<PrizeStructureListComponent />} />
         <Route path="user-management" element={<UserListComponent />} />
+        <Route path="participant-upload" element={<ParticipantUploadComponent />} /> {/* Add new route here */}
         <Route path="audit-logs" element={<AuditLogsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} /> 
