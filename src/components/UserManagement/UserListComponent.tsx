@@ -3,20 +3,22 @@ import React, { useState, useEffect } from "react";
 import { useAuth, type UserRole } from "../../contexts/AuthContext";
 import UserForm, { type UserFormData } from "./UserForm"; // Import the form component
 
-// Mock data types
+// Updated User interface to include email and isActive
 export interface User {
-  id: number | string; // Allow string for potential future UUIDs from backend
+  id: number | string;
   username: string;
+  email: string;
   role: UserRole;
+  isActive: boolean;
 }
 
-// Mock initial data - this would typically come from an API
+// Updated mock initial data
 const initialMockUsers: User[] = [
-  { id: 1, username: "superadmin", role: "SUPER_ADMIN" },
-  { id: 2, username: "admin_user", role: "ADMIN" },
-  { id: 3, username: "reporter", role: "WINNER_REPORTS_USER" },
-  { id: 4, username: "senior_user", role: "SENIOR_USER" },
-  { id: 5, username: "all_reports_user", role: "ALL_REPORT_USER" },
+  { id: 1, username: "superadmin", email: "super@example.com", role: "SUPER_ADMIN", isActive: true },
+  { id: 2, username: "admin_user", email: "admin@example.com", role: "ADMIN", isActive: true },
+  { id: 3, username: "reporter", email: "reporter@example.com", role: "WINNER_REPORTS_USER", isActive: true },
+  { id: 4, username: "senior_user", email: "senior@example.com", role: "SENIOR_USER", isActive: false }, // Example of an inactive user
+  { id: 5, username: "all_reports_user", email: "allreports@example.com", role: "ALL_REPORT_USER", isActive: true },
 ];
 
 const UserListComponent: React.FC = () => {
@@ -27,16 +29,13 @@ const UserListComponent: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Only SUPER_ADMIN can manage users
   const canManageUsers = currentUserRole === "SUPER_ADMIN";
 
   useEffect(() => {
     if (!canManageUsers) return;
 
     setIsLoading(true);
-    // Simulate fetching users
     setTimeout(() => {
-      // Load users from localStorage if available, otherwise use initial mock data
       const storedUsers = localStorage.getItem("mockAdminUsers");
       if (storedUsers) {
         setUsers(JSON.parse(storedUsers));
@@ -54,19 +53,24 @@ const UserListComponent: React.FC = () => {
 
   const handleAddNewUser = () => {
     if (!canManageUsers) return;
-    setEditingUser(null); // Clear any editing state
+    setEditingUser(null);
     setShowForm(true);
     setError(null);
   };
 
   const handleEditUser = (user: User) => {
     if (!canManageUsers) return;
-    // Prevent non-SUPER_ADMIN from editing SUPER_ADMIN users
     if (user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
         setError("Only a SUPER_ADMIN can edit another SUPER_ADMIN user.");
         return;
     }
-    setEditingUser({ id: user.id, username: user.username, role: user.role });
+    setEditingUser({ 
+        id: user.id, 
+        username: user.username, 
+        email: user.email, 
+        role: user.role, 
+        isActive: user.isActive 
+    });
     setShowForm(true);
     setError(null);
   };
@@ -78,7 +82,7 @@ const UserListComponent: React.FC = () => {
         setError("Only a SUPER_ADMIN can delete another SUPER_ADMIN user.");
         return;
     }
-    if (userToDelete && userToDelete.username === "superadmin" && userToDelete.id === 1) {
+    if (userToDelete && userToDelete.id === 1 && userToDelete.username === "superadmin") {
         setError("The primary superadmin (ID: 1) cannot be deleted.");
         return;
     }
@@ -91,17 +95,43 @@ const UserListComponent: React.FC = () => {
     }
   };
 
+  const handleToggleUserStatus = (userId: number | string) => {
+    if (!canManageUsers) return;
+    const userToToggle = users.find(u => u.id === userId);
+
+    if (userToToggle && userToToggle.id === 1 && userToToggle.username === "superadmin") {
+        setError("The primary superadmin's status cannot be changed directly here.");
+        return;
+    }
+
+    if (userToToggle && userToToggle.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
+        setError("Only a SUPER_ADMIN can change the status of another SUPER_ADMIN user.");
+        return;
+    }
+
+    const updatedUsers = users.map(user =>
+      user.id === userId ? { ...user, isActive: !user.isActive } : user
+    );
+    setUsers(updatedUsers);
+    saveUsersToLocalStorage(updatedUsers);
+    setError(null);
+  };
+
   const handleSaveUser = (userData: UserFormData) => {
     if (!canManageUsers) return;
     setError(null);
     let updatedUsers;
     if (userData.id) { // Editing existing user
-      updatedUsers = users.map(u => (u.id === userData.id ? { ...u, username: userData.username, role: userData.role } : u));
+      updatedUsers = users.map(u => 
+        u.id === userData.id ? { ...u, username: userData.username, email: userData.email, role: userData.role, isActive: userData.isActive } : u
+      );
     } else { // Adding new user
       const newUser: User = {
         id: Date.now(), // Simple ID generation for mock data
         username: userData.username,
+        email: userData.email,
         role: userData.role as UserRole, // Ensure role is correctly typed
+        isActive: userData.isActive,
       };
       updatedUsers = [...users, newUser];
     }
@@ -121,6 +151,7 @@ const UserListComponent: React.FC = () => {
     container: { padding: "20px", fontFamily: "Arial, sans-serif" },
     button: { padding: "8px 15px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginRight: "5px", marginBottom: "15px" },
     actionButton: { padding: "5px 10px", fontSize: "12px", marginRight: "5px"},
+    statusButton: { padding: "5px 10px", fontSize: "12px", marginRight: "5px", width: "80px" },
     table: { width: "100%", borderCollapse: "collapse" as "collapse", marginTop: "15px" },
     th: { border: "1px solid #ddd", padding: "10px", backgroundColor: "#f2f2f2", textAlign: "left" as "left" },
     td: { border: "1px solid #ddd", padding: "10px" },
@@ -154,7 +185,9 @@ const UserListComponent: React.FC = () => {
           <tr>
             <th style={styles.th}>ID</th>
             <th style={styles.th}>Username</th>
+            <th style={styles.th}>Email</th>
             <th style={styles.th}>Role</th>
+            <th style={styles.th}>Status</th>
             <th style={styles.th}>Actions</th>
           </tr>
         </thead>
@@ -163,11 +196,22 @@ const UserListComponent: React.FC = () => {
             <tr key={user.id}>
               <td style={styles.td}>{user.id}</td>
               <td style={styles.td}>{user.username}</td>
+              <td style={styles.td}>{user.email}</td>
               <td style={styles.td}>{user.role}</td>
+              <td style={styles.td}>{user.isActive ? "Active" : "Inactive"}</td>
               <td style={styles.td}>
                 <button onClick={() => handleEditUser(user)} style={{...styles.button, ...styles.actionButton}} 
-                        disabled={user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN" && user.id !== 1 /* Allow superadmin to edit self */}>
+                        disabled={user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN" && user.id !== 1}>
                   Edit
+                </button>
+                <button onClick={() => handleToggleUserStatus(user.id)} 
+                        style={{
+                            ...styles.button, 
+                            ...styles.statusButton, 
+                            backgroundColor: user.isActive ? "#ffc107" : "#28a745"
+                        }}
+                        disabled={(user.id === 1 && user.username === "superadmin") || (user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN")}>
+                  {user.isActive ? "Deactivate" : "Activate"}
                 </button>
                 <button onClick={() => handleDeleteUser(user.id)} style={{...styles.button, ...styles.actionButton, backgroundColor: "#dc3545"}} 
                         disabled={(user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") || (user.id === 1 && user.username === "superadmin")}>
