@@ -15,7 +15,7 @@ interface UserFormProps {
   onCancel: () => void;
 }
 
-const availableRoles: UserRole[] = [
+const availableRoles: Exclude<UserRole, null>[] = [
   "SUPER_ADMIN",
   "ADMIN",
   "SENIOR_USER",
@@ -42,12 +42,28 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSave, onCancel }) => {
         role: user.role,
         password: "", // Password field is not pre-filled for editing
       });
+    } else {
+      // Reset form for new user
+      setFormData({
+        username: "",
+        role: "WINNER_REPORTS_USER",
+        password: "",
+      });
     }
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "role") {
+      // When the <select> value changes:
+      // If `value` is "", it means the placeholder "Select a role" was chosen.
+      // In this case, we set `formData.role` to `null` because `UserRole` can be `null`.
+      // Otherwise, `value` is one of the actual role strings.
+      const newRole = value === "" ? null : value as Exclude<UserRole, null>;
+      setFormData(prev => ({ ...prev, role: newRole }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,7 +82,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSave, onCancel }) => {
       setError("Password must be at least 6 characters long.");
       return;
     }
-    if (!formData.role) {
+    if (formData.role === null) { // Check for null explicitly after handleChange modification
       setError("Role is required.");
       return;
     }
@@ -118,7 +134,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSave, onCancel }) => {
           type="password"
           id="password"
           name="password"
-          value={formData.password}
+          value={formData.password || ""} // Ensure password is not null for input value
           onChange={handleChange}
           style={styles.input}
           placeholder={isEditing ? "New password (min. 6 chars)" : "Min. 6 characters"}
@@ -129,12 +145,12 @@ const UserForm: React.FC<UserFormProps> = ({ user, onSave, onCancel }) => {
         <select
           id="role"
           name="role"
-          value={formData.role || ""} // Ensure value is not null/undefined for select
+          value={formData.role === null ? "" : formData.role} // Explicitly handle null for select value
           onChange={handleChange}
           style={styles.select}
           disabled={isEditing && user?.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN"}
         >
-          <option value="" disabled>Select a role</option>
+          <option value="" disabled={formData.role !== null}>Select a role</option> {/* Disable if a role is already selected */}
           {availableRoles.map(roleValue => (
             <option key={roleValue} value={roleValue} 
                     disabled={roleValue === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN" && (!isEditing || user?.role !== "SUPER_ADMIN")}>
