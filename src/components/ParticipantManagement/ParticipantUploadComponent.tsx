@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { useAuth } from "../../contexts/AuthContext";
+// Removed useAuth as token will be fetched from localStorage directly
 import { participantService, type UploadResponse } from "../../services/participantService";
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -67,7 +67,7 @@ const styles: { [key: string]: React.CSSProperties } = {
 };
 
 const ParticipantUploadComponent: React.FC = () => {
-  const { token } = useAuth();
+  // const { token } = useAuth(); // Removed: Token will be fetched from localStorage
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResponse, setUploadResponse] = useState<UploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +94,8 @@ const ParticipantUploadComponent: React.FC = () => {
     setError(null);
     setUploadResponse(null);
 
+    const token = localStorage.getItem("authToken"); // Fetch token from localStorage
+
     try {
       const response = await participantService.uploadParticipantData(selectedFile, token);
       setUploadResponse(response);
@@ -105,7 +107,7 @@ const ParticipantUploadComponent: React.FC = () => {
       setUploadResponse(null);
     }
     setIsLoading(false);
-  }, [selectedFile, token]);
+  }, [selectedFile]); // Removed token from dependencies as it's fetched inside
 
   return (
     <div style={styles.container}>
