@@ -1,24 +1,22 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { jwtDecode } from 'jwt-decode'; // Ensure you have jwt-decode installed: npm install jwt-decode
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
-// Updated UserRole type to match backend and AdminLayout.tsx usage
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'SENIOR_USER' | 'WINNER_REPORTS_USER' | 'ALL_REPORT_USER' | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
   userRole: UserRole;
   username: string | null;
+  isLoadingAuth: boolean; // New state to track initial auth check
   login: (token: string) => void;
   logout: () => void;
 }
 
 interface DecodedToken {
   username: string;
-  role: UserRole; // This should now correctly align if backend sends roles in SCREAMING_SNAKE_CASE
+  role: UserRole;
   exp: number;
-  // Add other claims if present in your JWT
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +25,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); // Initialize as true
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -35,10 +34,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const decodedToken = jwtDecode<DecodedToken>(token);
         if (decodedToken.exp * 1000 > Date.now()) {
           setIsAuthenticated(true);
-          setUserRole(decodedToken.role); // Role from token should be in SCREAMING_SNAKE_CASE
+          setUserRole(decodedToken.role);
           setUsername(decodedToken.username);
         } else {
-          // Token expired
           localStorage.removeItem('authToken');
         }
       } catch (error) {
@@ -46,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('authToken');
       }
     }
+    setIsLoadingAuth(false); // Set to false after check is complete
   }, []);
 
   const login = (token: string) => {
@@ -53,12 +52,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const decodedToken = jwtDecode<DecodedToken>(token);
       localStorage.setItem('authToken', token);
       setIsAuthenticated(true);
-      setUserRole(decodedToken.role); // Role from token should be in SCREAMING_SNAKE_CASE
+      setUserRole(decodedToken.role);
       setUsername(decodedToken.username);
-      // console.log('Logged in. Role:', decodedToken.role, 'Username:', decodedToken.username);
+      setIsLoadingAuth(false); // Ensure loading is false after login attempt
     } catch (error) {
       console.error('Error decoding token on login:', error);
-      // Handle login error (e.g., invalid token format)
+      localStorage.removeItem('authToken'); // Clear token if decoding fails
+      setIsAuthenticated(false);
+      setUserRole(null);
+      setUsername(null);
+      setIsLoadingAuth(false); // Ensure loading is false after failed login attempt
     }
   };
 
@@ -67,11 +70,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     setUserRole(null);
     setUsername(null);
-    // console.log('Logged out');
+    // No need to set isLoadingAuth here as it's mainly for initial load/login
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, username, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, username, isLoadingAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -84,4 +87,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
