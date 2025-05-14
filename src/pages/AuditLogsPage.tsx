@@ -1,24 +1,40 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
-import { getDataUploadAudits, DataUploadAudit } from '../services/auditService'; // Assuming auditService.ts is in a services folder
-import { BeatLoader } from 'react-spinners';
+// AuthContext is used to check isAuthenticated and isLoadingAuth, but token is retrieved from localStorage
+import { AuthContext, AuthContextType } from '../contexts/AuthContext'; 
+import { getDataUploadAudits } from '../services/auditService';
+import type { DataUploadAudit } from '../services/auditService'; // Type-only import
+import { BeatLoader } from 'react-spinners'; // Ensure 'react-spinners' is installed
 
 const AuditLogsPage: React.FC = () => {
-  const authContext = useContext(AuthContext);
+  const authContext = useContext<AuthContextType | undefined>(AuthContext);
   const [auditLogs, setAuditLogs] = useState<DataUploadAudit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAuditLogs = async () => {
-      if (!authContext || !authContext.token) {
-        setError('Authentication token not found. Please log in.');
+      // Use isLoadingAuth from context to wait for auth check to complete
+      if (authContext && authContext.isLoadingAuth) {
+        // Still loading auth state, wait before fetching
+        return;
+      }
+
+      if (!authContext || !authContext.isAuthenticated) {
+        setError('User is not authenticated. Please log in.');
         setLoading(false);
         return;
       }
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setError('Authentication token not found in storage. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const data = await getDataUploadAudits(authContext.token);
+        const data = await getDataUploadAudits(token); // Pass the token from localStorage
         setAuditLogs(data);
         setError(null);
       } catch (err: any) {
@@ -29,8 +45,12 @@ const AuditLogsPage: React.FC = () => {
       }
     };
 
-    fetchAuditLogs();
-  }, [authContext]);
+    // Trigger fetchAuditLogs when authContext changes, especially isLoadingAuth and isAuthenticated
+    if (authContext && !authContext.isLoadingAuth) {
+        fetchAuditLogs();
+    }
+
+  }, [authContext]); // Rerun effect if authContext (and its properties) changes
 
   const styles = {
     pageContainer: {
@@ -85,12 +105,13 @@ const AuditLogsPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Show loading spinner if auth is still loading OR if data is being fetched
+  if ((authContext && authContext.isLoadingAuth) || loading) {
     return (
       <div style={styles.pageContainer}>
         <h1 style={styles.header}>Audit Logs</h1>
         <div style={styles.loadingContainer}>
-            <BeatLoader color="#007bff" loading={loading} size={15} />
+            <BeatLoader color="#007bff" loading={true} size={15} />
         </div>
       </div>
     );
