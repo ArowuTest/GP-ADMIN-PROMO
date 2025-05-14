@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 // AuthContext is used to check isAuthenticated and isLoadingAuth, but token is retrieved from localStorage
-import { AuthContext, AuthContextType } from '../contexts/AuthContext'; 
+import { AuthContext, type AuthContextType } from '../contexts/AuthContext'; // Corrected import for AuthContextType
 import { getDataUploadAudits } from '../services/auditService';
 import type { DataUploadAudit } from '../services/auditService'; // Type-only import
 import { BeatLoader } from 'react-spinners'; // Ensure 'react-spinners' is installed
