@@ -67,7 +67,6 @@ const styles: { [key: string]: React.CSSProperties } = {
 };
 
 const ParticipantUploadComponent: React.FC = () => {
-  // const { token } = useAuth(); // Removed: Token will be fetched from localStorage
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResponse, setUploadResponse] = useState<UploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,21 +92,24 @@ const ParticipantUploadComponent: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setUploadResponse(null);
-
     const token = localStorage.getItem("authToken"); // Fetch token from localStorage
 
     try {
       const response = await participantService.uploadParticipantData(selectedFile, token);
       setUploadResponse(response);
       if (response.status !== "Success" && response.status !== "Partial Success") {
-        setError(response.message || "Upload failed. Check details below.");
+        // Use processing_error_messages if available, otherwise the main message
+        const displayError = response.processing_error_messages && response.processing_error_messages.length > 0 
+                             ? response.processing_error_messages.join("; ") 
+                             : response.message || "Upload failed. Check details below.";
+        setError(displayError);
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred during upload.");
       setUploadResponse(null);
     }
     setIsLoading(false);
-  }, [selectedFile]); // Removed token from dependencies as it's fetched inside
+  }, [selectedFile]);
 
   return (
     <div style={styles.container}>
@@ -120,8 +122,8 @@ const ParticipantUploadComponent: React.FC = () => {
           style={styles.fileInput}
           disabled={isLoading}
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={!selectedFile || isLoading}
           style={isLoading ? {...styles.uploadButton, ...styles.uploadButtonDisabled} : styles.uploadButton}
         >
@@ -136,19 +138,34 @@ const ParticipantUploadComponent: React.FC = () => {
       )}
 
       {uploadResponse && (
-        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" ? {...styles.messageContainer, ...styles.successMessage} : {...styles.messageContainer, ...styles.errorMessage}}>
+        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" 
+                  ? {...styles.messageContainer, ...styles.successMessage} 
+                  : {...styles.messageContainer, ...styles.errorMessage}}>
           <strong>{uploadResponse.status}:</strong> {uploadResponse.message}
           <div style={styles.details}>
             <p>Audit ID: {uploadResponse.audit_id}</p>
             <p>Total Data Rows Processed: {uploadResponse.total_data_rows_processed}</p>
-            <p>Successfully Imported Rows: {uploadResponse.successful_rows_imported}</p>
+            <p>Successfully Imported Rows: {uploadResponse.successfully_imported_rows}</p>
+            <p>Duplicates Skipped: {uploadResponse.duplicates_skipped_count}</p>
           </div>
-          {uploadResponse.errors && uploadResponse.errors.length > 0 && (
+
+          {uploadResponse.processing_error_messages && uploadResponse.processing_error_messages.length > 0 && (
             <>
-              <p style={{marginTop: "10px"}}><strong>Details:</strong></p>
+              <p style={{marginTop: "10px"}}><strong>Processing Errors:</strong></p>
               <ul style={styles.errorList}>
-                {uploadResponse.errors.map((errMsg, index) => (
-                  <li key={index}>{errMsg}</li>
+                {uploadResponse.processing_error_messages.map((errMsg, index) => (
+                  <li key={`error-${index}`}>{errMsg}</li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0 && (
+            <>
+              <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Details:</strong></p>
+              <ul style={styles.errorList}>
+                {uploadResponse.skipped_duplicate_event_details.map((detailMsg, index) => (
+                  <li key={`skipped-${index}`}>{detailMsg}</li>
                 ))}
               </ul>
             </>
