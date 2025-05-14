@@ -5,7 +5,8 @@ import { jwtDecode } from "jwt-decode";
 
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SENIOR_USER" | "WINNER_REPORTS_USER" | "ALL_REPORT_USER" | null;
 
-interface AuthContextType {
+// Ensure AuthContextType is exported
+export interface AuthContextType {
   isAuthenticated: boolean;
   userRole: UserRole;
   username: string | null;
@@ -20,7 +21,8 @@ interface DecodedToken {
   exp: number;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Ensure AuthContext is exported
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -88,3 +90,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
