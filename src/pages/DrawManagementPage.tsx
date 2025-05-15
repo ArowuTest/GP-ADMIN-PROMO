@@ -1,7 +1,7 @@
 // src/pages/DrawManagementPage.tsx
 import React, { useState, useEffect, useMemo } from "react";
-import { useAuth, type UserRole } from "../contexts/AuthContext"; // Ensure UserRole is imported if used for explicit typing
-import { apiClient } from "../services/apiClient"; 
+import { useAuth } from "../contexts/AuthContext"; // UserRole import removed as it's not directly used
+import { apiClient } from "../services/apiClient.ts"; // Corrected import path
 
 // Matches backend models.Prize (PrizeTier)
 export interface PrizeTierData {
@@ -27,7 +27,7 @@ export interface PrizeStructureData {
   effective_end_date?: string;
   prizes: PrizeTierData[]; 
   created_at: string; 
-  applicableDays?: string[]; // Added to match potential usage, ensure backend provides or handle if not
+  applicableDays?: string[]; 
 }
 
 // Matches backend models.DrawWinner
@@ -108,7 +108,7 @@ const DrawManagementPage: React.FC = () => {
   const [showRerunConfirm, setShowRerunConfirm] = useState<boolean>(false); 
   const [rerunConfirmText, setRerunConfirmText] = useState<string>("");
 
-  const canExecuteDraw = userRole === "SUPER_ADMIN"; // Corrected comparison
+  const canExecuteDraw = userRole === "SUPER_ADMIN";
 
   useEffect(() => {
     const fetchPrizeStructures = async () => {
@@ -129,7 +129,7 @@ const DrawManagementPage: React.FC = () => {
       }
       setLoading(false);
     };
-    if (token) { // Ensure token is available before fetching
+    if (token) { 
         fetchPrizeStructures();
     }
   }, [token]);
@@ -350,8 +350,7 @@ const DrawManagementPage: React.FC = () => {
             <div style={styles.animationPlaceholder}>
               <p>Executing Draw...</p>
               <p>Please wait, this may take a moment.</p>
-              {/* Basic spinner or animation could go here */}
-              <div className="spinner"></div> {/* Add CSS for spinner if desired */}
+              <div className="spinner"></div> 
             </div>
           )}
 
