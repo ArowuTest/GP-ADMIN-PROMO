@@ -1,12 +1,15 @@
 // src/services/userService.ts
 import axios from 'axios';
 
+// Import UserRole type from AuthContext to ensure consistency
+import { UserRole } from '../contexts/AuthContext';
+
 // Define the UserData interface to match backend response
 export interface UserData {
   id: number | string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   status: 'Active' | 'Inactive' | 'Locked';
   first_name?: string;
   last_name?: string;
@@ -19,7 +22,7 @@ export interface CreateUserPayload {
   username: string;
   email: string;
   password: string;
-  role: string;
+  role: UserRole;
   status: 'Active' | 'Inactive' | 'Locked';
   first_name?: string;
   last_name?: string;
@@ -30,7 +33,7 @@ export interface UpdateUserPayload {
   username?: string;
   email?: string;
   password?: string;
-  role?: string;
+  role?: UserRole;
   status?: 'Active' | 'Inactive' | 'Locked';
   first_name?: string;
   last_name?: string;
