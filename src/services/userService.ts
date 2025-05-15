@@ -1,8 +1,8 @@
 // src/services/userService.ts
 import axios from 'axios';
 
-// Import UserRole type from AuthContext to ensure consistency
-import { UserRole } from '../contexts/AuthContext';
+// Import UserRole type from AuthContext using type-only import
+import type { UserRole } from '../contexts/AuthContext';
 
 // Define the UserData interface to match backend response
 export interface UserData {
