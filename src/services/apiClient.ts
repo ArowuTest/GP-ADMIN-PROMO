@@ -1,6 +1,9 @@
 // src/services/apiClient.ts
 import axios from 'axios';
 
+// Flag to control mock mode behavior
+export const MOCK_MODE = true;
+
 // Create a base axios instance with common configuration
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
@@ -30,6 +33,12 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // In mock mode, log the error but don't redirect to login
+    if (MOCK_MODE) {
+      console.warn('API Error in mock mode:', error);
+      return Promise.reject(error);
+    }
+    
     // Handle session expiration
     if (error.response && error.response.status === 401) {
       // Clear local storage and redirect to login
