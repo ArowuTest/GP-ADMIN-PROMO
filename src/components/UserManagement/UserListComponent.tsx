@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import UserForm, { type UserFormData } from "./UserForm";
-import { userService, type UserData } from "../../services/userService"; // Import the service and UserData type
+// Corrected import path to remove .ts extension
+import { userService, type UserData } from "../../services/userService"; 
 
 // The User interface should now align with UserData from the service
 export type User = UserData;
 
 const UserListComponent: React.FC = () => {
-  const { token, userRole: currentUserRole } = useAuth(); // Assuming token is available from useAuth
+  const { token, userRole: currentUserRole } = useAuth(); 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
@@ -47,15 +48,12 @@ const UserListComponent: React.FC = () => {
       setError("Only a SUPER_ADMIN can edit another SUPER_ADMIN user.");
       return;
     }
-    // Map User (UserData) to UserFormData for the form
-    // Ensure user.id is converted to string for UserFormData.id which is string | undefined
     setEditingUser({
-      id: String(user.id), // Ensure id is a string
+      id: String(user.id), 
       username: user.username,
       email: user.email,
       role: user.role,
-      isActive: user.status === "Active", // Map status to isActive
-      // Password is not pre-filled for editing
+      isActive: user.status === "Active", 
     });
     setShowForm(true);
     setError(null);
@@ -63,7 +61,7 @@ const UserListComponent: React.FC = () => {
 
   const handleDeleteUser = async (userId: string) => {
     if (!canManageUsers || !token) return;
-    const userToDelete = users.find(u => String(u.id) === userId); // Ensure comparison with string ID
+    const userToDelete = users.find(u => String(u.id) === userId); 
     if (userToDelete && userToDelete.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
       setError("Only a SUPER_ADMIN can delete another SUPER_ADMIN user.");
       return;
@@ -72,8 +70,8 @@ const UserListComponent: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete user ${userToDelete?.username}?`)) {
       setIsLoading(true);
       try {
-        await userService.deleteUser(userId, token); // userService.deleteUser expects a string ID
-        await fetchUsers(); // Refresh the list
+        await userService.deleteUser(userId, token); 
+        await fetchUsers(); 
         setError(null);
       } catch (err: any) {
         setError(err.response?.data?.error || err.message || "Failed to delete user.");
@@ -93,9 +91,8 @@ const UserListComponent: React.FC = () => {
     const newStatus = user.status === "Active" ? "Inactive" : "Active";
     setIsLoading(true);
     try {
-      // userService.updateUser expects a string ID
       await userService.updateUser(String(user.id), { status: newStatus }, token);
-      await fetchUsers(); // Refresh list
+      await fetchUsers(); 
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Failed to update user status.");
@@ -119,9 +116,9 @@ const UserListComponent: React.FC = () => {
     };
 
     try {
-      if (formData.id) { // Editing existing user, formData.id is string | undefined
-        await userService.updateUser(formData.id as string, payload, token); // Cast to string, ensure it's defined
-      } else { // Adding new user
+      if (formData.id) { 
+        await userService.updateUser(formData.id as string, payload, token); 
+      } else { 
         if (!payload.password) {
             setError("Password is required for new users.");
             setIsLoading(false);
@@ -192,7 +189,6 @@ const UserListComponent: React.FC = () => {
           </thead>
           <tbody>
             {users.map(user => (
-              // Ensure user.id is treated as a string for key and display
               <tr key={String(user.id)}>
                 <td style={styles.td}>{String(user.id).substring(0,8)}...</td> 
                 <td style={styles.td}>{user.username}</td>

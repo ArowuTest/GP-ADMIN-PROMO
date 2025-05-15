@@ -1,7 +1,7 @@
 // src/pages/DrawManagementPage.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext"; // UserRole import removed as it's not directly used
-import { apiClient } from "../services/apiClient.ts"; // Corrected import path
+import { apiClient } from "../services/apiClient"; // Corrected import path, removed .ts
 
 // Matches backend models.Prize (PrizeTier)
 export interface PrizeTierData {
