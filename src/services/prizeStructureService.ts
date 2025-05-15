@@ -10,6 +10,7 @@ export interface PrizeTierData {
   valueNGN: number;
   winnerCount: number;
   order: number;
+  numberOfRunnerUps: number; // Number of runner-ups for this prize tier
 }
 
 export interface PrizeStructureData {
@@ -22,6 +23,7 @@ export interface PrizeStructureData {
   prizeTiers: PrizeTierData[];
   createdAt?: string;
   updatedAt?: string;
+  applicableDays?: string[]; // Days of week this structure applies to
 }
 
 const getAuthHeaders = (token: string | null) => {
@@ -55,7 +57,8 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
             prizeType: "Cash",
             valueNGN: 1000000,
             winnerCount: 1,
-            order: 1
+            order: 1,
+            numberOfRunnerUps: 2 // Default number of runner-ups
           },
           {
             id: "pt-002",
@@ -63,9 +66,11 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
             prizeType: "Airtime",
             valueNGN: 10000,
             winnerCount: 5,
-            order: 2
+            order: 2,
+            numberOfRunnerUps: 1 // Default number of runner-ups
           }
         ],
+        applicableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z"
       }];
@@ -86,7 +91,16 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
 // Create a new prize structure
 const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">, token: string | null): Promise<PrizeStructureData> => {
   try {
-    const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures/`, data, {
+    // Ensure each prize tier has a numberOfRunnerUps property
+    const dataWithRunnerUps = {
+      ...data,
+      prizeTiers: data.prizeTiers.map(tier => ({
+        ...tier,
+        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
+      }))
+    };
+    
+    const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures/`, dataWithRunnerUps, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -109,7 +123,17 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
     const response = await axios.get<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, {
       headers: getAuthHeaders(token),
     });
-    return response.data;
+    
+    // Ensure each prize tier has a numberOfRunnerUps property
+    const dataWithRunnerUps = {
+      ...response.data,
+      prizeTiers: response.data.prizeTiers.map(tier => ({
+        ...tier,
+        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
+      }))
+    };
+    
+    return dataWithRunnerUps;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
@@ -124,10 +148,18 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
 };
 
 // Update a prize structure
-const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt" | "prizeTiers">>, token: string | null): Promise<PrizeStructureData> => {
-  // Note: Backend currently doesn"t support updating tiers via this endpoint directly.
+const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">>, token: string | null): Promise<PrizeStructureData> => {
   try {
-    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, data, {
+    // If prizeTiers are included, ensure each has a numberOfRunnerUps property
+    const dataWithRunnerUps = {
+      ...data,
+      prizeTiers: data.prizeTiers ? data.prizeTiers.map(tier => ({
+        ...tier,
+        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
+      })) : undefined
+    };
+    
+    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, dataWithRunnerUps, {
       headers: getAuthHeaders(token),
     });
     return response.data;
