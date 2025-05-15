@@ -1,6 +1,19 @@
 import React, { useState, useCallback } from "react";
-// Removed useAuth as token will be fetched from localStorage directly
-import { participantService, type UploadResponse } from "../../services/participantService";
+import { participantService, type UploadResponse as BackendUploadResponse } from "../../services/participantService";
+
+// Define a more comprehensive frontend UploadResponse type if needed, or ensure BackendUploadResponse includes all fields
+// For this example, we assume BackendUploadResponse from the service includes:
+// errors?: string[]; (for processing_error_messages)
+// skipped_duplicate_event_details?: string[];
+// duplicates_skipped_count?: number;
+// successful_rows_imported: number; // (ensure this matches backend field name, e.g. successfully_imported_rows)
+// total_data_rows_processed: number;
+
+interface UploadResponse extends BackendUploadResponse {
+    // Add any frontend specific transformations if necessary
+    // For now, assume BackendUploadResponse is sufficient and includes all necessary fields
+    // like errors, skipped_duplicate_event_details, duplicates_skipped_count, successful_rows_imported
+}
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
@@ -49,7 +62,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderColor: "#c3e6cb",
     color: "#155724",
   },
-  errorMessage: {
+  errorMessageContainer: { // Renamed for clarity, specifically for error messages section
     backgroundColor: "#f8d7da",
     borderColor: "#f5c6cb",
     color: "#721c24",
@@ -63,6 +76,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: "10px",
     fontSize: "14px",
     color: "#555",
+  },
+  downloadButton: {
+    padding: "8px 12px",
+    backgroundColor: "#28a745", // Green color for download
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    marginTop: "15px",
+    display: "inline-block",
   }
 };
 
@@ -75,11 +99,64 @@ const ParticipantUploadComponent: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFile(event.target.files[0]);
-      setUploadResponse(null); // Reset previous response
-      setError(null); // Reset previous error
+      setUploadResponse(null);
+      setError(null);
     } else {
       setSelectedFile(null);
     }
+  };
+
+  const generateErrorFileContent = (response: UploadResponse): string => {
+    let content = "Participant Upload Error Report\n";
+    content += `Audit ID: ${response.audit_id}\n`;
+    content += `Status: ${response.status}\n`;
+    content += `Total Data Rows Processed: ${response.total_data_rows_processed}\n`;
+    content += `Successfully Imported Rows: ${response.successful_rows_imported}\n`;
+    content += `Duplicates Skipped: ${response.duplicates_skipped_count || 0}\n\n`;
+
+    if (response.errors && response.errors.length > 0) {
+      content += "Processing Errors:\n";
+      response.errors.forEach(err => {
+        content += `- ${err}\n`;
+      });
+      content += "\n";
+    }
+
+    if (response.skipped_duplicate_event_details && response.skipped_duplicate_event_details.length > 0) {
+      content += "Skipped Duplicate Event Details:\n";
+      response.skipped_duplicate_event_details.forEach(detail => {
+        content += `- ${detail}\n`;
+      });
+      content += "\n";
+    }
+    
+    if ((!response.errors || response.errors.length === 0) && (!response.skipped_duplicate_event_details || response.skipped_duplicate_event_details.length === 0) && response.status !== "Success"){
+        content += "No specific row errors reported, but upload was not fully successful. General message: " + response.message + "\n";
+    }
+
+    return content;
+  };
+
+  const handleDownloadErrors = () => {
+    if (!uploadResponse) return;
+
+    const errorsExist = (uploadResponse.errors && uploadResponse.errors.length > 0) || 
+                        (uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0);
+    
+    if (!errorsExist && uploadResponse.status === "Success") {
+        // Optionally, prevent download if no errors and successful, or provide a success summary.
+        // For now, we allow download of the summary even on success if button is somehow shown.
+    }
+
+    const fileContent = generateErrorFileContent(uploadResponse);
+    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `upload_error_report_${uploadResponse.audit_id || "details"}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   };
 
   const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
@@ -92,17 +169,15 @@ const ParticipantUploadComponent: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setUploadResponse(null);
-    const token = localStorage.getItem("authToken"); // Fetch token from localStorage
+
+    const token = localStorage.getItem("authToken");
 
     try {
-      const response = await participantService.uploadParticipantData(selectedFile, token);
+      // Ensure the service returns all fields: processing_error_messages as errors, skipped_duplicate_event_details, duplicates_skipped_count
+      const response: UploadResponse = await participantService.uploadParticipantData(selectedFile, token);
       setUploadResponse(response);
       if (response.status !== "Success" && response.status !== "Partial Success") {
-        // Use processing_error_messages if available, otherwise the main message
-        const displayError = response.processing_error_messages && response.processing_error_messages.length > 0 
-                             ? response.processing_error_messages.join("; ") 
-                             : response.message || "Upload failed. Check details below.";
-        setError(displayError);
+        setError(response.message || "Upload failed. Check details below.");
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred during upload.");
@@ -110,6 +185,11 @@ const ParticipantUploadComponent: React.FC = () => {
     }
     setIsLoading(false);
   }, [selectedFile]);
+
+  const hasErrorsToReport = uploadResponse && 
+                           ((uploadResponse.errors && uploadResponse.errors.length > 0) || 
+                            (uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0) ||
+                            (uploadResponse.status !== "Success" && uploadResponse.status !== "Partial Success"));
 
   return (
     <div style={styles.container}>
@@ -122,8 +202,8 @@ const ParticipantUploadComponent: React.FC = () => {
           style={styles.fileInput}
           disabled={isLoading}
         />
-        <button
-          type="submit"
+        <button 
+          type="submit" 
           disabled={!selectedFile || isLoading}
           style={isLoading ? {...styles.uploadButton, ...styles.uploadButtonDisabled} : styles.uploadButton}
         >
@@ -132,43 +212,45 @@ const ParticipantUploadComponent: React.FC = () => {
       </form>
 
       {error && (
-        <div style={{...styles.messageContainer, ...styles.errorMessage}}>
+        <div style={{...styles.messageContainer, ...styles.errorMessageContainer}}>
           <strong>Error:</strong> {error}
         </div>
       )}
 
       {uploadResponse && (
-        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" 
-                  ? {...styles.messageContainer, ...styles.successMessage} 
-                  : {...styles.messageContainer, ...styles.errorMessage}}>
+        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" ? {...styles.messageContainer, ...styles.successMessage} : {...styles.messageContainer, ...styles.errorMessageContainer}}>
           <strong>{uploadResponse.status}:</strong> {uploadResponse.message}
           <div style={styles.details}>
             <p>Audit ID: {uploadResponse.audit_id}</p>
             <p>Total Data Rows Processed: {uploadResponse.total_data_rows_processed}</p>
-            <p>Successfully Imported Rows: {uploadResponse.successfully_imported_rows}</p>
-            <p>Duplicates Skipped: {uploadResponse.duplicates_skipped_count}</p>
+            <p>Successfully Imported Rows: {uploadResponse.successful_rows_imported}</p>
+            <p>Duplicates Skipped: {uploadResponse.duplicates_skipped_count || 0}</p>
           </div>
-
-          {uploadResponse.processing_error_messages && uploadResponse.processing_error_messages.length > 0 && (
+          {(uploadResponse.errors && uploadResponse.errors.length > 0) && (
             <>
               <p style={{marginTop: "10px"}}><strong>Processing Errors:</strong></p>
               <ul style={styles.errorList}>
-                {uploadResponse.processing_error_messages.map((errMsg, index) => (
-                  <li key={`error-${index}`}>{errMsg}</li>
+                {uploadResponse.errors.map((errMsg, index) => (
+                  <li key={`proc-err-${index}`}>{errMsg}</li>
                 ))}
               </ul>
             </>
           )}
-
-          {uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0 && (
+          {(uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0) && (
             <>
-              <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Details:</strong></p>
+              <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Event Details:</strong></p>
               <ul style={styles.errorList}>
                 {uploadResponse.skipped_duplicate_event_details.map((detailMsg, index) => (
-                  <li key={`skipped-${index}`}>{detailMsg}</li>
+                  <li key={`skip-err-${index}`}>{detailMsg}</li>
                 ))}
               </ul>
             </>
+          )}
+          {/* Show download button if there are any errors or if the status is not pure success */}
+          {hasErrorsToReport && (
+             <button onClick={handleDownloadErrors} style={styles.downloadButton}>
+               Download Error Report
+             </button>
           )}
         </div>
       )}
