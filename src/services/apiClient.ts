@@ -1,8 +1,8 @@
 // src/services/apiClient.ts
 import axios from 'axios';
 
-// Flag to control mock mode behavior
-export const MOCK_MODE = true;
+// Flag to control mock mode behavior - set to false to use real API
+export const MOCK_MODE = false;
 
 // Create a base axios instance with common configuration
 const apiClient = axios.create({
