@@ -6,7 +6,7 @@ export const MOCK_MODE = false;
 
 // Create a base axios instance with common configuration
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
