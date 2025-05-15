@@ -1,26 +1,28 @@
 // src/components/PrizeManagement/PrizeStructureListComponent.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import PrizeStructureForm from "./PrizeStructureForm"; // Import the form component
+import PrizeStructureForm from "./PrizeStructureForm";
+import { prizeStructureService } from "../../services/prizeStructureService";
+import type { PrizeStructureData as ServicePrizeStructureData, PrizeTierData as ServicePrizeTierData } from "../../services/prizeStructureService";
 
 // Define and export DayOfWeek type
 export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 // Updated PrizeTierData interface
 export interface PrizeTierData {
-  id?: number; // Or string, depending on backend
+  id?: string;
   name: string;
   value: string;
   quantity: number;
   prizeType: string;
   order: number;
-  valueNGN: number; // Added field
-  numberOfRunnerUps: number; // Added field
+  valueNGN: number;
+  numberOfRunnerUps: number;
 }
 
 // Updated PrizeStructureData interface
 export interface PrizeStructureData {
-  id: number; // Or string
+  id: string;
   name: string;
   description: string;
   isActive: boolean;
@@ -28,42 +30,58 @@ export interface PrizeStructureData {
   createdAt: string;
   validFrom: string;
   validTo?: string | null;
-  applicableDays: DayOfWeek[]; // Added field using the new DayOfWeek type
+  applicableDays: DayOfWeek[];
 }
 
-// Mock initial data - this would typically come from an API
-const initialMockStructures: PrizeStructureData[] = [
-  {
-    id: 1,
-    name: "Daily Draw Week 1",
-    description: "Standard daily draw for the first week.",
-    isActive: true,
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
-    validFrom: new Date(Date.now() - 86400000 * 7).toISOString(),
-    applicableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-    prizes: [
-      { id: 1, name: "Jackpot", value: "N1,000,000", quantity: 1, prizeType: "Cash", order: 0, valueNGN: 1000000, numberOfRunnerUps: 2 },
-      { id: 2, name: "Consolation", value: "N10,000 Airtime", quantity: 5, prizeType: "Airtime", order: 1, valueNGN: 10000, numberOfRunnerUps: 1 },
-    ],
-  },
-  {
-    id: 2,
-    name: "Weekend Special",
-    description: "Special draw for weekend participants.",
-    isActive: false,
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
-    validFrom: new Date(Date.now() - 86400000 * 2).toISOString(),
-    applicableDays: ["Sat", "Sun"],
-    prizes: [
-      { id: 3, name: "Grand Weekend Prize", value: "N5,000,000", quantity: 1, prizeType: "Cash", order: 0, valueNGN: 5000000, numberOfRunnerUps: 1 },
-    ],
-  },
-];
+// Convert service data to component data
+const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): PrizeStructureData => {
+  return {
+    id: serviceData.id || "",
+    name: serviceData.name,
+    description: serviceData.description,
+    isActive: serviceData.isActive,
+    prizes: serviceData.prizeTiers.map(pt => ({
+      id: pt.id,
+      name: pt.name,
+      value: `N${pt.valueNGN.toLocaleString()}`,
+      quantity: pt.winnerCount,
+      prizeType: pt.prizeType,
+      order: pt.order,
+      valueNGN: pt.valueNGN,
+      numberOfRunnerUps: pt.numberOfRunnerUps
+    })),
+    createdAt: serviceData.createdAt || new Date().toISOString(),
+    validFrom: serviceData.validFrom,
+    validTo: serviceData.validTo,
+    applicableDays: (serviceData.applicableDays || []) as DayOfWeek[]
+  };
+};
+
+// Convert component data to service data
+const convertComponentToServiceData = (componentData: Omit<PrizeStructureData, 'id' | 'createdAt'>): Omit<ServicePrizeStructureData, 'id' | 'createdAt' | 'updatedAt'> => {
+  return {
+    name: componentData.name,
+    description: componentData.description,
+    isActive: componentData.isActive,
+    prizeTiers: componentData.prizes.map(p => ({
+      name: p.name,
+      prizeType: p.prizeType,
+      valueNGN: p.valueNGN,
+      winnerCount: p.quantity,
+      order: p.order,
+      numberOfRunnerUps: p.numberOfRunnerUps
+    })),
+    validFrom: componentData.validFrom,
+    validTo: componentData.validTo,
+    applicableDays: componentData.applicableDays
+  };
+};
 
 const PrizeStructureListComponent = () => {
-  const { userRole } = useAuth();
-  const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>(initialMockStructures);
-  const [isLoading] = useState<boolean>(false);
+  const { userRole, token } = useAuth();
+  const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<PrizeStructureData | null>(null);
   const [viewingStructure, setViewingStructure] = useState<PrizeStructureData | null>(null);
@@ -72,8 +90,24 @@ const PrizeStructureListComponent = () => {
 
   useEffect(() => {
     if (!canManagePrizeStructures) return;
-    // API call to fetch prize structures would go here
-  }, [canManagePrizeStructures]);
+    
+    const fetchPrizeStructures = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const serviceData = await prizeStructureService.listPrizeStructures(token);
+        const componentData = serviceData.map(convertServiceToComponentData);
+        setPrizeStructures(componentData);
+      } catch (err: any) {
+        console.error("Error fetching prize structures:", err);
+        setError(err.message || "Failed to load prize structures");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPrizeStructures();
+  }, [canManagePrizeStructures, token]);
 
   const handleAddStructure = () => {
     setEditingStructure(null);
@@ -85,11 +119,15 @@ const PrizeStructureListComponent = () => {
     setIsFormOpen(true);
   };
 
-  const handleDeleteStructure = (id: number) => {
+  const handleDeleteStructure = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this prize structure?")) {
-      setPrizeStructures(prizeStructures.filter(ps => ps.id !== id));
-      // TODO: Add API call for actual deletion later
-      console.log(`Mock delete structure with id: ${id}`);
+      try {
+        await prizeStructureService.deletePrizeStructure(id, token);
+        setPrizeStructures(prizeStructures.filter(ps => ps.id !== id));
+      } catch (err: any) {
+        console.error("Error deleting prize structure:", err);
+        alert(`Failed to delete prize structure: ${err.message}`);
+      }
     }
   };
 
@@ -97,24 +135,37 @@ const PrizeStructureListComponent = () => {
     setViewingStructure(structure);
   };
 
-  const handleFormSubmit = (formData: Omit<PrizeStructureData, 'id' | 'createdAt'>) => {
-    if (editingStructure) {
-      setPrizeStructures(prizeStructures.map(ps => 
-        ps.id === editingStructure.id ? { ...editingStructure, ...formData, prizes: formData.prizes.map(p => ({...p})) } : ps
-      ));
-      console.log("Mock update structure:", { ...editingStructure, ...formData });
-    } else {
-      const newId = prizeStructures.length > 0 ? Math.max(...prizeStructures.map(ps => ps.id)) + 1 : 1;
-      const newStructure: PrizeStructureData = {
-        ...formData,
-        id: newId,
-        createdAt: new Date().toISOString(),
-      };
-      setPrizeStructures([...prizeStructures, newStructure]);
-      console.log("Mock create structure:", newStructure);
+  const handleFormSubmit = async (formData: Omit<PrizeStructureData, 'id' | 'createdAt'>) => {
+    try {
+      const serviceData = convertComponentToServiceData(formData);
+      
+      if (editingStructure) {
+        // Update existing structure
+        const updatedServiceData = await prizeStructureService.updatePrizeStructure(
+          editingStructure.id,
+          serviceData,
+          token
+        );
+        const updatedComponentData = convertServiceToComponentData(updatedServiceData);
+        setPrizeStructures(prizeStructures.map(ps => 
+          ps.id === editingStructure.id ? updatedComponentData : ps
+        ));
+      } else {
+        // Create new structure
+        const newServiceData = await prizeStructureService.createPrizeStructure(
+          serviceData,
+          token
+        );
+        const newComponentData = convertServiceToComponentData(newServiceData);
+        setPrizeStructures([...prizeStructures, newComponentData]);
+      }
+      
+      setIsFormOpen(false);
+      setEditingStructure(null);
+    } catch (err: any) {
+      console.error("Error saving prize structure:", err);
+      alert(`Failed to save prize structure: ${err.message}`);
     }
-    setIsFormOpen(false);
-    setEditingStructure(null);
   };
 
   if (!canManagePrizeStructures) {
@@ -125,51 +176,62 @@ const PrizeStructureListComponent = () => {
     return <p>Loading prize structures...</p>;
   }
 
+  if (error) {
+    return <p>Error: {error}</p>;
+  }
+
   return (
     <div>
       <h2>Prize Structure Management</h2>
       <button onClick={handleAddStructure} style={{ marginBottom: "15px" }}>Add New Prize Structure</button>
       
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Active</th>
-            <th>Prizes Count</th>
-            <th>Applicable Days</th>
-            <th>Created At</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {prizeStructures.map(ps => (
-            <tr key={ps.id}>
-              <td>{ps.id}</td>
-              <td>{ps.name}</td>
-              <td>{ps.isActive ? "Yes" : "No"}</td>
-              <td>{ps.prizes.length}</td>
-              <td>{ps.applicableDays.join(", ")}</td>
-              <td>{new Date(ps.createdAt).toLocaleDateString()}</td>
-              <td>
-                <button onClick={() => handleViewStructure(ps)} style={{ marginRight: "5px" }}>View</button>
-                <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
-                <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
-              </td>
+      {prizeStructures.length === 0 ? (
+        <p>No prize structures found. Create one to get started.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Active</th>
+              <th>Prizes Count</th>
+              <th>Applicable Days</th>
+              <th>Created At</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {prizeStructures.map(ps => (
+              <tr key={ps.id}>
+                <td>{ps.id}</td>
+                <td>{ps.name}</td>
+                <td>{ps.isActive ? "Yes" : "No"}</td>
+                <td>{ps.prizes.length}</td>
+                <td>{ps.applicableDays.join(", ")}</td>
+                <td>{new Date(ps.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button onClick={() => handleViewStructure(ps)} style={{ marginRight: "5px" }}>View</button>
+                  <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
+                  <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <PrizeStructureForm 
-        isOpen={isFormOpen}
-        onClose={() => { setIsFormOpen(false); setEditingStructure(null); }}
-        onSubmit={handleFormSubmit}
-        initialData={editingStructure}
+        isOpen={isFormOpen} 
+        onClose={() => { 
+          setIsFormOpen(false); 
+          setEditingStructure(null); 
+        }} 
+        onSubmit={handleFormSubmit} 
+        initialData={editingStructure} 
       />
 
       {viewingStructure && (
-        <div style={modalOverlayStyle}> 
+        <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h3>Prize Structure Details: {viewingStructure.name}</h3>
             <p><strong>ID:</strong> {viewingStructure.id}</p>
@@ -179,18 +241,21 @@ const PrizeStructureListComponent = () => {
             <p><strong>Created At:</strong> {new Date(viewingStructure.createdAt).toLocaleString()}</p>
             <p><strong>Valid From:</strong> {new Date(viewingStructure.validFrom).toLocaleString()}</p>
             {viewingStructure.validTo && <p><strong>Valid To:</strong> {new Date(viewingStructure.validTo).toLocaleString()}</p>}
+            
             <h4>Prizes:</h4>
             {viewingStructure.prizes.length > 0 ? (
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
                 {viewingStructure.prizes.map((prize, index) => (
                   <li key={prize.id || index}>
-                    <strong>{prize.name}</strong> ({prize.prizeType}): {prize.value} (NGN: {prize.valueNGN}, Qty: {prize.quantity}, Order: {prize.order}, Runners: {prize.numberOfRunnerUps})
+                    <strong>{prize.name}</strong> ({prize.prizeType}): {prize.value} 
+                    (NGN: {prize.valueNGN}, Qty: {prize.quantity}, Order: {prize.order}, Runners: {prize.numberOfRunnerUps})
                   </li>
                 ))}
               </ul>
             ) : (
               <p>No prizes defined for this structure.</p>
             )}
+            
             <button onClick={() => setViewingStructure(null)} style={{ marginTop: "20px" }}>Close</button>
           </div>
         </div>
@@ -223,4 +288,3 @@ const modalContentStyle: React.CSSProperties = {
 };
 
 export default PrizeStructureListComponent;
-
