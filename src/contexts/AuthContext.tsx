@@ -1,16 +1,17 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from "react";
-import type { ReactNode } from "react"; // Changed to type-only import for ReactNode
+import type { ReactNode } from "react"; 
 import { jwtDecode } from "jwt-decode";
 
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SENIOR_USER" | "WINNER_REPORTS_USER" | "ALL_REPORT_USER" | null;
 
-interface AuthContextType {
+// Export AuthContextType interface
+export interface AuthContextType {
   isAuthenticated: boolean;
   userRole: UserRole;
   username: string | null;
-  token: string | null; // Added token property
-  isLoadingAuth: boolean; // New state to track initial auth check
+  token: string | null; 
+  isLoadingAuth: boolean; 
   login: (token: string) => void;
   logout: () => void;
 }
@@ -21,14 +22,15 @@ interface DecodedToken {
   exp: number;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export AuthContext
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null); // Added token state
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); // Initialize as true
+  const [token, setToken] = useState<string | null>(null); 
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); 
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
@@ -39,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsAuthenticated(true);
           setUserRole(decodedToken.role);
           setUsername(decodedToken.username);
-          setToken(storedToken); // Set token state
+          setToken(storedToken); 
         } else {
           localStorage.removeItem("authToken");
         }
@@ -48,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem("authToken");
       }
     }
-    setIsLoadingAuth(false); // Set to false after check is complete
+    setIsLoadingAuth(false); 
   }, []);
 
   const login = (newToken: string) => {
@@ -58,16 +60,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(true);
       setUserRole(decodedToken.role);
       setUsername(decodedToken.username);
-      setToken(newToken); // Set token state
-      setIsLoadingAuth(false); // Ensure loading is false after login attempt
+      setToken(newToken); 
+      setIsLoadingAuth(false); 
     } catch (error) {
       console.error("Error decoding token on login:", error);
-      localStorage.removeItem("authToken"); // Clear token if decoding fails
+      localStorage.removeItem("authToken"); 
       setIsAuthenticated(false);
       setUserRole(null);
       setUsername(null);
-      setToken(null); // Clear token state
-      setIsLoadingAuth(false); // Ensure loading is false after failed login attempt
+      setToken(null); 
+      setIsLoadingAuth(false); 
     }
   };
 
@@ -76,8 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     setUserRole(null);
     setUsername(null);
-    setToken(null); // Clear token state
-    // No need to set isLoadingAuth here as it's mainly for initial load/login
+    setToken(null); 
   };
 
   return (

@@ -1,12 +1,6 @@
 // src/components/PrizeManagement/PrizeStructureForm.tsx
 import React, { useState, useEffect } from 'react';
-// Assuming PrizeTierData includes numberOfRunnerUps or we add it to the local extension of the type
-import type { PrizeStructureData, PrizeTierData as ImportedPrizeTierData, DayOfWeek } from './PrizeStructureListComponent';
-
-// Extend PrizeTierData to include numberOfRunnerUps if not already present in imported type
-interface PrizeTierData extends ImportedPrizeTierData {
-  numberOfRunnerUps?: number; // Optional, as older structures might not have it
-}
+import type { PrizeStructureData, PrizeTierData, DayOfWeek } from './PrizeStructureListComponent';
 
 interface PrizeStructureFormProps {
   isOpen: boolean;
@@ -37,14 +31,13 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
         quantity: p.quantity, 
         prizeType: p.prizeType || 'Cash', 
         order: p.order || 0,
-        valueNGN: p.valueNGN || 0,
-        numberOfRunnerUps: p.numberOfRunnerUps === undefined ? 1 : p.numberOfRunnerUps, // Default to 1 if undefined
+        valueNGN: p.valueNGN,
+        numberOfRunnerUps: p.numberOfRunnerUps, // Assuming p.numberOfRunnerUps is always a number from PrizeTierData
       })));
       setApplicableDays(initialData.applicableDays || []);
       setValidFrom(initialData.validFrom ? new Date(initialData.validFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
       setValidTo(initialData.validTo ? new Date(initialData.validTo).toISOString().split('T')[0] : null);
     } else {
-      // Reset form for new entry
       setName('');
       setDescription('');
       setIsActive(true);
@@ -57,11 +50,25 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
 
   const handleTierChange = (index: number, field: keyof Omit<PrizeTierData, 'id'>, value: string | number) => {
     const updatedTiers = [...prizeTiers];
+    let numericValue = 0;
+    if (typeof value === 'string') {
+      numericValue = parseInt(value, 10);
+      if (isNaN(numericValue)) numericValue = 0; // Default to 0 if parsing fails
+    }
+    if (typeof value === 'number') {
+        numericValue = value;
+    }
+
     if (field === 'quantity' || field === 'order' || field === 'valueNGN' || field === 'numberOfRunnerUps') {
-      updatedTiers[index] = { ...updatedTiers[index], [field]: parseInt(value as string, 10) || 0 };
-      // Ensure numberOfRunnerUps is not negative
-      if (field === 'numberOfRunnerUps' && (updatedTiers[index] as PrizeTierData).numberOfRunnerUps! < 0) {
-        (updatedTiers[index] as PrizeTierData).numberOfRunnerUps = 0;
+      updatedTiers[index] = { ...updatedTiers[index], [field]: numericValue };
+      if (field === 'numberOfRunnerUps' && updatedTiers[index].numberOfRunnerUps < 0) {
+        updatedTiers[index].numberOfRunnerUps = 0;
+      }
+      if (field === 'valueNGN' && updatedTiers[index].valueNGN < 0) {
+        updatedTiers[index].valueNGN = 0;
+      }
+      if (field === 'quantity' && updatedTiers[index].quantity < 1) {
+        updatedTiers[index].quantity = 1;
       }
     } else {
       updatedTiers[index] = { ...updatedTiers[index], [field]: value };
@@ -93,7 +100,15 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       name,
       description,
       isActive,
-      prizes: prizeTiers.map(pt => ({ ...pt, id: undefined, numberOfRunnerUps: (pt as PrizeTierData).numberOfRunnerUps === undefined ? 1 : (pt as PrizeTierData).numberOfRunnerUps })),
+      prizes: prizeTiers.map(pt => ({ 
+          name: pt.name, 
+          value: pt.value, 
+          quantity: pt.quantity, 
+          prizeType: pt.prizeType, 
+          order: pt.order,
+          valueNGN: pt.valueNGN,
+          numberOfRunnerUps: pt.numberOfRunnerUps ?? 1, // Ensure it's a number, default to 1 if undefined
+        })),
       applicableDays,
       validFrom: new Date(validFrom).toISOString(),
       validTo: validTo ? new Date(validTo).toISOString() : null,
@@ -148,7 +163,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
             <div key={index} style={tierStyle}>
               <input type="text" placeholder="Tier Name" value={tier.name} onChange={(e) => handleTierChange(index, 'name', e.target.value)} required style={{flex:2}}/>
               <input type="text" placeholder="Display Value (e.g., N1000)" value={tier.value} onChange={(e) => handleTierChange(index, 'value', e.target.value)} required style={{flex:2}}/>
-              <input type="number" placeholder="Actual Value (NGN)" value={(tier as PrizeTierData).valueNGN} onChange={(e) => handleTierChange(index, 'valueNGN', e.target.value)} min="0" required style={{flex:1}}/>
+              <input type="number" placeholder="Actual Value (NGN)" value={tier.valueNGN} onChange={(e) => handleTierChange(index, 'valueNGN', e.target.value)} min="0" required style={{flex:1}}/>
               <input type="number" placeholder="Qty" value={tier.quantity} onChange={(e) => handleTierChange(index, 'quantity', e.target.value)} min="1" required style={{flex:1}}/>
               <select value={tier.prizeType} onChange={(e) => handleTierChange(index, 'prizeType', e.target.value)} style={{flex:1}}>
                 <option value="Cash">Cash</option>
@@ -157,7 +172,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
                 <option value="Physical">Physical Item</option>
               </select>
               <input type="number" placeholder="Order" value={tier.order} onChange={(e) => handleTierChange(index, 'order', e.target.value)} min="0" style={{flex:1}}/>
-              <input type="number" placeholder="Runner-ups" value={(tier as PrizeTierData).numberOfRunnerUps === undefined ? 1 : (tier as PrizeTierData).numberOfRunnerUps} onChange={(e) => handleTierChange(index, 'numberOfRunnerUps', e.target.value)} min="0" title="Number of Runner-ups" required style={{flex:1}}/>
+              <input type="number" placeholder="Runner-ups" value={tier.numberOfRunnerUps} onChange={(e) => handleTierChange(index, 'numberOfRunnerUps', e.target.value)} min="0" title="Number of Runner-ups" required style={{flex:1}}/>
               <button type="button" onClick={() => removeTier(index)} style={{ marginLeft: '10px' }}>X</button>
             </div>
           ))}
@@ -178,11 +193,11 @@ const modalOverlayStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1050,
 };
 const modalContentStyle: React.CSSProperties = {
-  backgroundColor: '#fff', padding: '25px', borderRadius: '8px', width: '700px', /* Increased width */ maxHeight: '90vh', 
+  backgroundColor: '#fff', padding: '25px', borderRadius: '8px', width: '700px', maxHeight: '90vh', 
   overflowY: 'auto', boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
 };
 const tierStyle: React.CSSProperties = {
-  display: 'flex', marginBottom: '10px', gap: '5px', /* Reduced gap */ alignItems: 'center',
+  display: 'flex', marginBottom: '10px', gap: '5px', alignItems: 'center',
 };
 const daysSelectionStyle: React.CSSProperties = {
   display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px', padding: '10px', border: '1px solid #eee', borderRadius: '4px'

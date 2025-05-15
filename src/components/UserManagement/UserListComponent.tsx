@@ -1,28 +1,14 @@
 // src/components/UserManagement/UserListComponent.tsx
-import React, { useState, useEffect } from "react";
-import { useAuth, type UserRole } from "../../contexts/AuthContext";
-import UserForm, { type UserFormData } from "./UserForm"; // Import the form component
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import UserForm, { type UserFormData } from "./UserForm";
+import { userService, type UserData } from "../../services/userService"; // Import the service and UserData type
 
-// Updated User interface to include email and isActive
-export interface User {
-  id: number | string;
-  username: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-}
-
-// Updated mock initial data
-const initialMockUsers: User[] = [
-  { id: 1, username: "superadmin", email: "super@example.com", role: "SUPER_ADMIN", isActive: true },
-  { id: 2, username: "admin_user", email: "admin@example.com", role: "ADMIN", isActive: true },
-  { id: 3, username: "reporter", email: "reporter@example.com", role: "WINNER_REPORTS_USER", isActive: true },
-  { id: 4, username: "senior_user", email: "senior@example.com", role: "SENIOR_USER", isActive: false }, // Example of an inactive user
-  { id: 5, username: "all_reports_user", email: "allreports@example.com", role: "ALL_REPORT_USER", isActive: true },
-];
+// The User interface should now align with UserData from the service
+export type User = UserData;
 
 const UserListComponent: React.FC = () => {
-  const { userRole: currentUserRole } = useAuth();
+  const { token, userRole: currentUserRole } = useAuth(); // Assuming token is available from useAuth
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
@@ -31,25 +17,22 @@ const UserListComponent: React.FC = () => {
 
   const canManageUsers = currentUserRole === "SUPER_ADMIN";
 
-  useEffect(() => {
-    if (!canManageUsers) return;
-
+  const fetchUsers = useCallback(async () => {
+    if (!canManageUsers || !token) return;
     setIsLoading(true);
-    setTimeout(() => {
-      const storedUsers = localStorage.getItem("mockAdminUsers");
-      if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
-      } else {
-        setUsers(initialMockUsers);
-        localStorage.setItem("mockAdminUsers", JSON.stringify(initialMockUsers));
-      }
-      setIsLoading(false);
-    }, 500);
-  }, [canManageUsers]);
+    setError(null);
+    try {
+      const fetchedUsers = await userService.listUsers(token);
+      setUsers(fetchedUsers);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Failed to fetch users.");
+    }
+    setIsLoading(false);
+  }, [canManageUsers, token]);
 
-  const saveUsersToLocalStorage = (updatedUsers: User[]) => {
-    localStorage.setItem("mockAdminUsers", JSON.stringify(updatedUsers));
-  };
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleAddNewUser = () => {
     if (!canManageUsers) return;
@@ -61,84 +44,98 @@ const UserListComponent: React.FC = () => {
   const handleEditUser = (user: User) => {
     if (!canManageUsers) return;
     if (user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
-        setError("Only a SUPER_ADMIN can edit another SUPER_ADMIN user.");
-        return;
+      setError("Only a SUPER_ADMIN can edit another SUPER_ADMIN user.");
+      return;
     }
-    setEditingUser({ 
-        id: user.id, 
-        username: user.username, 
-        email: user.email, 
-        role: user.role, 
-        isActive: user.isActive 
+    // Map User (UserData) to UserFormData for the form
+    // Ensure user.id is converted to string for UserFormData.id which is string | undefined
+    setEditingUser({
+      id: String(user.id), // Ensure id is a string
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      isActive: user.status === "Active", // Map status to isActive
+      // Password is not pre-filled for editing
     });
     setShowForm(true);
     setError(null);
   };
 
-  const handleDeleteUser = (userId: number | string) => {
-    if (!canManageUsers) return;
-    const userToDelete = users.find(u => u.id === userId);
-    if (userToDelete && userToDelete.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN"){
-        setError("Only a SUPER_ADMIN can delete another SUPER_ADMIN user.");
-        return;
-    }
-    if (userToDelete && userToDelete.id === 1 && userToDelete.username === "superadmin") {
-        setError("The primary superadmin (ID: 1) cannot be deleted.");
-        return;
+  const handleDeleteUser = async (userId: string) => {
+    if (!canManageUsers || !token) return;
+    const userToDelete = users.find(u => String(u.id) === userId); // Ensure comparison with string ID
+    if (userToDelete && userToDelete.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
+      setError("Only a SUPER_ADMIN can delete another SUPER_ADMIN user.");
+      return;
     }
 
     if (window.confirm(`Are you sure you want to delete user ${userToDelete?.username}?`)) {
-      const updatedUsers = users.filter(user => user.id !== userId);
-      setUsers(updatedUsers);
-      saveUsersToLocalStorage(updatedUsers);
-      setError(null);
+      setIsLoading(true);
+      try {
+        await userService.deleteUser(userId, token); // userService.deleteUser expects a string ID
+        await fetchUsers(); // Refresh the list
+        setError(null);
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || "Failed to delete user.");
+      }
+      setIsLoading(false);
     }
   };
 
-  const handleToggleUserStatus = (userId: number | string) => {
-    if (!canManageUsers) return;
-    const userToToggle = users.find(u => u.id === userId);
+  const handleToggleUserStatus = async (user: User) => {
+    if (!canManageUsers || !token) return;
 
-    if (userToToggle && userToToggle.id === 1 && userToToggle.username === "superadmin") {
-        setError("The primary superadmin's status cannot be changed directly here.");
-        return;
-    }
-
-    if (userToToggle && userToToggle.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
+    if (user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") {
         setError("Only a SUPER_ADMIN can change the status of another SUPER_ADMIN user.");
         return;
     }
 
-    const updatedUsers = users.map(user =>
-      user.id === userId ? { ...user, isActive: !user.isActive } : user
-    );
-    setUsers(updatedUsers);
-    saveUsersToLocalStorage(updatedUsers);
-    setError(null);
+    const newStatus = user.status === "Active" ? "Inactive" : "Active";
+    setIsLoading(true);
+    try {
+      // userService.updateUser expects a string ID
+      await userService.updateUser(String(user.id), { status: newStatus }, token);
+      await fetchUsers(); // Refresh list
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Failed to update user status.");
+    }
+    setIsLoading(false);
   };
 
-  const handleSaveUser = (userData: UserFormData) => {
-    if (!canManageUsers) return;
+  const handleSaveUser = async (formData: UserFormData) => {
+    if (!canManageUsers || !token) return;
     setError(null);
-    let updatedUsers;
-    if (userData.id) { // Editing existing user
-      updatedUsers = users.map(u => 
-        u.id === userData.id ? { ...u, username: userData.username, email: userData.email, role: userData.role, isActive: userData.isActive } : u
-      );
-    } else { // Adding new user
-      const newUser: User = {
-        id: Date.now(), // Simple ID generation for mock data
-        username: userData.username,
-        email: userData.email,
-        role: userData.role as UserRole, // Ensure role is correctly typed
-        isActive: userData.isActive,
-      };
-      updatedUsers = [...users, newUser];
+    setIsLoading(true);
+
+    const payload = {
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+        status: formData.isActive ? "Active" : ("Inactive" as "Active" | "Inactive" | "Locked"),
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        password: formData.password,
+    };
+
+    try {
+      if (formData.id) { // Editing existing user, formData.id is string | undefined
+        await userService.updateUser(formData.id as string, payload, token); // Cast to string, ensure it's defined
+      } else { // Adding new user
+        if (!payload.password) {
+            setError("Password is required for new users.");
+            setIsLoading(false);
+            return;
+        }
+        await userService.createUser(payload as any, token); 
+      }
+      await fetchUsers(); 
+      setShowForm(false);
+      setEditingUser(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || (formData.id ? "Failed to update user." : "Failed to create user."));
     }
-    setUsers(updatedUsers);
-    saveUsersToLocalStorage(updatedUsers);
-    setShowForm(false);
-    setEditingUser(null);
+    setIsLoading(false);
   };
 
   const handleCancelForm = () => {
@@ -151,7 +148,7 @@ const UserListComponent: React.FC = () => {
     container: { padding: "20px", fontFamily: "Arial, sans-serif" },
     button: { padding: "8px 15px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginRight: "5px", marginBottom: "15px" },
     actionButton: { padding: "5px 10px", fontSize: "12px", marginRight: "5px"},
-    statusButton: { padding: "5px 10px", fontSize: "12px", marginRight: "5px", width: "80px" },
+    statusButton: { padding: "5px 10px", fontSize: "12px", marginRight: "5px", width: "85px" },
     table: { width: "100%", borderCollapse: "collapse" as "collapse", marginTop: "15px" },
     th: { border: "1px solid #ddd", padding: "10px", backgroundColor: "#f2f2f2", textAlign: "left" as "left" },
     td: { border: "1px solid #ddd", padding: "10px" },
@@ -159,12 +156,11 @@ const UserListComponent: React.FC = () => {
     permissionDenied: { color: "orange", padding: "10px", border: "1px solid orange", borderRadius: "4px", backgroundColor: "#fff3e0"}
   };
 
-  if (!canManageUsers) {
+  if (!canManageUsers && currentUserRole !== null) { 
     return <div style={styles.container}><p style={styles.permissionDenied}>You do not have permission to manage users. (Requires SUPER_ADMIN role)</p></div>;
   }
-
-  if (isLoading) {
-    return <div style={styles.container}><p>Loading users...</p></div>;
+  if (currentUserRole === null && !token) { 
+    return <div style={styles.container}><p>Loading authentication details...</p></div>;
   }
 
   if (showForm) {
@@ -179,49 +175,54 @@ const UserListComponent: React.FC = () => {
     <div style={styles.container}>
       <h2>User Management</h2>
       {error && <p style={styles.error}>{error}</p>}
-      <button onClick={handleAddNewUser} style={styles.button}>Add New User</button>
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.th}>ID</th>
-            <th style={styles.th}>Username</th>
-            <th style={styles.th}>Email</th>
-            <th style={styles.th}>Role</th>
-            <th style={styles.th}>Status</th>
-            <th style={styles.th}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.id}>
-              <td style={styles.td}>{user.id}</td>
-              <td style={styles.td}>{user.username}</td>
-              <td style={styles.td}>{user.email}</td>
-              <td style={styles.td}>{user.role}</td>
-              <td style={styles.td}>{user.isActive ? "Active" : "Inactive"}</td>
-              <td style={styles.td}>
-                <button onClick={() => handleEditUser(user)} style={{...styles.button, ...styles.actionButton}} 
-                        disabled={user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN" && user.id !== 1}>
-                  Edit
-                </button>
-                <button onClick={() => handleToggleUserStatus(user.id)} 
-                        style={{
-                            ...styles.button, 
-                            ...styles.statusButton, 
-                            backgroundColor: user.isActive ? "#ffc107" : "#28a745"
-                        }}
-                        disabled={(user.id === 1 && user.username === "superadmin") || (user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN")}>
-                  {user.isActive ? "Deactivate" : "Activate"}
-                </button>
-                <button onClick={() => handleDeleteUser(user.id)} style={{...styles.button, ...styles.actionButton, backgroundColor: "#dc3545"}} 
-                        disabled={(user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN") || (user.id === 1 && user.username === "superadmin")}>
-                  Delete
-                </button>
-              </td>
+      {isLoading && <p>Loading users...</p>}
+      {!isLoading && canManageUsers && <button onClick={handleAddNewUser} style={styles.button}>Add New User</button>}
+      {!isLoading && users.length === 0 && !error && <p>No users found.</p>}
+      {!isLoading && users.length > 0 && (
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>ID</th>
+              <th style={styles.th}>Username</th>
+              <th style={styles.th}>Email</th>
+              <th style={styles.th}>Role</th>
+              <th style={styles.th}>Status</th>
+              <th style={styles.th}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              // Ensure user.id is treated as a string for key and display
+              <tr key={String(user.id)}>
+                <td style={styles.td}>{String(user.id).substring(0,8)}...</td> 
+                <td style={styles.td}>{user.username}</td>
+                <td style={styles.td}>{user.email}</td>
+                <td style={styles.td}>{user.role}</td>
+                <td style={styles.td}>{user.status}</td>
+                <td style={styles.td}>
+                  <button onClick={() => handleEditUser(user)} style={{...styles.button, ...styles.actionButton}}
+                          disabled={user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN"}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleToggleUserStatus(user)}
+                          style={{
+                              ...styles.button,
+                              ...styles.statusButton,
+                              backgroundColor: user.status === "Active" ? "#ffc107" : "#28a745"
+                          }}
+                          disabled={(user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN")}>
+                    {user.status === "Active" ? "Deactivate" : "Activate"}
+                  </button>
+                  <button onClick={() => handleDeleteUser(String(user.id))} style={{...styles.button, ...styles.actionButton, backgroundColor: "#dc3545"}}
+                          disabled={(user.role === "SUPER_ADMIN" && currentUserRole !== "SUPER_ADMIN")}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
