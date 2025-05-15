@@ -1,5 +1,4 @@
 // src/services/userService.ts
-import axios from 'axios';
 import { apiClient } from './apiClient';
 import { MOCK_MODE } from './apiClient';
 
@@ -88,7 +87,7 @@ const mockUsers: UserData[] = [
     id: 4,
     username: 'reportuser',
     email: 'report@example.com',
-    role: 'REPORT_USER',
+    role: 'WINNER_REPORTS_USER',
     status: 'Active',
     first_name: 'Report',
     last_name: 'User',

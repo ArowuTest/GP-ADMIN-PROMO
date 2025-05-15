@@ -1,9 +1,9 @@
 // src/pages/DrawManagementPage.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { apiClient } from "../services/apiClient";
 import { prizeStructureService } from "../services/prizeStructureService";
 import { drawService } from "../services/drawService";
+import type { DrawData as ServiceDrawData } from "../services/drawService";
 
 // Matches backend models.Prize (PrizeTier)
 export interface PrizeTierData {
@@ -63,6 +63,34 @@ export interface DrawData {
   winners: DrawWinnerData[];
   created_at: string;
 }
+
+// Function to convert from service DrawData to page DrawData
+const convertServiceDrawToPageDraw = (serviceDraw: ServiceDrawData): DrawData => {
+  return {
+    id: serviceDraw.id,
+    draw_date: serviceDraw.drawDate,
+    executed_by_admin_id: serviceDraw.executedByAdminID,
+    prize_structure_id: serviceDraw.prizeStructureID,
+    prize_structure: serviceDraw.prizeStructure,
+    status: serviceDraw.status,
+    total_eligible_msisdns: serviceDraw.totalEligibleMSISDNs,
+    total_tickets: serviceDraw.totalEntries,
+    execution_type: "MANUAL", // Default value if not provided
+    winners: serviceDraw.winners?.map(w => ({
+      id: w.id,
+      draw_id: w.drawID,
+      prize_id: w.prizeTierID,
+      prize_tier: w.prizeTier,
+      msisdn: w.msisdn,
+      is_runner_up: false, // Default value
+      notification_status: w.status,
+      payment_status: w.paymentStatus || "PENDING",
+      payment_remarks: w.paymentNotes,
+      created_at: w.createdAt
+    })) || [],
+    created_at: serviceDraw.createdAt
+  };
+};
 
 const styles = {
   container: { padding: "20px", fontFamily: "Arial, sans-serif", maxWidth: "1200px", margin: "0 auto" },
@@ -240,8 +268,14 @@ const DrawManagementPage: React.FC = () => {
       // Try to use the real API
       try {
         const result = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token);
-        setDrawResult(result);
-        setSuccessMessage("Draw executed successfully!");
+        // Convert from service DrawData to page DrawData format
+        if (result && result.draw) {
+          const convertedDraw = convertServiceDrawToPageDraw(result.draw);
+          setDrawResult(convertedDraw);
+          setSuccessMessage("Draw executed successfully!");
+        } else {
+          throw new Error("Invalid draw result format");
+        }
       } catch (apiError: any) {
         console.warn("API error, using mock data:", apiError);
         
@@ -249,7 +283,7 @@ const DrawManagementPage: React.FC = () => {
         if (selectedStructureDetails) {
           const mockWinners: DrawWinnerData[] = [];
           
-          selectedStructureDetails.prizes.forEach((prize, prizeIndex) => {
+          selectedStructureDetails.prizes.forEach((prize) => {
             for (let i = 0; i < prize.winner_count; i++) {
               const winnerMsisdn = `080${Math.floor(Math.random() * 100000000).toString().padStart(8, "0")}`;
               
