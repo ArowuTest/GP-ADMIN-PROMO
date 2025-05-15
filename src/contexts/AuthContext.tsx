@@ -5,11 +5,11 @@ import { jwtDecode } from "jwt-decode";
 
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SENIOR_USER" | "WINNER_REPORTS_USER" | "ALL_REPORT_USER" | null;
 
-// Ensure AuthContextType is exported
-export interface AuthContextType {
+interface AuthContextType {
   isAuthenticated: boolean;
   userRole: UserRole;
   username: string | null;
+  token: string | null; // Added token property
   isLoadingAuth: boolean; // New state to track initial auth check
   login: (token: string) => void;
   logout: () => void;
@@ -21,24 +21,25 @@ interface DecodedToken {
   exp: number;
 }
 
-// Ensure AuthContext is exported
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null); // Added token state
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); // Initialize as true
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
+    const storedToken = localStorage.getItem("authToken");
+    if (storedToken) {
       try {
-        const decodedToken = jwtDecode<DecodedToken>(token);
+        const decodedToken = jwtDecode<DecodedToken>(storedToken);
         if (decodedToken.exp * 1000 > Date.now()) {
           setIsAuthenticated(true);
           setUserRole(decodedToken.role);
           setUsername(decodedToken.username);
+          setToken(storedToken); // Set token state
         } else {
           localStorage.removeItem("authToken");
         }
@@ -50,13 +51,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoadingAuth(false); // Set to false after check is complete
   }, []);
 
-  const login = (token: string) => {
+  const login = (newToken: string) => {
     try {
-      const decodedToken = jwtDecode<DecodedToken>(token);
-      localStorage.setItem("authToken", token);
+      const decodedToken = jwtDecode<DecodedToken>(newToken);
+      localStorage.setItem("authToken", newToken);
       setIsAuthenticated(true);
       setUserRole(decodedToken.role);
       setUsername(decodedToken.username);
+      setToken(newToken); // Set token state
       setIsLoadingAuth(false); // Ensure loading is false after login attempt
     } catch (error) {
       console.error("Error decoding token on login:", error);
@@ -64,6 +66,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(false);
       setUserRole(null);
       setUsername(null);
+      setToken(null); // Clear token state
       setIsLoadingAuth(false); // Ensure loading is false after failed login attempt
     }
   };
@@ -73,11 +76,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     setUserRole(null);
     setUsername(null);
+    setToken(null); // Clear token state
     // No need to set isLoadingAuth here as it's mainly for initial load/login
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, username, isLoadingAuth, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, username, token, isLoadingAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

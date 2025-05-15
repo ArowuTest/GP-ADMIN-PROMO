@@ -3,25 +3,32 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm"; // Import the form component
 
-// Mock data types - ensure these are consistent with PrizeStructureForm.tsx
+// Define and export DayOfWeek type
+export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+
+// Updated PrizeTierData interface
 export interface PrizeTierData {
   id?: number; // Or string, depending on backend
   name: string;
   value: string;
   quantity: number;
-  prizeType: string; // Added for consistency with form
-  order: number;     // Added for consistency with form
+  prizeType: string;
+  order: number;
+  valueNGN: number; // Added field
+  numberOfRunnerUps: number; // Added field
 }
 
+// Updated PrizeStructureData interface
 export interface PrizeStructureData {
   id: number; // Or string
   name: string;
-  description: string; // Added for consistency with form
+  description: string;
   isActive: boolean;
-  prizes: PrizeTierData[]; // Ensure this matches the form's expectation (e.g., 'prizes' vs 'prizeTiers')
+  prizes: PrizeTierData[];
   createdAt: string;
-  validFrom: string; // Added for consistency with form
-  validTo?: string | null; // Added for consistency with form
+  validFrom: string;
+  validTo?: string | null;
+  applicableDays: DayOfWeek[]; // Added field using the new DayOfWeek type
 }
 
 // Mock initial data - this would typically come from an API
@@ -33,9 +40,10 @@ const initialMockStructures: PrizeStructureData[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
     validFrom: new Date(Date.now() - 86400000 * 7).toISOString(),
+    applicableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     prizes: [
-      { id: 1, name: "Jackpot", value: "N1,000,000", quantity: 1, prizeType: "Cash", order: 0 },
-      { id: 2, name: "Consolation", value: "N10,000 Airtime", quantity: 5, prizeType: "Airtime", order: 1 },
+      { id: 1, name: "Jackpot", value: "N1,000,000", quantity: 1, prizeType: "Cash", order: 0, valueNGN: 1000000, numberOfRunnerUps: 2 },
+      { id: 2, name: "Consolation", value: "N10,000 Airtime", quantity: 5, prizeType: "Airtime", order: 1, valueNGN: 10000, numberOfRunnerUps: 1 },
     ],
   },
   {
@@ -45,8 +53,9 @@ const initialMockStructures: PrizeStructureData[] = [
     isActive: false,
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
     validFrom: new Date(Date.now() - 86400000 * 2).toISOString(),
+    applicableDays: ["Sat", "Sun"],
     prizes: [
-      { id: 3, name: "Grand Weekend Prize", value: "N5,000,000", quantity: 1, prizeType: "Cash", order: 0 },
+      { id: 3, name: "Grand Weekend Prize", value: "N5,000,000", quantity: 1, prizeType: "Cash", order: 0, valueNGN: 5000000, numberOfRunnerUps: 1 },
     ],
   },
 ];
@@ -54,26 +63,20 @@ const initialMockStructures: PrizeStructureData[] = [
 const PrizeStructureListComponent = () => {
   const { userRole } = useAuth();
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructureData[]>(initialMockStructures);
-  // const [isLoading, setIsLoading] = useState<boolean>(false); // TS6133: 'setIsLoading' is declared but its value is never read. - REMOVED
-  const [isLoading] = useState<boolean>(false); // Kept for potential API integration later, but setIsLoading removed
+  const [isLoading] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<PrizeStructureData | null>(null);
   const [viewingStructure, setViewingStructure] = useState<PrizeStructureData | null>(null);
 
   const canManagePrizeStructures = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
 
-  // Simulate fetching data (already initialized with mock data)
   useEffect(() => {
     if (!canManagePrizeStructures) return;
-    // setIsLoading(true); // This would be used if we were actually loading
-    // setTimeout(() => {
-    //   setPrizeStructures(initialMockStructures);
-    //   setIsLoading(false);
-    // }, 500); // Simulate API delay
+    // API call to fetch prize structures would go here
   }, [canManagePrizeStructures]);
 
   const handleAddStructure = () => {
-    setEditingStructure(null); // Ensure no initial data for new structure
+    setEditingStructure(null);
     setIsFormOpen(true);
   };
 
@@ -96,13 +99,11 @@ const PrizeStructureListComponent = () => {
 
   const handleFormSubmit = (formData: Omit<PrizeStructureData, 'id' | 'createdAt'>) => {
     if (editingStructure) {
-      // Update existing structure
       setPrizeStructures(prizeStructures.map(ps => 
-        ps.id === editingStructure.id ? { ...editingStructure, ...formData, prizes: formData.prizes } : ps
+        ps.id === editingStructure.id ? { ...editingStructure, ...formData, prizes: formData.prizes.map(p => ({...p})) } : ps
       ));
       console.log("Mock update structure:", { ...editingStructure, ...formData });
     } else {
-      // Add new structure
       const newId = prizeStructures.length > 0 ? Math.max(...prizeStructures.map(ps => ps.id)) + 1 : 1;
       const newStructure: PrizeStructureData = {
         ...formData,
@@ -116,7 +117,6 @@ const PrizeStructureListComponent = () => {
     setEditingStructure(null);
   };
 
-  // Corrected permission check: if user is not SUPER_ADMIN or ADMIN, they don't have permission.
   if (!canManagePrizeStructures) {
     return <p>You do not have permission to manage prize structures.</p>;
   }
@@ -128,7 +128,6 @@ const PrizeStructureListComponent = () => {
   return (
     <div>
       <h2>Prize Structure Management</h2>
-      {/* Button to add new structure is already guarded by canManagePrizeStructures implicitly by being inside the main return block that's guarded */}
       <button onClick={handleAddStructure} style={{ marginBottom: "15px" }}>Add New Prize Structure</button>
       
       <table>
@@ -138,6 +137,7 @@ const PrizeStructureListComponent = () => {
             <th>Name</th>
             <th>Active</th>
             <th>Prizes Count</th>
+            <th>Applicable Days</th>
             <th>Created At</th>
             <th>Actions</th>
           </tr>
@@ -149,10 +149,10 @@ const PrizeStructureListComponent = () => {
               <td>{ps.name}</td>
               <td>{ps.isActive ? "Yes" : "No"}</td>
               <td>{ps.prizes.length}</td>
+              <td>{ps.applicableDays.join(", ")}</td>
               <td>{new Date(ps.createdAt).toLocaleDateString()}</td>
               <td>
                 <button onClick={() => handleViewStructure(ps)} style={{ marginRight: "5px" }}>View</button>
-                {/* Edit and Delete buttons are also implicitly guarded by the main permission check */}
                 <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
                 <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
               </td>
@@ -175,6 +175,7 @@ const PrizeStructureListComponent = () => {
             <p><strong>ID:</strong> {viewingStructure.id}</p>
             <p><strong>Description:</strong> {viewingStructure.description}</p>
             <p><strong>Active:</strong> {viewingStructure.isActive ? "Yes" : "No"}</p>
+            <p><strong>Applicable Days:</strong> {viewingStructure.applicableDays.join(", ")}</p>
             <p><strong>Created At:</strong> {new Date(viewingStructure.createdAt).toLocaleString()}</p>
             <p><strong>Valid From:</strong> {new Date(viewingStructure.validFrom).toLocaleString()}</p>
             {viewingStructure.validTo && <p><strong>Valid To:</strong> {new Date(viewingStructure.validTo).toLocaleString()}</p>}
@@ -183,7 +184,7 @@ const PrizeStructureListComponent = () => {
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
                 {viewingStructure.prizes.map((prize, index) => (
                   <li key={prize.id || index}>
-                    <strong>{prize.name}</strong> ({prize.prizeType}): {prize.value} (Quantity: {prize.quantity}, Order: {prize.order})
+                    <strong>{prize.name}</strong> ({prize.prizeType}): {prize.value} (NGN: {prize.valueNGN}, Qty: {prize.quantity}, Order: {prize.order}, Runners: {prize.numberOfRunnerUps})
                   </li>
                 ))}
               </ul>
@@ -198,7 +199,6 @@ const PrizeStructureListComponent = () => {
   );
 };
 
-// Basic styles for modal - consider moving to a CSS file or using a styling library
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -223,3 +223,4 @@ const modalContentStyle: React.CSSProperties = {
 };
 
 export default PrizeStructureListComponent;
+

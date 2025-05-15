@@ -11,10 +11,10 @@ export interface UploadResponse {
   audit_id: string;
   status: string;
   total_data_rows_processed: number;
-  successfully_imported_rows: number; // Corrected field name from successful_rows_imported
-  duplicates_skipped_count: number;   // Added this field
-  processing_error_messages: string[]; // Aligned with backend field name (was errors)
-  skipped_duplicate_event_details: string[]; // Added this field
+  successful_rows_imported: number;
+  errors: string[];
+  duplicates_skipped_count?: number; // Added field
+  skipped_duplicate_event_details?: string[]; // Added field, assuming array of strings
 }
 
 // Upload participant data CSV file
@@ -39,17 +39,12 @@ const uploadParticipantData = async (
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
-      const errorData = error.response.data as Partial<UploadResponse>; // Type assertion
-      // Prefer specific error messages from backend if available
-      let errorMessage = "Failed to upload participant data";
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.processing_error_messages && errorData.processing_error_messages.length > 0) {
-        errorMessage = errorData.processing_error_messages.join("; ");
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      throw new Error(errorMessage);
+      const errorData = error.response.data as Partial<UploadResponse>; 
+      throw new Error(
+        errorData.message || 
+        (errorData.errors && errorData.errors.length > 0 ? errorData.errors.join("; ") : error.message) || 
+        "Failed to upload participant data"
+      );
     }
     throw new Error("An unexpected error occurred during participant data upload");
   }
@@ -58,3 +53,4 @@ const uploadParticipantData = async (
 export const participantService = {
   uploadParticipantData,
 };
+
