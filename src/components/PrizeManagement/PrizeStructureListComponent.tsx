@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm";
 import { prizeStructureService } from "../../services/prizeStructureService";
-import type { PrizeStructureData as ServicePrizeStructureData, PrizeTierData as ServicePrizeTierData } from "../../services/prizeStructureService";
+import type { PrizeStructureData as ServicePrizeStructureData } from "../../services/prizeStructureService";
 
 // Define and export DayOfWeek type
 export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
