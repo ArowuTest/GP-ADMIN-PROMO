@@ -1,29 +1,50 @@
+// src/services/prizeStructureService.ts
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
-// Define proper types for PrizeStructure and PrizeTier based on backend models
-export interface PrizeTierData {
+// --- Types for GET responses (data received from backend) ---
+export interface ServicePrizeTierData { // Represents a single prize tier as returned by GET
   id?: string;
   name: string;
-  prizeType: string; // e.g., "Cash", "Airtime"
+  prizeType: string;
   valueNGN: number;
   winnerCount: number;
   order: number;
-  numberOfRunnerUps: number; // Number of runner-ups for this prize tier
+  numberOfRunnerUps: number;
 }
 
-export interface PrizeStructureData {
+export interface ServicePrizeStructureData { // Represents a prize structure as returned by GET
   id?: string;
   name: string;
   description: string;
   isActive: boolean;
-  validFrom: string; // ISO Date string
-  validTo?: string | null; // ISO Date string or null
-  prizeTiers: PrizeTierData[];
+  validFrom: string;
+  validTo?: string | null;
+  prizeTiers: ServicePrizeTierData[]; // Backend GET responses use 'prizeTiers'
   createdAt?: string;
   updatedAt?: string;
-  applicableDays?: string[]; // Days of week this structure applies to
+  applicableDays?: string[];
+}
+
+// --- Types for POST/PUT payloads (data sent to backend) ---
+export interface CreatePrizeTierPayload { // Fields for a prize tier when creating/updating a structure
+  name: string;
+  prizeType: string;
+  valueNGN: number;
+  winnerCount: number;
+  order: number;
+  numberOfRunnerUps: number;
+}
+
+export interface CreatePrizeStructurePayload { // Payload for creating/updating a prize structure
+  name: string;
+  description: string;
+  isActive: boolean;
+  validFrom: string;
+  validTo?: string | null;
+  prizes: CreatePrizeTierPayload[]; // Backend POST/PUT requests expect 'prizes'
+  applicableDays?: string[];
 }
 
 const getAuthHeaders = (token: string | null) => {
@@ -31,51 +52,14 @@ const getAuthHeaders = (token: string | null) => {
 };
 
 // Fetch all prize structures
-const listPrizeStructures = async (token: string | null): Promise<PrizeStructureData[]> => {
+const listPrizeStructures = async (token: string | null): Promise<ServicePrizeStructureData[]> => {
   try {
-    const response = await axios.get<PrizeStructureData[]>(`${API_URL}/admin/prize-structures/`, {
+    const response = await axios.get<ServicePrizeStructureData[]>(`${API_URL}/admin/prize-structures/`, {
       headers: getAuthHeaders(token),
     });
     return response.data;
   } catch (error: unknown) {
     console.error("Error fetching prize structures:", error);
-    
-    // Only use mock data as absolute last resort if API is completely unreachable
-    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-      console.warn("API unreachable, using minimal mock data as fallback");
-      return [{
-        id: "ps-001",
-        name: "Daily Draw Week 1 (Active)",
-        description: "Prize structure for daily draws in week 1",
-        isActive: true,
-        validFrom: "2025-01-01T00:00:00Z",
-        validTo: "2025-12-31T23:59:59Z",
-        prizeTiers: [
-          {
-            id: "pt-001",
-            name: "Jackpot",
-            prizeType: "Cash",
-            valueNGN: 1000000,
-            winnerCount: 1,
-            order: 1,
-            numberOfRunnerUps: 2 // Default number of runner-ups
-          },
-          {
-            id: "pt-002",
-            name: "Consolation",
-            prizeType: "Airtime",
-            valueNGN: 10000,
-            winnerCount: 5,
-            order: 2,
-            numberOfRunnerUps: 1 // Default number of runner-ups
-          }
-        ],
-        applicableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z"
-      }];
-    }
-    
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
       const defaultMessage = "Failed to fetch prize structures due to server error.";
@@ -89,26 +73,28 @@ const listPrizeStructures = async (token: string | null): Promise<PrizeStructure
 };
 
 // Create a new prize structure
-const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">, token: string | null): Promise<PrizeStructureData> => {
+const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    // Ensure each prize tier has a numberOfRunnerUps property
-    const dataWithRunnerUps = {
-      ...data,
-      prizeTiers: data.prizeTiers.map(tier => ({
+    // Ensure each prize tier in the 'prizes' array has numberOfRunnerUps defaulted if necessary
+    const payloadToSend = {
+      ...payload,
+      prizes: payload.prizes.map(tier => ({
         ...tier,
-        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
-      }))
+        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1,
+      })),
     };
-    
-    const response = await axios.post<PrizeStructureData>(`${API_URL}/admin/prize-structures/`, dataWithRunnerUps, {
+    // The backend expects 'prizes' field in the payload, which payloadToSend now has.
+    const response = await axios.post<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/`, payloadToSend, {
       headers: getAuthHeaders(token),
     });
+    // The response from the backend (ServicePrizeStructureData) might use 'prizeTiers', so the return type is correct.
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = "Failed to create prize structure due to server error.";
-      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
+      const defaultMessage = `Failed to create prize structure: ${typeof apiError === "string" && apiError ? apiError : "Invalid request payload or server error."}`;
+      console.error("Full error creating prize structure:", error.response.data);
+      throw new Error(defaultMessage);
     } else if (error instanceof Error) {
       throw new Error(error.message || "Failed to create prize structure due to an unexpected error.");
     } else {
@@ -118,22 +104,12 @@ const createPrizeStructure = async (data: Omit<PrizeStructureData, "id" | "creat
 };
 
 // Get a single prize structure by ID
-const getPrizeStructure = async (id: string, token: string | null): Promise<PrizeStructureData> => {
+const getPrizeStructure = async (id: string, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    const response = await axios.get<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, {
+    const response = await axios.get<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, {
       headers: getAuthHeaders(token),
     });
-    
-    // Ensure each prize tier has a numberOfRunnerUps property
-    const dataWithRunnerUps = {
-      ...response.data,
-      prizeTiers: response.data.prizeTiers.map(tier => ({
-        ...tier,
-        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
-      }))
-    };
-    
-    return dataWithRunnerUps;
+    return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
@@ -148,26 +124,25 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Priz
 };
 
 // Update a prize structure
-const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructureData, "id" | "createdAt" | "updatedAt">>, token: string | null): Promise<PrizeStructureData> => {
+const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    // If prizeTiers are included, ensure each has a numberOfRunnerUps property
-    const dataWithRunnerUps = {
-      ...data,
-      prizeTiers: data.prizeTiers ? data.prizeTiers.map(tier => ({
+    const payloadToSend = { ...payload };
+    if (payload.prizes) {
+      payloadToSend.prizes = payload.prizes.map(tier => ({
         ...tier,
-        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1 // Default to 1 if not specified
-      })) : undefined
-    };
-    
-    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, dataWithRunnerUps, {
+        numberOfRunnerUps: tier.numberOfRunnerUps !== undefined ? tier.numberOfRunnerUps : 1,
+      }));
+    }
+    const response = await axios.put<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, payloadToSend, {
       headers: getAuthHeaders(token),
     });
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
-      const defaultMessage = "Failed to update prize structure due to server error.";
-      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
+      const defaultMessage = `Failed to update prize structure: ${typeof apiError === "string" && apiError ? apiError : "Invalid request payload or server error."}`;
+      console.error("Full error updating prize structure:", error.response.data);
+      throw new Error(defaultMessage);
     } else if (error instanceof Error) {
       throw new Error(error.message || "Failed to update prize structure due to an unexpected error.");
     } else {
@@ -177,9 +152,9 @@ const updatePrizeStructure = async (id: string, data: Partial<Omit<PrizeStructur
 };
 
 // Activate/Deactivate a prize structure
-const activatePrizeStructure = async (id: string, isActive: boolean, token: string | null): Promise<PrizeStructureData> => {
+const activatePrizeStructure = async (id: string, isActive: boolean, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    const response = await axios.put<PrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/activate/`, { isActive }, {
+    const response = await axios.put<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/activate/`, { isActive }, {
       headers: getAuthHeaders(token),
     });
     return response.data;
@@ -224,3 +199,4 @@ export const prizeStructureService = {
   activatePrizeStructure,
   deletePrizeStructure,
 };
+
