@@ -3,29 +3,29 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm";
 import { prizeStructureService } from "../../services/prizeStructureService";
-// Corrected import: Use ServicePrizeStructureData and ServicePrizeTierData from the service
 import type { 
   ServicePrizeStructureData, 
   ServicePrizeTierData, 
-  CreatePrizeStructurePayload 
+  CreatePrizeStructurePayload,
+  CreatePrizeTierPayload // Import this type for clarity
 } from "../../services/prizeStructureService";
 
 // Define and export DayOfWeek type
 export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
-// Updated PrizeTierData interface (for component state)
+// Component state for a single prize tier
 export interface PrizeTierData {
-  id?: string; // Optional for new tiers
+  id?: string; 
   name: string;
-  value: string; // Display value like N1000
-  quantity: number;
+  value: string; // Display value like N1000 (used in form)
   prizeType: string;
+  quantity: number;
   order: number;
-  valueNGN: number; // Actual numeric value
+  valueNGN: number; // Actual numeric value (used in form, converted from/to service.value)
   numberOfRunnerUps: number;
 }
 
-// Updated PrizeStructureData interface (for component state)
+// Component state for a prize structure
 export interface PrizeStructureData {
   id: string;
   name: string;
@@ -38,48 +38,52 @@ export interface PrizeStructureData {
   applicableDays: DayOfWeek[];
 }
 
-// Convert service data (for listing/display) to component data
+// Convert service data (for listing/display from GET) to component data
 const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): PrizeStructureData => {
   return {
-    id: serviceData.id || "", // Ensure id is always a string
+    id: serviceData.id || "",
     name: serviceData.name,
     description: serviceData.description,
     isActive: serviceData.isActive,
-    // Corrected: Explicitly type pt as ServicePrizeTierData
     prizes: (serviceData.prizeTiers || []).map((pt: ServicePrizeTierData) => ({ 
       id: pt.id,
       name: pt.name,
-      value: `N${pt.valueNGN.toLocaleString()}`, // Display value
-      quantity: pt.winnerCount,
+      // Assuming service GET response for tier has valueNGN and prizeType
+      // If service.value is the display string, use that. Otherwise, construct from valueNGN.
+      value: pt.value || `N${pt.valueNGN?.toLocaleString() || 0}`, 
+      quantity: pt.winnerCount, // Service GET uses winnerCount
       prizeType: pt.prizeType,
       order: pt.order,
-      valueNGN: pt.valueNGN, // Actual numeric value
+      valueNGN: pt.valueNGN || 0, 
       numberOfRunnerUps: pt.numberOfRunnerUps
     })),
     createdAt: serviceData.createdAt || new Date().toISOString(),
-    validFrom: serviceData.validFrom,
+    validFrom: serviceData.validFrom, // Assuming service sends it in correct string format
     validTo: serviceData.validTo,
-    applicableDays: (serviceData.applicableDays || []) as DayOfWeek[]
+    applicableDays: (serviceData.applicableDays || []) as DayOfWeek[] // applicableDays is part of GET response
   };
 };
 
 // Convert component data to service payload for CREATE/UPDATE
-const convertComponentToServicePayload = (componentData: Omit<PrizeStructureData,  | "id" | "createdAt">): CreatePrizeStructurePayload => {
+const convertComponentToServicePayload = (
+  componentData: Omit<PrizeStructureData, "id" | "createdAt" | "applicableDays">
+): CreatePrizeStructurePayload => {
   return {
     name: componentData.name,
     description: componentData.description,
-    isActive: componentData.isActive,
-    prizes: componentData.prizes.map(p => ({
-      name: p.name,
-      prizeType: p.prizeType,
-      valueNGN: p.valueNGN,
-      winnerCount: p.quantity, // Map component 'quantity' to service 'winnerCount'
-      order: p.order,
-      numberOfRunnerUps: p.numberOfRunnerUps
+    is_active: componentData.isActive, // Maps to backend json:"is_active"
+    valid_from: componentData.validFrom, // Maps to backend json:"valid_from"
+    valid_to: componentData.validTo, // Maps to backend json:"valid_to"
+    prizes: componentData.prizes.map((p: PrizeTierData): CreatePrizeTierPayload => ({
+      name: p.name, // json:"name"
+      value: p.value, // This is the display string like "N1000", backend expects this for CreatePrizeRequest.Value
+      prize_type: p.prizeType, // json:"prize_type"
+      quantity: p.quantity, // json:"quantity"
+      order: p.order, // json:"order"
+      numberOfRunnerUps: p.numberOfRunnerUps // json:"numberOfRunnerUps"
+      // valueNGN is a component-only field for calculation, not sent directly if backend takes display `value`
     })),
-    validFrom: componentData.validFrom,
-    validTo: componentData.validTo,
-    applicableDays: componentData.applicableDays
+    // applicable_days is NOT sent in POST/PUT as per backend CreatePrizeStructureRequest
   };
 };
 
@@ -141,9 +145,12 @@ const PrizeStructureListComponent = () => {
     setViewingStructure(structure);
   };
 
-  const handleFormSubmit = async (formData: Omit<PrizeStructureData, | "id" | "createdAt">) => {
+  const handleFormSubmit = async (formData: Omit<PrizeStructureData, "id" | "createdAt">) => {
+    // The formData here includes applicableDays, but convertComponentToServicePayload will omit it.
+    const { applicableDays, ...dataForPayload } = formData; 
+    
     try {
-      const payload = convertComponentToServicePayload(formData);
+      const payload = convertComponentToServicePayload(dataForPayload);
       
       if (editingStructure) {
         const updatedServiceData = await prizeStructureService.updatePrizeStructure(
