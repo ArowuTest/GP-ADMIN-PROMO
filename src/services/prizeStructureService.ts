@@ -8,9 +8,9 @@ export interface ServicePrizeTierData { // Represents a single prize tier as ret
   id?: string;
   name: string;
   prizeType: string;
-  valueNGN: number; // Backend sends this in GET response (from Prize model)
-  value?: string; // Backend might also send display value
-  winnerCount: number; // Backend sends this as winnerCount (from Prize model, maps to Quantity)
+  valueNGN: number; 
+  value?: string; 
+  winnerCount: number; 
   order: number;
   numberOfRunnerUps: number;
 }
@@ -22,32 +22,33 @@ export interface ServicePrizeStructureData { // Represents a prize structure as 
   isActive: boolean;
   validFrom: string;
   validTo?: string | null;
-  prizeTiers: ServicePrizeTierData[]; // Backend GET responses use 'prizeTiers'
+  prizeTiers: ServicePrizeTierData[]; 
   createdAt?: string;
   updatedAt?: string;
   applicableDays?: string[]; // Backend sends this in GET response
+  dayType?: string; // Backend might send this in GET response if it stores it
 }
 
 // --- Types for POST/PUT payloads (data sent to backend) ---
 // Matches backend models.CreatePrizeRequest JSON tags
 export interface CreatePrizeTierPayload {
   name: string;
-  value: string; // Corresponds to models.CreatePrizeRequest.Value (json:"value")
-  prize_type: string; // Corresponds to models.CreatePrizeRequest.PrizeType (json:"prize_type")
-  quantity: number; // Corresponds to models.CreatePrizeRequest.Quantity (json:"quantity")
-  order: number; // Corresponds to models.CreatePrizeRequest.Order (json:"order")
-  numberOfRunnerUps: number; // Corresponds to models.CreatePrizeRequest.NumberOfRunnerUps (json:"numberOfRunnerUps")
+  value: string; 
+  prize_type: string; 
+  quantity: number; 
+  order: number; 
+  numberOfRunnerUps: number; 
 }
 
 // Matches backend CreatePrizeStructureRequest JSON tags
 export interface CreatePrizeStructurePayload { 
   name: string;
   description: string;
-  is_active: boolean; // Corresponds to backend json:"is_active"
-  valid_from: string; // Corresponds to backend json:"valid_from"
-  valid_to?: string | null; // Corresponds to backend json:"valid_to"
-  prizes: CreatePrizeTierPayload[]; // Corresponds to backend json:"prizes"
-  // applicable_days is NOT part of the backend CreatePrizeStructureRequest struct
+  is_active: boolean; 
+  valid_from: string; 
+  valid_to?: string | null; 
+  prizes: CreatePrizeTierPayload[]; 
+  applicable_days?: string[]; // ADDING THIS BACK - Backend will derive day_type from this
 }
 
 const getAuthHeaders = (token: string | null) => {
@@ -76,6 +77,7 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
 
 const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
+    console.log("Sending payload to createPrizeStructure:", JSON.stringify(payload, null, 2));
     const response = await axios.post<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/`, payload, {
       headers: getAuthHeaders(token),
     });
@@ -115,6 +117,7 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Serv
 
 const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
+    console.log(`Sending payload to updatePrizeStructure for ID ${id}:`, JSON.stringify(payload, null, 2));
     const response = await axios.put<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, payload, {
       headers: getAuthHeaders(token),
     });
@@ -157,7 +160,6 @@ export const prizeStructureService = {
   createPrizeStructure,
   getPrizeStructure,
   updatePrizeStructure,
-  // activatePrizeStructure, // This function was not fully defined or used previously, commenting out.
   deletePrizeStructure,
 };
 
