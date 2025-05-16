@@ -3,7 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm";
 import { prizeStructureService } from "../../services/prizeStructureService";
-import type { PrizeStructureData as ServicePrizeStructureData, CreatePrizeStructurePayload } from "../../services/prizeStructureService"; // Added CreatePrizeStructurePayload
+// Corrected import: Use ServicePrizeStructureData and ServicePrizeTierData from the service
+import type { 
+  ServicePrizeStructureData, 
+  ServicePrizeTierData, 
+  CreatePrizeStructurePayload 
+} from "../../services/prizeStructureService";
 
 // Define and export DayOfWeek type
 export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
@@ -40,8 +45,8 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
     name: serviceData.name,
     description: serviceData.description,
     isActive: serviceData.isActive,
-    // Assuming serviceData.prizeTiers is the correct field from the backend for GET requests
-    prizes: (serviceData.prizeTiers || []).map(pt => ({ 
+    // Corrected: Explicitly type pt as ServicePrizeTierData
+    prizes: (serviceData.prizeTiers || []).map((pt: ServicePrizeTierData) => ({ 
       id: pt.id,
       name: pt.name,
       value: `N${pt.valueNGN.toLocaleString()}`, // Display value
@@ -59,13 +64,11 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
 };
 
 // Convert component data to service payload for CREATE/UPDATE
-// This now maps to CreatePrizeStructurePayload which should have a `prizes` field
 const convertComponentToServicePayload = (componentData: Omit<PrizeStructureData,  | "id" | "createdAt">): CreatePrizeStructurePayload => {
   return {
     name: componentData.name,
     description: componentData.description,
     isActive: componentData.isActive,
-    // CRITICAL CHANGE: Backend expects 'prizes', not 'prizeTiers' in the POST/PUT payload
     prizes: componentData.prizes.map(p => ({
       name: p.name,
       prizeType: p.prizeType,
@@ -98,7 +101,6 @@ const PrizeStructureListComponent = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // This uses prizeStructureService.listPrizeStructures which returns ServicePrizeStructureData[]
         const serviceDataArray = await prizeStructureService.listPrizeStructures(token);
         const componentDataArray = serviceDataArray.map(convertServiceToComponentData);
         setPrizeStructures(componentDataArray);
@@ -141,30 +143,23 @@ const PrizeStructureListComponent = () => {
 
   const handleFormSubmit = async (formData: Omit<PrizeStructureData, | "id" | "createdAt">) => {
     try {
-      // Convert component form data to the payload expected by the service/backend
       const payload = convertComponentToServicePayload(formData);
       
       if (editingStructure) {
-        // Update existing structure
-        // prizeStructureService.updatePrizeStructure should also expect CreatePrizeStructurePayload or similar
         const updatedServiceData = await prizeStructureService.updatePrizeStructure(
           editingStructure.id,
-          payload, // Use the correctly mapped payload
+          payload, 
           token
         );
-        // Convert the response (which is ServicePrizeStructureData) back to component data for display
         const updatedComponentData = convertServiceToComponentData(updatedServiceData);
         setPrizeStructures(prizeStructures.map(ps => 
           ps.id === editingStructure.id ? updatedComponentData : ps
         ));
       } else {
-        // Create new structure
-        // prizeStructureService.createPrizeStructure expects CreatePrizeStructurePayload
         const newServiceData = await prizeStructureService.createPrizeStructure(
-          payload, // Use the correctly mapped payload
+          payload, 
           token
         );
-        // Convert the response (which is ServicePrizeStructureData) back to component data for display
         const newComponentData = convertServiceToComponentData(newServiceData);
         setPrizeStructures([...prizeStructures, newComponentData]);
       }
