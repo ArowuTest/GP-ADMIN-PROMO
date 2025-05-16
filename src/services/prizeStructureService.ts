@@ -19,9 +19,9 @@ export interface ServicePrizeStructureData { // Represents a prize structure as 
   id?: string;
   name: string;
   description: string;
-  isActive: boolean;
-  validFrom: string;
-  validTo?: string | null;
+  is_active: boolean; // Changed from isActive to is_active to match backend JSON tags
+  valid_from: string; // Changed from validFrom to valid_from to match backend JSON tags
+  valid_to?: string | null; // Changed from validTo to valid_to to match backend JSON tags
   prizeTiers: ServicePrizeTierData[]; 
   createdAt?: string;
   updatedAt?: string;
@@ -44,11 +44,11 @@ export interface CreatePrizeTierPayload {
 export interface CreatePrizeStructurePayload { 
   name: string;
   description: string;
-  is_active: boolean; 
-  valid_from: string; 
-  valid_to?: string | null; 
+  is_active: boolean; // Changed from isActive to is_active to match backend JSON tags
+  valid_from: string; // Changed from validFrom to valid_from to match backend JSON tags
+  valid_to?: string | null; // Changed from validTo to valid_to to match backend JSON tags
   prizes: CreatePrizeTierPayload[]; 
-  applicable_days?: string[]; // ADDING THIS BACK - Backend will derive day_type from this
+  applicable_days?: string[]; // Backend will derive day_type from this
 }
 
 const getAuthHeaders = (token: string | null) => {
@@ -162,4 +162,3 @@ export const prizeStructureService = {
   updatePrizeStructure,
   deletePrizeStructure,
 };
-

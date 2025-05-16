@@ -44,7 +44,7 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
     id: serviceData.id || "",
     name: serviceData.name,
     description: serviceData.description,
-    isActive: serviceData.isActive,
+    isActive: serviceData.is_active, // Changed to match backend field name
     prizes: (serviceData.prizeTiers || []).map((pt: ServicePrizeTierData) => ({ 
       id: pt.id,
       name: pt.name,
@@ -58,15 +58,15 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
       numberOfRunnerUps: pt.numberOfRunnerUps
     })),
     createdAt: serviceData.createdAt || new Date().toISOString(),
-    validFrom: serviceData.validFrom, // Assuming service sends it in correct string format
-    validTo: serviceData.validTo,
+    validFrom: serviceData.valid_from, // Changed to match backend field name
+    validTo: serviceData.valid_to, // Changed to match backend field name
     applicableDays: (serviceData.applicableDays || []) as DayOfWeek[] // applicableDays is part of GET response
   };
 };
 
 // Convert component data to service payload for CREATE/UPDATE
 const convertComponentToServicePayload = (
-  componentData: Omit<PrizeStructureData, "id" | "createdAt" | "applicableDays">
+  componentData: Omit<PrizeStructureData, "id" | "createdAt"> & { applicableDays: DayOfWeek[] }
 ): CreatePrizeStructurePayload => {
   return {
     name: componentData.name,
@@ -83,7 +83,7 @@ const convertComponentToServicePayload = (
       numberOfRunnerUps: p.numberOfRunnerUps // json:"numberOfRunnerUps"
       // valueNGN is a component-only field for calculation, not sent directly if backend takes display `value`
     })),
-    // applicable_days is NOT sent in POST/PUT as per backend CreatePrizeStructureRequest
+    applicable_days: componentData.applicableDays, // Explicitly include applicable_days in the payload
   };
 };
 
@@ -146,11 +146,12 @@ const PrizeStructureListComponent = () => {
   };
 
   const handleFormSubmit = async (formData: Omit<PrizeStructureData, "id" | "createdAt">) => {
-    // The formData here includes applicableDays, but convertComponentToServicePayload will omit it.
-    const { applicableDays, ...dataForPayload } = formData; 
-    
     try {
-      const payload = convertComponentToServicePayload(dataForPayload);
+      // Include applicableDays in the payload
+      const payload = convertComponentToServicePayload({
+        ...formData,
+        applicableDays: formData.applicableDays
+      });
       
       if (editingStructure) {
         const updatedServiceData = await prizeStructureService.updatePrizeStructure(
@@ -299,4 +300,3 @@ const modalContentStyle: React.CSSProperties = {
 };
 
 export default PrizeStructureListComponent;
-
