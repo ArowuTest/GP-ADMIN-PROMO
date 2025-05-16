@@ -155,9 +155,9 @@ const DrawManagementPage: React.FC = () => {
       try {
         const structures = await prizeStructureService.listPrizeStructures(token);
         const activeValidStructures = structures.filter(s => 
-          s.isActive && 
-          new Date(s.validFrom) <= new Date() && 
-          (!s.validTo || new Date(s.validTo) >= new Date())
+          s.is_active && 
+          new Date(s.valid_from) <= new Date() && 
+          (!s.valid_to || new Date(s.valid_to) >= new Date())
         );
         
         // Map to match backend model format
@@ -165,9 +165,9 @@ const DrawManagementPage: React.FC = () => {
           id: s.id || "",
           name: s.name,
           description: s.description,
-          is_active: s.isActive,
-          effective_start_date: s.validFrom,
-          effective_end_date: s.validTo || undefined,
+          is_active: s.is_active,
+          effective_start_date: s.valid_from,
+          effective_end_date: s.valid_to || undefined,
           prizes: s.prizeTiers.map(pt => ({
             id: pt.id || "",
             name: pt.name,
@@ -400,177 +400,215 @@ const DrawManagementPage: React.FC = () => {
             <h2>Configure New Draw</h2>
             {error && <p style={showRerunConfirm ? styles.warning : styles.error}>{error}</p>}
             {successMessage && <p style={{ color: "green", marginBottom: "15px" }}>{successMessage}</p>}
-            <div>
-              <label htmlFor="drawDate" style={styles.label}>Draw Date:</label>
-              <input 
-                type="date" 
-                id="drawDate" 
-                value={drawDate} 
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => { 
-                  setDrawDate(e.target.value); 
-                  setDrawResult(null); 
-                  setShowRerunConfirm(false);
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                style={styles.input}
-                disabled={loading || isExecuting || !canExecuteDraw}
-              />
-            </div>
-            <div>
-              <label htmlFor="prizeStructure" style={styles.label}>Prize Structure:</label>
-              <select 
-                id="prizeStructure" 
-                value={selectedPrizeStructureId} 
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPrizeStructureId(e.target.value)} 
-                style={styles.select}
-                disabled={loading || isExecuting || availablePrizeStructures.length === 0 || !canExecuteDraw}
-              >
-                <option value="">{availablePrizeStructures.length === 0 ? "No active prize structures found" : "Select a Prize Structure"}</option>
-                {availablePrizeStructures.map(ps => (
-                  <option key={ps.id} value={ps.id}>{ps.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {selectedStructureDetails && (
-              <div style={styles.infoSection}>
-                <h4>Draw Information</h4>
-                <p><strong>Eligible Participants:</strong> {eligibleParticipantsCount.toLocaleString()}</p>
-                <p><strong>Total Points in Draw:</strong> {totalPointsInDraw.toLocaleString()}</p>
-              </div>
-            )}
-
-            {canExecuteDraw && !showRerunConfirm && (
-              <button 
-                onClick={() => handleExecuteDraw(false)} 
-                disabled={loading || isExecuting || !selectedPrizeStructureId} 
-                style={styles.button}
-              >
-                {isExecuting ? "Executing Draw..." : (loading ? "Loading Data..." : "Execute Draw")}
-              </button>
-            )}
             
-            {canExecuteDraw && showRerunConfirm && (
-              <div style={{marginTop: "15px"}}>
+            <label style={styles.label} htmlFor="drawDate">Draw Date:</label>
+            <input 
+              id="drawDate"
+              type="date" 
+              value={drawDate} 
+              onChange={(e) => setDrawDate(e.target.value)}
+              style={styles.input}
+              disabled={loading}
+            />
+            
+            <label style={styles.label} htmlFor="prizeStructure">Prize Structure:</label>
+            <select 
+              id="prizeStructure"
+              value={selectedPrizeStructureId} 
+              onChange={(e) => setSelectedPrizeStructureId(e.target.value)}
+              style={styles.select}
+              disabled={loading || availablePrizeStructures.length === 0}
+            >
+              {availablePrizeStructures.length === 0 ? (
+                <option value="">No active prize structures available</option>
+              ) : (
+                availablePrizeStructures.map(structure => (
+                  <option key={structure.id} value={structure.id}>
+                    {structure.name}
+                  </option>
+                ))
+              )}
+            </select>
+            
+            {showRerunConfirm && (
+              <div style={{ marginBottom: "15px" }}>
+                <label style={styles.label} htmlFor="rerunConfirm">Type "rerun" to confirm:</label>
                 <input 
+                  id="rerunConfirm"
                   type="text" 
                   value={rerunConfirmText} 
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRerunConfirmText(e.target.value)} 
-                  placeholder="Type 'rerun' to confirm" 
-                  style={{...styles.input, width: "calc(100% - 230px)", marginRight: "10px", display: "inline-block"}}
+                  onChange={(e) => setRerunConfirmText(e.target.value)}
+                  style={styles.input}
+                  placeholder="rerun"
                 />
-                <button onClick={() => handleExecuteDraw(true)} style={styles.confirmButton} disabled={loading || isExecuting}>Confirm Re-run</button>
-                <button 
-                  onClick={() => {setShowRerunConfirm(false); setError(null); setRerunConfirmText("");}} 
-                  style={{...styles.cancelButton, marginLeft: "10px"}} 
-                  disabled={loading || isExecuting}
-                >
-                  Cancel
-                </button>
+                <div>
+                  <button 
+                    onClick={() => handleExecuteDraw(true)} 
+                    style={styles.confirmButton}
+                    disabled={loading || rerunConfirmText.toLowerCase() !== "rerun"}
+                  >
+                    Confirm Re-run
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowRerunConfirm(false);
+                      setRerunConfirmText("");
+                      setError(null);
+                    }} 
+                    style={{...styles.cancelButton, marginLeft: "10px"}}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
             
-            {!canExecuteDraw && (
-              <p style={{color: "orange"}}>You do not have permission to execute draws. (Requires SUPER_ADMIN role)</p>
-            )}
+            <button 
+              onClick={() => handleExecuteDraw(false)} 
+              style={styles.button}
+              disabled={loading || !selectedPrizeStructureId || !drawDate || !canExecuteDraw}
+            >
+              {loading ? "Processing..." : "Execute Draw"}
+            </button>
           </div>
-        </div>
-
-        <div style={styles.rightPanel}>
+          
           {selectedStructureDetails && (
             <div style={styles.prizeBreakdownSection}>
-              <h4>Prize Breakdown for: {selectedStructureDetails.name}</h4>
+              <h3>Selected Prize Structure: {selectedStructureDetails.name}</h3>
+              <p>{selectedStructureDetails.description}</p>
+              
               <table style={styles.prizeTierTable}>
                 <thead>
                   <tr>
-                    <th style={styles.th}>Prize Name</th>
+                    <th style={styles.th}>Prize</th>
                     <th style={styles.th}>Value</th>
-                    <th style={styles.th}>Quantity</th>
-                    <th style={styles.th}>Type</th>
-                    <th style={styles.th}>Runners-up</th>
+                    <th style={styles.th}>Winners</th>
+                    <th style={styles.th}>Runner-ups</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedStructureDetails.prizes.map(prize => (
+                  {selectedStructureDetails.prizes.map((prize) => (
                     <tr key={prize.id}>
                       <td style={styles.td}>{prize.name}</td>
-                      <td style={styles.td}>{prize.value || `N${prize.prize_amount.toLocaleString()}`}</td>
+                      <td style={styles.td}>{prize.value || `N${prize.prize_amount?.toLocaleString()}`}</td>
                       <td style={styles.td}>{prize.winner_count}</td>
-                      <td style={styles.td}>{prize.prize_type}</td>
                       <td style={styles.td}>{prize.number_of_runner_ups}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p style={styles.totalPot}>Total Prize Pot Value: N{calculateTotalPrizePot(selectedStructureDetails.prizes).toLocaleString()}</p>
+              
+              <p style={styles.totalPot}>
+                Total Prize Pot: N{calculateTotalPrizePot(selectedStructureDetails.prizes).toLocaleString()}
+              </p>
             </div>
           )}
-
+          
+          <div style={styles.infoSection}>
+            <h3>Draw Eligibility</h3>
+            <p><strong>Eligible Participants:</strong> {eligibleParticipantsCount.toLocaleString()}</p>
+            <p><strong>Total Points in Draw:</strong> {totalPointsInDraw.toLocaleString()}</p>
+            <p><em>Note: Each participant can have multiple entries based on their points.</em></p>
+          </div>
+        </div>
+        
+        <div style={styles.rightPanel}>
           {isExecuting && (
             <div style={styles.animationPlaceholder}>
-              <p>Executing Draw...</p>
-              <p>Please wait while winners are selected...</p>
+              <p>Drawing Winners...</p>
+              <p>Please wait while we select the lucky winners!</p>
             </div>
           )}
-
+          
           {drawResult && (
             <div style={styles.resultsSection}>
-              <h3>Draw Results</h3>
+              <h2>Draw Results</h2>
               <p><strong>Draw ID:</strong> {drawResult.id}</p>
               <p><strong>Draw Date:</strong> {new Date(drawResult.draw_date).toLocaleDateString()}</p>
-              <p><strong>Status:</strong> {drawResult.status}</p>
-              <p><strong>Total Eligible MSISDNs:</strong> {drawResult.total_eligible_msisdns?.toLocaleString()}</p>
-              <p><strong>Total Entries:</strong> {drawResult.total_tickets?.toLocaleString()}</p>
+              <p><strong>Prize Structure:</strong> {drawResult.prize_structure?.name}</p>
+              <p><strong>Eligible Participants:</strong> {drawResult.total_eligible_msisdns?.toLocaleString()}</p>
+              <p><strong>Total Points in Draw:</strong> {drawResult.total_tickets?.toLocaleString()}</p>
               
-              <h4>Winners</h4>
-              {drawResult.winners.filter(w => !w.is_runner_up).length > 0 ? (
-                <ul style={styles.list}>
-                  {drawResult.winners.filter(w => !w.is_runner_up).map(winner => (
-                    <li key={winner.id} style={styles.listItem}>
-                      <div>
-                        <strong>MSISDN:</strong> {maskMSISDN(winner.msisdn)} | 
-                        <strong> Prize:</strong> {winner.prize_tier?.name} ({winner.prize_tier?.value || `N${winner.prize_tier?.prize_amount.toLocaleString()}`}) | 
-                        <strong> Status:</strong> {winner.notification_status}
-                      </div>
-                      {winner.notification_status === "FORFEITED" && (
-                        <span style={{color: "red", fontStyle: "italic"}}>Forfeited</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+              <h3>Winners</h3>
+              {drawResult.winners.filter(w => !w.is_runner_up).length === 0 ? (
+                <p>No winners selected.</p>
               ) : (
-                <p>No winners found.</p>
+                <ul style={styles.list}>
+                  {drawResult.winners
+                    .filter(w => !w.is_runner_up)
+                    .sort((a, b) => {
+                      // Sort by prize tier order if available
+                      const orderA = a.prize_tier?.sort_order || 0;
+                      const orderB = b.prize_tier?.sort_order || 0;
+                      return orderA - orderB;
+                    })
+                    .map(winner => (
+                      <li key={winner.id} style={styles.listItem}>
+                        <div>
+                          <strong>{winner.prize_tier?.name || "Prize"}:</strong> {maskMSISDN(winner.msisdn)}
+                          <br />
+                          <small>
+                            Value: {winner.prize_tier?.value || `N${winner.prize_tier?.prize_amount?.toLocaleString()}`} | 
+                            Status: {winner.notification_status}
+                          </small>
+                        </div>
+                        <div>
+                          {winner.notification_status !== "FORFEITED" && canExecuteDraw && (
+                            <div>
+                              {drawResult.winners
+                                .filter(w => w.is_runner_up && w.original_winner_id === winner.id)
+                                .sort((a, b) => (a.runner_up_rank || 0) - (b.runner_up_rank || 0))
+                                .map((runnerUp, index) => (
+                                  <button 
+                                    key={runnerUp.id}
+                                    onClick={() => handleInvokeRunnerUp(winner.id, runnerUp.id)}
+                                    style={styles.invokeButton}
+                                    disabled={loading}
+                                  >
+                                    Invoke Runner-up #{(runnerUp.runner_up_rank || index + 1)}
+                                  </button>
+                                ))
+                              }
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))
+                  }
+                </ul>
               )}
               
-              <h4>Runner-ups</h4>
-              {drawResult.winners.filter(w => w.is_runner_up).length > 0 ? (
+              <h3>Runner-ups</h3>
+              {drawResult.winners.filter(w => w.is_runner_up).length === 0 ? (
+                <p>No runner-ups selected.</p>
+              ) : (
                 <ul style={styles.list}>
-                  {drawResult.winners.filter(w => w.is_runner_up).map(runnerUp => {
-                    const originalWinner = drawResult.winners.find(w => w.id === runnerUp.original_winner_id);
-                    return (
+                  {drawResult.winners
+                    .filter(w => w.is_runner_up)
+                    .sort((a, b) => {
+                      // Sort by prize tier order first
+                      const orderA = a.prize_tier?.sort_order || 0;
+                      const orderB = b.prize_tier?.sort_order || 0;
+                      if (orderA !== orderB) return orderA - orderB;
+                      
+                      // Then by runner-up rank
+                      return (a.runner_up_rank || 0) - (b.runner_up_rank || 0);
+                    })
+                    .map(runnerUp => (
                       <li key={runnerUp.id} style={styles.listItem}>
                         <div>
-                          <strong>MSISDN:</strong> {maskMSISDN(runnerUp.msisdn)} | 
-                          <strong> Prize:</strong> {runnerUp.prize_tier?.name} | 
-                          <strong> Rank:</strong> {runnerUp.runner_up_rank} | 
-                          <strong> Original Winner:</strong> {maskMSISDN(originalWinner?.msisdn || "")}
+                          <strong>{runnerUp.prize_tier?.name || "Prize"} Runner-up #{runnerUp.runner_up_rank}:</strong> {maskMSISDN(runnerUp.msisdn)}
+                          <br />
+                          <small>
+                            Value: {runnerUp.prize_tier?.value || `N${runnerUp.prize_tier?.prize_amount?.toLocaleString()}`} | 
+                            Status: {runnerUp.notification_status}
+                          </small>
                         </div>
-                        {canExecuteDraw && originalWinner?.notification_status !== "FORFEITED" && (
-                          <button 
-                            onClick={() => handleInvokeRunnerUp(originalWinner?.id || "", runnerUp.id)} 
-                            style={styles.invokeButton}
-                            disabled={loading}
-                          >
-                            Invoke Runner-up
-                          </button>
-                        )}
                       </li>
-                    );
-                  })}
+                    ))
+                  }
                 </ul>
-              ) : (
-                <p>No runner-ups found.</p>
               )}
             </div>
           )}
