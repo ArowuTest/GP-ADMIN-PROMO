@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { ensureString, ensureArray } from '../../utils/nullSafety';
 
 interface AuditLog {
   id: string;
@@ -80,9 +81,9 @@ const SystemAuditLogsPage: React.FC = () => {
       params.append('page', page.toString());
       params.append('page_size', meta.page_size.toString());
       
-      // Use empty string as fallback if token is null
+      // Use ensureString utility for null safety
       const response = await axios.get(`${API_URL}/admin/audit-logs?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token || ''}` }
+        headers: { Authorization: `Bearer ${ensureString(token)}` }
       });
       
       setAuditLogs(response.data.data);
@@ -99,13 +100,13 @@ const SystemAuditLogsPage: React.FC = () => {
   // Fetch available filter options
   const fetchFilterOptions = async () => {
     try {
-      // Use empty string as fallback if token is null
+      // Use ensureString utility for null safety
       const response = await axios.get(`${API_URL}/admin/audit-logs/types`, {
-        headers: { Authorization: `Bearer ${token || ''}` }
+        headers: { Authorization: `Bearer ${ensureString(token)}` }
       });
       
-      setAvailableActionTypes(response.data.action_types);
-      setAvailableResourceTypes(response.data.resource_types);
+      setAvailableActionTypes(ensureArray(response.data.action_types));
+      setAvailableResourceTypes(ensureArray(response.data.resource_types));
     } catch (err) {
       console.error('Error fetching filter options:', err);
       // Don't show error toast for this, as it's not critical
@@ -161,7 +162,7 @@ const SystemAuditLogsPage: React.FC = () => {
   };
   
   // Check if user has permission to view this page
-  const hasPermission = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+  const hasPermission = ['SUPER_ADMIN', 'ADMIN'].includes(userRole || '');
   
   if (!hasPermission) {
     return <p>You do not have permission to view this page.</p>;

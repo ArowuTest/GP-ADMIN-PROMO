@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { drawService } from '../../services/drawService';
-import { prizeStructureService, ServicePrizeStructureData, ServicePrizeTierData } from '../../services/prizeStructureService';
+import { prizeStructureService } from '../../services/prizeStructureService';
+import type { ServicePrizeStructureData, ServicePrizeTierData } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DrawAnimationComponent from './DrawAnimationComponent';
+import { ensureString, ensureArray } from '../../utils/nullSafety';
 
 // Types
 interface PrizeTier {
@@ -52,8 +54,8 @@ const convertToPrizeStructure = (data: ServicePrizeStructureData): PrizeStructur
     isActive: data.is_active,
     validFrom: data.valid_from,
     validTo: data.valid_to || null,
-    applicableDays: data.applicable_days || [],
-    prizeTiers: (data.prizes || []).map((prize: ServicePrizeTierData) => ({
+    applicableDays: ensureArray(data.applicable_days),
+    prizeTiers: (ensureArray(data.prizes)).map((prize: ServicePrizeTierData) => ({
       id: prize.id || '',
       name: prize.name,
       value: prize.value,
@@ -70,7 +72,6 @@ const DrawExecutionPage: React.FC = () => {
   const [selectedPrizeStructureId, setSelectedPrizeStructureId] = useState<string>('');
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructure[]>([]);
   const [drawDetails, setDrawDetails] = useState<DrawDetails | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isEligibilityLoading, setIsEligibilityLoading] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [drawResults, setDrawResults] = useState<DrawWinner[] | null>(null);
@@ -80,7 +81,7 @@ const DrawExecutionPage: React.FC = () => {
   useEffect(() => {
     const fetchPrizeStructures = async () => {
       try {
-        const structures = await prizeStructureService.listPrizeStructures(token);
+        const structures = await prizeStructureService.listPrizeStructures(ensureString(token));
         // Convert ServicePrizeStructureData[] to PrizeStructure[]
         const convertedStructures = structures.map(convertToPrizeStructure);
         setPrizeStructures(convertedStructures);
@@ -121,7 +122,7 @@ const DrawExecutionPage: React.FC = () => {
 
     try {
       // Get eligibility stats
-      const stats = await drawService.getDrawEligibilityStats(selectedDate, token || '');
+      const stats = await drawService.getDrawEligibilityStats(selectedDate, ensureString(token));
       
       // Find the selected prize structure
       const prizeStructure = prizeStructures.find(ps => ps.id === selectedPrizeStructureId);
@@ -161,16 +162,16 @@ const DrawExecutionPage: React.FC = () => {
 
   const handleAnimationComplete = async () => {
     try {
-      const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, token || '');
+      const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, ensureString(token));
       
       // Transform the result into the expected format
-      const winners: DrawWinner[] = result.draw.winners?.map(winner => ({
+      const winners: DrawWinner[] = ensureArray(result.draw.winners).map(winner => ({
         id: winner.id,
         msisdn: maskMSISDN(winner.msisdn),
         prizeName: winner.prizeTier?.name || 'Unknown Prize',
         isRunnerUp: winner.isRunnerUp || false,
         runnerUpRank: winner.runnerUpRank || 0
-      })) || [];
+      }));
       
       setDrawResults(winners);
       toast.success('Draw executed successfully');
@@ -229,7 +230,7 @@ const DrawExecutionPage: React.FC = () => {
 
         <button 
           onClick={handleCheckEligibility} 
-          disabled={isEligibilityLoading || isLoading || !selectedDate || !selectedPrizeStructureId}
+          disabled={isEligibilityLoading || !selectedDate || !selectedPrizeStructureId}
           className="check-eligibility-button"
         >
           {isEligibilityLoading ? 'Checking...' : 'Check Eligibility'}
