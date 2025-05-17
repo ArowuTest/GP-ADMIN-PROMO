@@ -1,19 +1,31 @@
-// Placeholder for Draw Execution Page Component
-// This component will allow Super Admins to select a date, view draw details, and execute the draw.
-
+// src/components/DrawManagement/DrawExecutionPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext'; // Removed unused UserRole import
+import { useAuth } from '../../contexts/AuthContext';
+import { drawService } from '../../services/drawService';
+import { prizeStructureService } from '../../services/prizeStructureService';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import DrawAnimationComponent from './DrawAnimationComponent';
 
-// Mock data types - replace with actual types from API/models
-interface Prize {
+// Types
+interface PrizeTier {
+  id: string;
   name: string;
   value: string;
+  prizeType: string;
   quantity: number;
+  numberOfRunnerUps: number;
 }
 
 interface PrizeStructure {
+  id: string;
   name: string;
-  prizes: Prize[];
+  description: string;
+  isActive: boolean;
+  validFrom: string;
+  validTo: string | null;
+  applicableDays: string[];
+  prizeTiers: PrizeTier[];
 }
 
 interface DrawDetails {
@@ -23,64 +35,135 @@ interface DrawDetails {
   dayOfWeek: string;
 }
 
-const DrawExecutionPage = () => {
-  const { userRole } = useAuth(); // Get user role from AuthContext
+interface DrawWinner {
+  id: string;
+  msisdn: string;
+  prizeName: string;
+  isRunnerUp: boolean;
+  runnerUpRank: number;
+}
+
+const DrawExecutionPage: React.FC = () => {
+  const { userRole, token } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedPrizeStructureId, setSelectedPrizeStructureId] = useState<string>('');
+  const [prizeStructures, setPrizeStructures] = useState<PrizeStructure[]>([]);
   const [drawDetails, setDrawDetails] = useState<DrawDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isEligibilityLoading, setIsEligibilityLoading] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
-  const [drawResults, setDrawResults] = useState<any | null>(null); // Replace 'any' with actual result type
+  const [drawResults, setDrawResults] = useState<DrawWinner[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Effect to fetch draw details when selectedDate changes
+  // Fetch prize structures on component mount
   useEffect(() => {
-    if (selectedDate) {
-      setIsLoading(true);
-      console.log(`Fetching draw details for ${selectedDate}...`);
-      const dateObj = new Date(selectedDate + 'T00:00:00'); // Ensure date is parsed in local timezone or UTC consistently
-      const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-      
-      // Simulate API call
-      setTimeout(() => {
-        setDrawDetails({
-          eligibleParticipants: Math.floor(Math.random() * 10000) + 1000,
-          totalPoints: Math.floor(Math.random() * 50000) + 5000,
-          prizeStructure: {
-            name: `Prize Structure for ${dayOfWeek}`,
-            prizes: [
-              { name: 'Jackpot', value: 'N1,000,000', quantity: 1 },
-              { name: '2nd Prize', value: 'N500,000', quantity: 2 },
-              { name: 'Consolation Prize', value: 'N50,000 Airtime', quantity: 10 },
-            ],
-          },
-          dayOfWeek: dayOfWeek,
-        });
-        setIsLoading(false);
-      }, 1500);
-    }
-  }, [selectedDate]);
+    const fetchPrizeStructures = async () => {
+      try {
+        const structures = await prizeStructureService.listPrizeStructures(token);
+        setPrizeStructures(structures);
+        if (structures.length > 0) {
+          setSelectedPrizeStructureId(structures[0].id);
+        }
+      } catch (err) {
+        console.error('Error fetching prize structures:', err);
+        setError('Failed to load prize structures. Please try again later.');
+        toast.error('Failed to load prize structures');
+      }
+    };
+
+    fetchPrizeStructures();
+  }, [token]);
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(event.target.value);
     setDrawResults(null);
+    setDrawDetails(null);
   };
 
-  const handleExecuteDraw = () => {
-    if (!drawDetails || userRole !== 'SUPER_ADMIN') return; 
+  const handlePrizeStructureChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedPrizeStructureId(event.target.value);
+    setDrawResults(null);
+    setDrawDetails(null);
+  };
+
+  const handleCheckEligibility = async () => {
+    if (!selectedDate || !selectedPrizeStructureId) {
+      toast.warning('Please select both a date and prize structure');
+      return;
+    }
+
+    setIsEligibilityLoading(true);
+    setError(null);
+    setDrawDetails(null);
+
+    try {
+      // Get eligibility stats
+      const stats = await drawService.getDrawEligibilityStats(selectedDate, token);
+      
+      // Find the selected prize structure
+      const prizeStructure = prizeStructures.find(ps => ps.id === selectedPrizeStructureId);
+      
+      if (!prizeStructure) {
+        throw new Error('Selected prize structure not found');
+      }
+
+      // Get day of week
+      const dateObj = new Date(selectedDate + 'T00:00:00');
+      const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      setDrawDetails({
+        eligibleParticipants: stats.totalEligibleMSISDNs,
+        totalPoints: stats.totalEntries,
+        prizeStructure: prizeStructure,
+        dayOfWeek: dayOfWeek
+      });
+    } catch (err) {
+      console.error('Error checking eligibility:', err);
+      setError('Failed to check eligibility. Please try again later.');
+      toast.error('Failed to check eligibility');
+    } finally {
+      setIsEligibilityLoading(false);
+    }
+  };
+
+  const handleExecuteDraw = async () => {
+    if (!drawDetails || !selectedPrizeStructureId || userRole !== 'SUPER_ADMIN') {
+      return;
+    }
 
     setIsExecuting(true);
+    setError(null);
     setDrawResults(null);
-    console.log('Executing draw...');
+  };
 
-    setTimeout(() => {
-      setDrawResults([
-        { prizeName: 'Jackpot', winnerMsisdn: '234***789', isRunnerUp: false, runnerUpRank: 0 },
-        { prizeName: 'Jackpot', winnerMsisdn: '234***012', isRunnerUp: true, runnerUpRank: 1 },
-        { prizeName: '2nd Prize', winnerMsisdn: '234***345', isRunnerUp: false, runnerUpRank: 0 },
-        { prizeName: '2nd Prize', winnerMsisdn: '234***678', isRunnerUp: false, runnerUpRank: 0 },
-      ]);
+  const handleAnimationComplete = async () => {
+    try {
+      const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, token);
+      
+      // Transform the result into the expected format
+      const winners: DrawWinner[] = result.draw.winners?.map(winner => ({
+        id: winner.id,
+        msisdn: maskMSISDN(winner.msisdn),
+        prizeName: winner.prizeTier?.name || 'Unknown Prize',
+        isRunnerUp: winner.isRunnerUp || false,
+        runnerUpRank: winner.runnerUpRank || 0
+      })) || [];
+      
+      setDrawResults(winners);
+      toast.success('Draw executed successfully');
+    } catch (err) {
+      console.error('Error executing draw:', err);
+      setError(`Failed to execute draw: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(`Draw execution failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
       setIsExecuting(false);
-      console.log('Draw execution complete.');
-    }, 5000);
+    }
+  };
+
+  // Helper function to mask MSISDN (show only first 3 and last 3 digits)
+  const maskMSISDN = (msisdn: string): string => {
+    if (msisdn.length <= 6) return msisdn;
+    return `${msisdn.substring(0, 3)}***${msisdn.substring(msisdn.length - 3)}`;
   };
 
   if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN' && userRole !== 'SENIOR_USER') { 
@@ -88,87 +171,328 @@ const DrawExecutionPage = () => {
   }
 
   return (
-    <div>
-      <h2>Draw Execution</h2>
-      
-      <div>
-        <label htmlFor="draw-date">Select Draw Date: </label>
-        <input 
-          type="date" 
-          id="draw-date" 
-          value={selectedDate} 
-          onChange={handleDateChange} 
-        />
+    <div className="draw-management-container">
+      <div className="draw-setup-section">
+        <h2>Draw Management</h2>
+        
+        {error && <div className="error-message">{error}</div>}
+        
+        <div className="form-group">
+          <label htmlFor="draw-date">Select Draw Date: </label>
+          <input 
+            type="date" 
+            id="draw-date" 
+            value={selectedDate} 
+            onChange={handleDateChange} 
+            className="form-control"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="prize-structure">Prize Structure: </label>
+          <select 
+            id="prize-structure" 
+            value={selectedPrizeStructureId} 
+            onChange={handlePrizeStructureChange}
+            className="form-control"
+          >
+            {prizeStructures.map(ps => (
+              <option key={ps.id} value={ps.id}>
+                {ps.name} ({ps.applicableDays.join(', ')})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button 
+          onClick={handleCheckEligibility} 
+          disabled={isEligibilityLoading || isLoading || !selectedDate || !selectedPrizeStructureId}
+          className="check-eligibility-button"
+        >
+          {isEligibilityLoading ? 'Checking...' : 'Check Eligibility'}
+        </button>
+        
+        {drawDetails && (
+          <div className="eligibility-results-section">
+            <h3>Eligibility Results</h3>
+            <p><strong>Eligible Participants:</strong> {drawDetails.eligibleParticipants.toLocaleString()}</p>
+            <p><strong>Total Points in Draw:</strong> {drawDetails.totalPoints.toLocaleString()}</p>
+            
+            {userRole === 'SUPER_ADMIN' && (
+              <button 
+                onClick={handleExecuteDraw} 
+                disabled={isExecuting || isEligibilityLoading}
+                className="execute-draw-button"
+              >
+                {isExecuting ? 'Executing...' : 'Execute Draw'}
+              </button>
+            )}
+            
+            {(userRole === 'ADMIN' || userRole === 'SENIOR_USER') && (
+              <p><i>Draw execution is reserved for Super Admins.</i></p>
+            )}
+          </div>
+        )}
       </div>
 
-      {isLoading && <p>Loading draw details...</p>}
-
-      {drawDetails && !isLoading && (
-        <div style={{ border: '1px solid #ccc', padding: '15px', margin: '15px 0' }}>
-          <h3>Details for Draw on {new Date(selectedDate + 'T00:00:00').toLocaleDateString()} ({drawDetails.dayOfWeek})</h3>
-          <p><strong>Eligible Participants:</strong> {drawDetails.eligibleParticipants.toLocaleString()}</p>
-          <p><strong>Total Points in Draw:</strong> {drawDetails.totalPoints.toLocaleString()}</p>
-          <h4>Prize Structure: {drawDetails.prizeStructure?.name}</h4>
-          {drawDetails.prizeStructure && (
-            <ul>
-              {drawDetails.prizeStructure.prizes.map((prize, index) => (
-                <li key={index}>
-                  {prize.name} ({prize.quantity} to be won): {prize.value}
-                </li>
+      {drawDetails && drawDetails.prizeStructure && (
+        <div className="prize-structure-section">
+          <h3>Prize Structure Details</h3>
+          <p><strong>Name:</strong> {drawDetails.prizeStructure.name}</p>
+          <p><strong>Description:</strong> {drawDetails.prizeStructure.description}</p>
+          <p><strong>Applicable Days:</strong> {drawDetails.prizeStructure.applicableDays.join(', ')}</p>
+          <p><strong>Valid From:</strong> {new Date(drawDetails.prizeStructure.validFrom).toLocaleDateString()}</p>
+          {drawDetails.prizeStructure.validTo && (
+            <p><strong>Valid To:</strong> {new Date(drawDetails.prizeStructure.validTo).toLocaleDateString()}</p>
+          )}
+          
+          <h4>Prize Tiers:</h4>
+          <table className="prize-tiers-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+                <th>Quantity</th>
+                <th>Runner-ups</th>
+                <th>Total Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drawDetails.prizeStructure.prizeTiers.map((tier, index) => (
+                <tr key={index}>
+                  <td>{tier.name}</td>
+                  <td>{tier.value}</td>
+                  <td>{tier.quantity}</td>
+                  <td>{tier.numberOfRunnerUps}</td>
+                  <td>{tier.value}</td>
+                </tr>
               ))}
-            </ul>
-          )}
-          {userRole === 'SUPER_ADMIN' && (
-            <button onClick={handleExecuteDraw} disabled={isExecuting || isLoading}>
-              {isExecuting ? 'Executing...' : 'Execute Draw'}
-            </button>
-          )}
-          {(userRole === 'ADMIN' || userRole === 'SENIOR_USER') && (
-            <p><i>Draw execution is reserved for Super Admins.</i></p>
-          )}
+            </tbody>
+          </table>
+          
+          <p className="total-prize-pot">
+            <strong>Total Prize Pot:</strong> {drawDetails.prizeStructure.prizeTiers.reduce((total, tier) => {
+              // Extract numeric value from string like "N5,000,000"
+              const valueMatch = tier.value.match(/[0-9,]+/);
+              if (!valueMatch) return total;
+              
+              const numericValue = parseFloat(valueMatch[0].replace(/,/g, ''));
+              return total + (numericValue * tier.quantity);
+            }, 0).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}
+          </p>
         </div>
       )}
 
-      {isExecuting && (
-        <div style={{ margin: '15px 0' }}>
-          <p><strong>Executing Draw... Please wait for animation to complete (5 seconds).</strong></p>
-          <div style={{
-                width: '100px',
-                height: '100px',
-                backgroundColor: 'lightblue',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '10px auto'
-              }}>
-            Spinning...
-          </div>
+      {isExecuting && drawDetails && (
+        <div className="draw-animation-section">
+          <DrawAnimationComponent 
+            isExecuting={isExecuting}
+            participantCount={drawDetails.eligibleParticipants}
+            onAnimationComplete={handleAnimationComplete}
+            duration={5000} // 5 seconds
+          />
         </div>
       )}
 
       {drawResults && !isExecuting && (
-        <div style={{ marginTop: '20px' }}>
+        <div className="draw-results-section">
           <h3>Draw Results</h3>
-          <table>
+          <table className="draw-results-table">
             <thead>
               <tr>
                 <th>Prize Name</th>
                 <th>Winner MSISDN (Masked)</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {drawResults.map((result: any, index: number) => (
-                <tr key={index}>
+              {drawResults.map((result, index) => (
+                <tr key={index} className={result.isRunnerUp ? 'runner-up-row' : 'winner-row'}>
                   <td>{result.prizeName}</td>
-                  <td>{result.winnerMsisdn}</td>
+                  <td>{result.msisdn}</td>
                   <td>{result.isRunnerUp ? `Runner-up ${result.runnerUpRank}` : 'Winner'}</td>
+                  <td>
+                    {!result.isRunnerUp && (
+                      <button className="view-details-button">View Details</button>
+                    )}
+                    {result.isRunnerUp && (
+                      <button className="invoke-runner-up-button" disabled>Invoke Runner-up</button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <style jsx>{`
+        .draw-management-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        
+        .draw-setup-section {
+          grid-column: 1;
+          padding: 20px;
+          background-color: #f9f9f9;
+          border-radius: 8px;
+          border: 1px solid #eee;
+        }
+        
+        .prize-structure-section {
+          grid-column: 2;
+          padding: 20px;
+          background-color: #f9f9f9;
+          border-radius: 8px;
+          border: 1px solid #eee;
+        }
+        
+        .eligibility-results-section {
+          margin-top: 20px;
+          padding: 15px;
+          background-color: #e6f7ff;
+          border-radius: 8px;
+          border: 1px solid #91d5ff;
+        }
+        
+        .draw-animation-section {
+          grid-column: 1 / span 2;
+          margin-top: 20px;
+        }
+        
+        .draw-results-section {
+          grid-column: 1 / span 2;
+          margin-top: 20px;
+          padding: 20px;
+          background-color: #f9f9f9;
+          border-radius: 8px;
+          border: 1px solid #eee;
+        }
+        
+        .form-group {
+          margin-bottom: 15px;
+        }
+        
+        .form-control {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        }
+        
+        .check-eligibility-button {
+          padding: 10px 15px;
+          background-color: #1890ff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .check-eligibility-button:hover {
+          background-color: #40a9ff;
+        }
+        
+        .check-eligibility-button:disabled {
+          background-color: #d9d9d9;
+          cursor: not-allowed;
+        }
+        
+        .execute-draw-button {
+          margin-top: 15px;
+          padding: 12px 24px;
+          background-color: #52c41a;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-size: 16px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+        
+        .execute-draw-button:hover {
+          background-color: #73d13d;
+        }
+        
+        .execute-draw-button:disabled {
+          background-color: #d9d9d9;
+          cursor: not-allowed;
+        }
+        
+        .error-message {
+          padding: 10px;
+          margin-bottom: 15px;
+          background-color: #fff1f0;
+          border: 1px solid #ffa39e;
+          border-radius: 4px;
+          color: #f5222d;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        
+        th, td {
+          padding: 8px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+          background-color: #f5f5f5;
+        }
+        
+        .winner-row {
+          background-color: #f6ffed;
+        }
+        
+        .runner-up-row {
+          background-color: #fcfcfc;
+        }
+        
+        .view-details-button, .invoke-runner-up-button {
+          padding: 5px 10px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .view-details-button {
+          background-color: #1890ff;
+          color: white;
+        }
+        
+        .invoke-runner-up-button {
+          background-color: #faad14;
+          color: white;
+        }
+        
+        .total-prize-pot {
+          margin-top: 15px;
+          font-size: 18px;
+          color: #52c41a;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .draw-management-container {
+            grid-template-columns: 1fr;
+          }
+          
+          .draw-setup-section,
+          .prize-structure-section,
+          .draw-animation-section,
+          .draw-results-section {
+            grid-column: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };

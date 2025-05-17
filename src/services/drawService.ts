@@ -1,4 +1,4 @@
-// src/services/drawService.ts
+// src/services/drawService.ts - Update to add invokeRunnerUp method
 import axios from 'axios';
 import { apiClient } from './apiClient';
 import { MOCK_MODE } from './apiClient';
@@ -7,8 +7,8 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 // Define interfaces for draw-related data structures
 export interface ExecuteDrawRequestData {
-  drawDate: string; // ISO Date string (e.g., "2023-10-26T00:00:00Z")
-  prizeStructureID: string;
+  draw_date: string; // Changed from drawDate to draw_date to match backend expectation
+  prize_structure_id: string; // Changed from prizeStructureID to prize_structure_id to match backend expectation
 }
 
 export interface DrawData {
@@ -36,6 +36,8 @@ export interface WinnerData {
   paymentStatus?: string; // e.g., "Pending", "Paid", "Failed"
   paymentNotes?: string;
   paidAt?: string | null;
+  isRunnerUp: boolean;
+  runnerUpRank: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +45,20 @@ export interface WinnerData {
 export interface DrawEligibilityStats {
   totalEligibleMSISDNs: number;
   totalEntries: number;
+}
+
+export interface InvokeRunnerUpResponse {
+  message: string;
+  forfeited_winner: {
+    id: string;
+    msisdn: string;
+    status: string;
+  };
+  promoted_runner_up: {
+    id: string;
+    msisdn: string;
+    status: string;
+  };
 }
 
 const getAuthHeaders = (token: string | null) => {
@@ -83,9 +99,11 @@ const executeDraw = async (
   token: string | null
 ): Promise<{ message: string; draw: DrawData }> => {
   const data: ExecuteDrawRequestData = {
-    drawDate,
-    prizeStructureID: prizeStructureId
+    draw_date: drawDate, // Changed from drawDate to draw_date
+    prize_structure_id: prizeStructureId // Changed from prizeStructureID to prize_structure_id
   };
+
+  console.log("Executing draw with payload:", data);
 
   try {
     const response = await axios.post<{ message: string; draw: DrawData }>(
@@ -105,6 +123,37 @@ const executeDraw = async (
       throw new Error(error.message || 'Failed to execute draw due to an unexpected error.');
     } else {
       throw new Error('Failed to execute draw due to an unexpected error.');
+    }
+  }
+};
+
+// Invoke a runner-up when a winner forfeits
+const invokeRunnerUp = async (
+  winnerId: string,
+  reason: string,
+  token: string | null
+): Promise<InvokeRunnerUpResponse> => {
+  try {
+    const response = await axios.post<InvokeRunnerUpResponse>(
+      `${API_URL}/admin/draws/invoke-runner-up`,
+      {
+        winner_id: winnerId,
+        reason: reason
+      },
+      {
+        headers: getAuthHeaders(token),
+      }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
+      const apiError = error.response.data?.error;
+      const defaultMessage = 'Failed to invoke runner-up due to server error.';
+      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to invoke runner-up due to an unexpected error.');
+    } else {
+      throw new Error('Failed to invoke runner-up due to an unexpected error.');
     }
   }
 };
@@ -216,6 +265,7 @@ const updateWinnerPaymentStatus = async (
 export const drawService = {
   getDrawEligibilityStats,
   executeDraw,
+  invokeRunnerUp,
   listDraws,
   getDrawDetails,
   listWinners,
