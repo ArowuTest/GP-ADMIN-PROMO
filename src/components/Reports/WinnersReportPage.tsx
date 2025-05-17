@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import { ensureString, ensureArray } from '../../utils/nullSafety';
+import { ensureString } from '../../utils/nullSafety';
 
 interface Winner {
   id: string;
@@ -80,8 +80,15 @@ const WinnersReportPage: React.FC = () => {
         headers: { Authorization: `Bearer ${ensureString(token)}` }
       });
       
-      setWinners(response.data.data);
-      setMeta(response.data.meta);
+      setWinners(response.data.data || []);
+      setMeta(response.data.meta || {
+        total: 0,
+        page: 1,
+        page_size: 20,
+        total_pages: 0,
+        has_next: false,
+        has_prev: false
+      });
     } catch (err) {
       console.error('Error fetching winners:', err);
       setError('Failed to load winners. Please try again later.');
