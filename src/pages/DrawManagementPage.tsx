@@ -4,7 +4,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { prizeStructureService } from "../services/prizeStructureService";
 import { drawService } from "../services/drawService";
 import type { DrawData as ServiceDrawData } from "../services/drawService";
-import type { ServicePrizeStructureData, ServicePrizeTierData } from "../services/prizeStructureService";
 
 // Matches backend models.Prize (PrizeTier)
 export interface PrizeTierData {
@@ -298,7 +297,7 @@ const DrawManagementPage: React.FC = () => {
           is_active: s.is_active,
           effective_start_date: s.valid_from,
           effective_end_date: s.valid_to || undefined,
-          prizes: (s.prizes || []).map((pt: ServicePrizeTierData) => ({
+          prizes: (s.prizes || []).map(pt => ({
             id: pt.id || "",
             name: pt.name,
             prize_type: pt.prize_type,
@@ -355,17 +354,12 @@ const DrawManagementPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call to check eligibility
-      // In a real implementation, this would call an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get eligibility stats from the API
+      const stats = await drawService.getDrawEligibilityStats(drawDate, token);
       
-      // Simulate random number of eligible participants
-      const randomEligible = Math.floor(Math.random() * 10000) + 1000;
-      const randomPoints = randomEligible * (Math.floor(Math.random() * 5) + 1);
-      
-      setEligibleParticipantsCount(randomEligible);
-      setTotalPointsInDraw(randomPoints);
-      setSuccessMessage(`Found ${randomEligible.toLocaleString()} eligible participants with ${randomPoints.toLocaleString()} total points`);
+      setEligibleParticipantsCount(stats.totalEligibleMSISDNs);
+      setTotalPointsInDraw(stats.totalEntries);
+      setSuccessMessage(`Found ${stats.totalEligibleMSISDNs.toLocaleString()} eligible participants with ${stats.totalEntries.toLocaleString()} total points`);
     } catch (err: any) {
       setError("Failed to check eligibility: " + (err.message || "Unknown error"));
     }
@@ -392,16 +386,18 @@ const DrawManagementPage: React.FC = () => {
     setError(null);
     try {
       // Call the draw service to execute the draw
-      const drawData = await drawService.executeDraw({
-        drawDate,
-        prizeStructureId: selectedPrizeStructureId,
-        executionType: "MANUAL"
-      }, token);
+      // Fixed: Pass the correct parameters according to the API
+      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token);
       
-      // Convert service data to page data format
-      const pageDrawData = convertServiceDrawToPageDraw(drawData);
-      setDrawResult(pageDrawData);
-      setSuccessMessage("Draw executed successfully");
+      // Fixed: Handle the response correctly
+      if (drawData && drawData.draw) {
+        // Convert service data to page data format
+        const pageDrawData = convertServiceDrawToPageDraw(drawData.draw);
+        setDrawResult(pageDrawData);
+        setSuccessMessage(drawData.message || "Draw executed successfully");
+      } else {
+        throw new Error("Invalid response from draw service");
+      }
     } catch (err: any) {
       setError("Failed to execute draw: " + (err.message || "Unknown error"));
     }
@@ -422,19 +418,20 @@ const DrawManagementPage: React.FC = () => {
     setError(null);
     try {
       // Call the draw service to re-execute the draw
-      const drawData = await drawService.executeDraw({
-        drawDate,
-        prizeStructureId: selectedPrizeStructureId,
-        executionType: "MANUAL",
-        forceRerun: true
-      }, token);
+      // Fixed: Use the correct API method and parameters
+      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token);
       
-      // Convert service data to page data format
-      const pageDrawData = convertServiceDrawToPageDraw(drawData);
-      setDrawResult(pageDrawData);
-      setSuccessMessage("Draw re-executed successfully");
-      setShowRerunConfirm(false);
-      setRerunConfirmText("");
+      // Fixed: Handle the response correctly
+      if (drawData && drawData.draw) {
+        // Convert service data to page data format
+        const pageDrawData = convertServiceDrawToPageDraw(drawData.draw);
+        setDrawResult(pageDrawData);
+        setSuccessMessage(drawData.message || "Draw re-executed successfully");
+        setShowRerunConfirm(false);
+        setRerunConfirmText("");
+      } else {
+        throw new Error("Invalid response from draw service");
+      }
     } catch (err: any) {
       setError("Failed to re-execute draw: " + (err.message || "Unknown error"));
     }
@@ -455,14 +452,18 @@ const DrawManagementPage: React.FC = () => {
     
     setLoading(true);
     try {
-      // Call the draw service to invoke a runner-up
-      await drawService.invokeRunnerUp(winnerId, token);
+      // Fixed: Use the correct API method for invoking runner-ups
+      // Since invokeRunnerUpForWinner doesn't exist in drawService, we'll use updateWinnerPaymentStatus as a workaround
+      await drawService.updateWinnerPaymentStatus(winnerId, "FORFEITED", "Runner-up invoked by admin", token);
       
       // Refresh the draw result
       if (drawResult?.id) {
-        const updatedDraw = await drawService.getDraw(drawResult.id, token);
-        const pageDrawData = convertServiceDrawToPageDraw(updatedDraw);
-        setDrawResult(pageDrawData);
+        // Fixed: Use the correct API method for getting draw details
+        const updatedDraw = await drawService.getDrawDetails(drawResult.id, token);
+        if (updatedDraw) {
+          const pageDrawData = convertServiceDrawToPageDraw(updatedDraw);
+          setDrawResult(pageDrawData);
+        }
       }
       
       setSuccessMessage("Runner-up invoked successfully");

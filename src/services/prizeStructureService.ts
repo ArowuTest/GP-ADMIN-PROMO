@@ -68,10 +68,10 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
       const transformedPrizes = (item.prizes || []).map(prize => ({
         id: prize.id,
         name: prize.name,
-        prize_type: prize.prize_type || prize.prizeType,
+        prize_type: prize.prize_type, // Fixed: use prize_type consistently
         value: prize.value,
         valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-        quantity: prize.quantity || prize.winnerCount,
+        quantity: prize.quantity, // Fixed: use quantity consistently
         order: prize.order,
         numberOfRunnerUps: prize.numberOfRunnerUps
       }));
@@ -111,10 +111,10 @@ const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token:
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type, // Fixed: use prize_type consistently
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity, // Fixed: use quantity consistently
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
@@ -149,10 +149,10 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Serv
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type, // Fixed: use prize_type consistently
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity, // Fixed: use quantity consistently
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
@@ -187,10 +187,10 @@ const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStru
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type, // Fixed: use prize_type consistently
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity, // Fixed: use quantity consistently
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
