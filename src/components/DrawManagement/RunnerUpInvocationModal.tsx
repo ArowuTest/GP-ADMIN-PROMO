@@ -36,7 +36,8 @@ const RunnerUpInvocationModal: React.FC<RunnerUpInvocationModalProps> = ({
     setError(null);
     
     try {
-      await drawService.invokeRunnerUp(winner.id, reason, token);
+      // Use empty string as fallback if token is null
+      await drawService.invokeRunnerUp(winner.id, reason, token || '');
       toast.success('Runner-up successfully invoked');
       onSuccess();
     } catch (err) {
@@ -108,7 +109,8 @@ const RunnerUpInvocationModal: React.FC<RunnerUpInvocationModalProps> = ({
         </div>
       </div>
       
-      <style jsx>{`
+      <style>
+        {`
         .modal-overlay {
           position: fixed;
           top: 0;
@@ -239,7 +241,8 @@ const RunnerUpInvocationModal: React.FC<RunnerUpInvocationModalProps> = ({
           opacity: 0.5;
           cursor: not-allowed;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

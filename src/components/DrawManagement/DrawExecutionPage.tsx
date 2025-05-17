@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { drawService } from '../../services/drawService';
-import { prizeStructureService } from '../../services/prizeStructureService';
+import { prizeStructureService, ServicePrizeStructureData, ServicePrizeTierData } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DrawAnimationComponent from './DrawAnimationComponent';
@@ -43,6 +43,27 @@ interface DrawWinner {
   runnerUpRank: number;
 }
 
+// Helper function to convert ServicePrizeStructureData to PrizeStructure
+const convertToPrizeStructure = (data: ServicePrizeStructureData): PrizeStructure => {
+  return {
+    id: data.id || '',
+    name: data.name,
+    description: data.description,
+    isActive: data.is_active,
+    validFrom: data.valid_from,
+    validTo: data.valid_to || null,
+    applicableDays: data.applicable_days || [],
+    prizeTiers: (data.prizes || []).map((prize: ServicePrizeTierData) => ({
+      id: prize.id || '',
+      name: prize.name,
+      value: prize.value,
+      prizeType: prize.prize_type,
+      quantity: prize.quantity,
+      numberOfRunnerUps: prize.numberOfRunnerUps
+    }))
+  };
+};
+
 const DrawExecutionPage: React.FC = () => {
   const { userRole, token } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -60,9 +81,11 @@ const DrawExecutionPage: React.FC = () => {
     const fetchPrizeStructures = async () => {
       try {
         const structures = await prizeStructureService.listPrizeStructures(token);
-        setPrizeStructures(structures);
-        if (structures.length > 0) {
-          setSelectedPrizeStructureId(structures[0].id);
+        // Convert ServicePrizeStructureData[] to PrizeStructure[]
+        const convertedStructures = structures.map(convertToPrizeStructure);
+        setPrizeStructures(convertedStructures);
+        if (convertedStructures.length > 0) {
+          setSelectedPrizeStructureId(convertedStructures[0].id);
         }
       } catch (err) {
         console.error('Error fetching prize structures:', err);
@@ -98,7 +121,7 @@ const DrawExecutionPage: React.FC = () => {
 
     try {
       // Get eligibility stats
-      const stats = await drawService.getDrawEligibilityStats(selectedDate, token);
+      const stats = await drawService.getDrawEligibilityStats(selectedDate, token || '');
       
       // Find the selected prize structure
       const prizeStructure = prizeStructures.find(ps => ps.id === selectedPrizeStructureId);
@@ -138,7 +161,7 @@ const DrawExecutionPage: React.FC = () => {
 
   const handleAnimationComplete = async () => {
     try {
-      const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, token);
+      const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, token || '');
       
       // Transform the result into the expected format
       const winners: DrawWinner[] = result.draw.winners?.map(winner => ({
@@ -327,7 +350,8 @@ const DrawExecutionPage: React.FC = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>
+        {`
         .draw-management-container {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -492,7 +516,8 @@ const DrawExecutionPage: React.FC = () => {
             grid-column: 1;
           }
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

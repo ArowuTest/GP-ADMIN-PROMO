@@ -102,7 +102,8 @@ const DrawAnimationComponent: React.FC<DrawAnimationProps> = ({
         </div>
       </div>
       
-      <style jsx>{`
+      <style>
+        {`
         .draw-animation-container {
           background-color: #f0f8ff;
           border-radius: 8px;
@@ -221,7 +222,8 @@ const DrawAnimationComponent: React.FC<DrawAnimationProps> = ({
             text-align: center;
           }
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

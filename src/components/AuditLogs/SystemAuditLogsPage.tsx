@@ -80,8 +80,9 @@ const SystemAuditLogsPage: React.FC = () => {
       params.append('page', page.toString());
       params.append('page_size', meta.page_size.toString());
       
+      // Use empty string as fallback if token is null
       const response = await axios.get(`${API_URL}/admin/audit-logs?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token || ''}` }
       });
       
       setAuditLogs(response.data.data);
@@ -98,8 +99,9 @@ const SystemAuditLogsPage: React.FC = () => {
   // Fetch available filter options
   const fetchFilterOptions = async () => {
     try {
+      // Use empty string as fallback if token is null
       const response = await axios.get(`${API_URL}/admin/audit-logs/types`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token || ''}` }
       });
       
       setAvailableActionTypes(response.data.action_types);
@@ -365,7 +367,8 @@ const SystemAuditLogsPage: React.FC = () => {
         )}
       </div>
       
-      <style jsx>{`
+      <style>
+        {`
         .audit-logs-container {
           padding: 20px;
         }
@@ -537,12 +540,12 @@ const SystemAuditLogsPage: React.FC = () => {
           cursor: pointer;
         }
         
-        .pagination-button:hover:not(:disabled) {
+        .pagination-button:hover {
           background-color: #e8e8e8;
         }
         
         .pagination-button:disabled {
-          color: #d9d9d9;
+          opacity: 0.5;
           cursor: not-allowed;
         }
         
@@ -566,7 +569,8 @@ const SystemAuditLogsPage: React.FC = () => {
             gap: 10px;
           }
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
