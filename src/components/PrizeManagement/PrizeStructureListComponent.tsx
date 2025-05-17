@@ -148,9 +148,9 @@ const PrizeStructureListComponent = () => {
   const handleFormSubmit = async (formData: Omit<PrizeStructureData, "id" | "createdAt">) => {
     try {
       // Include applicableDays in the payload
-      const payload = convertComponentToServicePayload({
-        ...formData,
-        applicableDays: formData.applicableDays
+      const payload = convertComponentToServicePayload({ 
+        ...formData, 
+        applicableDays: formData.applicableDays 
       });
       
       if (editingStructure) {
