@@ -60,9 +60,9 @@ const SuccessNotification = ({ message, onClose }: { message: string, onClose: (
 const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): PrizeStructureData => {
   console.log("Converting service data to component data:", serviceData);
   
-  // Ensure applicableDays is always an array
-  const applicableDays = Array.isArray(serviceData.applicableDays) 
-    ? serviceData.applicableDays 
+  // Ensure applicable_days is always an array
+  const applicableDays = Array.isArray(serviceData.applicable_days) 
+    ? serviceData.applicable_days 
     : [];
     
   return {
@@ -70,22 +70,20 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
     name: serviceData.name,
     description: serviceData.description,
     isActive: serviceData.is_active, // Changed to match backend field name
-    prizes: (serviceData.prizeTiers || []).map((pt: ServicePrizeTierData) => ({ 
+    prizes: (serviceData.prizes || []).map((pt: ServicePrizeTierData) => ({ 
       id: pt.id,
       name: pt.name,
-      // Assuming service GET response for tier has valueNGN and prizeType
-      // If service.value is the display string, use that. Otherwise, construct from valueNGN.
       value: pt.value || `N${pt.valueNGN?.toLocaleString() || 0}`, 
-      quantity: pt.winnerCount, // Service GET uses winnerCount
-      prizeType: pt.prizeType,
+      quantity: pt.quantity, // Changed from winnerCount to match backend
+      prizeType: pt.prize_type, // Changed to match backend field name
       order: pt.order,
       valueNGN: pt.valueNGN || 0, 
       numberOfRunnerUps: pt.numberOfRunnerUps
     })),
-    createdAt: serviceData.createdAt || new Date().toISOString(),
+    createdAt: serviceData.created_at || new Date().toISOString(), // Changed to match backend field name
     validFrom: serviceData.valid_from, // Changed to match backend field name
     validTo: serviceData.valid_to, // Changed to match backend field name
-    applicableDays: applicableDays as DayOfWeek[] // applicableDays is part of GET response
+    applicableDays: applicableDays as DayOfWeek[] // Changed to match backend field name
   };
 };
 

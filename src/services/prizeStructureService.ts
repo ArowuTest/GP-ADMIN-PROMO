@@ -7,10 +7,10 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 export interface ServicePrizeTierData { // Represents a single prize tier as returned by GET
   id?: string;
   name: string;
-  prizeType: string;
+  prize_type: string; // Snake case to match backend
   valueNGN?: number; 
-  value: string; // This is the display value like "N1,000,000"
-  winnerCount: number; 
+  value: string; // This is the display string like "N1,000,000"
+  quantity: number; // Changed from winnerCount to match backend
   order: number;
   numberOfRunnerUps: number;
 }
@@ -19,14 +19,14 @@ export interface ServicePrizeStructureData { // Represents a prize structure as 
   id?: string;
   name: string;
   description: string;
-  is_active: boolean; // Changed from isActive to match backend field name
-  valid_from: string; // Changed from validFrom to match backend field name
-  valid_to?: string | null; // Changed from validTo to match backend field name
+  is_active: boolean; // Snake case to match backend
+  valid_from: string; // Snake case to match backend
+  valid_to?: string | null; // Snake case to match backend
   prizes: ServicePrizeTierData[]; // Changed from prizeTiers to match backend field name
-  created_at?: string; // Changed from createdAt to match backend field name
-  updated_at?: string; // Changed from updatedAt to match backend field name
-  applicable_days?: string[]; // Backend sends this in GET response
-  day_type?: string; // Backend might send this in GET response if it stores it
+  created_at?: string; // Snake case to match backend
+  updated_at?: string; // Snake case to match backend
+  applicable_days?: string[]; // Snake case to match backend
+  day_type?: string; // Snake case to match backend
 }
 
 // --- Types for POST/PUT payloads (data sent to backend) ---
@@ -68,10 +68,10 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
       const transformedPrizes = (item.prizes || []).map(prize => ({
         id: prize.id,
         name: prize.name,
-        prizeType: prize.prize_type || prize.prizeType,
+        prize_type: prize.prize_type || prize.prizeType,
         value: prize.value,
         valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-        winnerCount: prize.quantity || prize.winnerCount,
+        quantity: prize.quantity || prize.winnerCount,
         order: prize.order,
         numberOfRunnerUps: prize.numberOfRunnerUps
       }));
@@ -111,10 +111,10 @@ const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token:
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prizeType: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type || prize.prizeType,
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      winnerCount: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity || prize.winnerCount,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
@@ -149,10 +149,10 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Serv
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prizeType: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type || prize.prizeType,
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      winnerCount: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity || prize.winnerCount,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
@@ -187,10 +187,10 @@ const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStru
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prizeType: prize.prize_type || prize.prizeType,
+      prize_type: prize.prize_type || prize.prizeType,
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      winnerCount: prize.quantity || prize.winnerCount,
+      quantity: prize.quantity || prize.winnerCount,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
