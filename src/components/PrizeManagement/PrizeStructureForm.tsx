@@ -25,14 +25,13 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       setName(initialData.name);
       setDescription(initialData.description || '');
       setIsActive(initialData.isActive);
-      setPrizeTiers(initialData.prizes.map(p => ({ 
+      setPrizeTiers(initialData.prizeTiers.map(p => ({ 
         name: p.name, 
         value: p.value, 
         quantity: p.quantity, 
         prizeType: p.prizeType || 'Cash', 
         order: p.order || 0,
-        valueNGN: p.valueNGN,
-        numberOfRunnerUps: p.numberOfRunnerUps, // Assuming p.numberOfRunnerUps is always a number from PrizeTierData
+        numberOfRunnerUps: p.numberOfRunnerUps || 0
       })));
       setApplicableDays(initialData.applicableDays || []);
       setValidFrom(initialData.validFrom ? new Date(initialData.validFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -41,7 +40,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       setName('');
       setDescription('');
       setIsActive(true);
-      setPrizeTiers([{ name: '', value: '', quantity: 1, prizeType: 'Cash', order: 0, valueNGN: 0, numberOfRunnerUps: 1 }]);
+      setPrizeTiers([{ name: '', value: '', quantity: 1, prizeType: 'Cash', order: 0, numberOfRunnerUps: 1 }]);
       setApplicableDays([]);
       setValidFrom(new Date().toISOString().split('T')[0]);
       setValidTo(null);
@@ -59,13 +58,10 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
         numericValue = value;
     }
 
-    if (field === 'quantity' || field === 'order' || field === 'valueNGN' || field === 'numberOfRunnerUps') {
+    if (field === 'quantity' || field === 'order' || field === 'numberOfRunnerUps') {
       updatedTiers[index] = { ...updatedTiers[index], [field]: numericValue };
       if (field === 'numberOfRunnerUps' && updatedTiers[index].numberOfRunnerUps < 0) {
         updatedTiers[index].numberOfRunnerUps = 0;
-      }
-      if (field === 'valueNGN' && updatedTiers[index].valueNGN < 0) {
-        updatedTiers[index].valueNGN = 0;
       }
       if (field === 'quantity' && updatedTiers[index].quantity < 1) {
         updatedTiers[index].quantity = 1;
@@ -77,7 +73,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
   };
 
   const addTier = () => {
-    setPrizeTiers([...prizeTiers, { name: '', value: '', quantity: 1, prizeType: 'Cash', order: prizeTiers.length, valueNGN: 0, numberOfRunnerUps: 1 }]);
+    setPrizeTiers([...prizeTiers, { name: '', value: '', quantity: 1, prizeType: 'Cash', order: prizeTiers.length, numberOfRunnerUps: 1 }]);
   };
 
   const removeTier = (index: number) => {
@@ -100,13 +96,12 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       name,
       description,
       isActive,
-      prizes: prizeTiers.map(pt => ({ 
+      prizeTiers: prizeTiers.map(pt => ({ 
           name: pt.name, 
           value: pt.value, 
           quantity: pt.quantity, 
           prizeType: pt.prizeType, 
           order: pt.order,
-          valueNGN: pt.valueNGN,
           numberOfRunnerUps: pt.numberOfRunnerUps ?? 1, // Ensure it's a number, default to 1 if undefined
         })),
       applicableDays,
@@ -207,7 +202,6 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
             <div style={tierHeaderStyle}>
               <div style={{...tierColumnStyle, flex: 2}}>Tier Name</div>
               <div style={{...tierColumnStyle, flex: 2}}>Display Value</div>
-              <div style={{...tierColumnStyle, flex: 1}}>Value (NGN)</div>
               <div style={{...tierColumnStyle, flex: 1}}>Quantity</div>
               <div style={{...tierColumnStyle, flex: 1}}>Type</div>
               <div style={{...tierColumnStyle, flex: 1}}>Order</div>
@@ -234,16 +228,6 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
                   style={{...tierInputStyle, flex: 2}}
                   placeholder="e.g., N1,000,000"
                   title="Display value shown to users (e.g., N1,000,000)"
-                />
-                <input 
-                  type="number" 
-                  value={tier.valueNGN} 
-                  onChange={(e) => handleTierChange(index, 'valueNGN', e.target.value)} 
-                  min="0" 
-                  required 
-                  style={{...tierInputStyle, flex: 1}}
-                  placeholder="1000000"
-                  title="Actual numeric value in Naira (e.g., 1000000)"
                 />
                 <input 
                   type="number" 
@@ -496,25 +480,22 @@ const addTierButtonStyle: React.CSSProperties = {
 const formActionsStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'flex-end',
-  gap: '15px',
-  marginTop: '30px',
-  borderTop: '1px solid #eee',
-  paddingTop: '20px',
+  gap: '10px',
+  marginTop: '20px',
 };
 
 const submitButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
+  padding: '10px 20px',
   backgroundColor: '#1890ff',
   color: 'white',
   border: 'none',
   borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '16px',
-  fontWeight: 'bold',
 };
 
 const cancelButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
+  padding: '10px 20px',
   backgroundColor: '#f5f5f5',
   color: '#333',
   border: '1px solid #d9d9d9',

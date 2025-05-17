@@ -3,7 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { prizeStructureService } from "../../services/prizeStructureService";
 import PrizeStructureForm from "./PrizeStructureForm";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Define and export DayOfWeek type
+export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 // Component data types (used internally by the component)
 export interface PrizeTierData {
@@ -25,16 +29,12 @@ export interface PrizeStructureData {
   validTo?: string | null;
   prizeTiers: PrizeTierData[];
   createdAt?: string;
-  applicableDays: string[];
+  applicableDays: DayOfWeek[];
 }
 
 // Convert component data to service payload format
 const convertComponentToServicePayload = (data: Omit<PrizeStructureData, "prizeTiers" | "id" | "createdAt">, prizeTiers: PrizeTierData[] = []) => {
   console.log("Converting component data to service payload:", data, prizeTiers);
-  
-  // Convert dates to ISO format if they're not already
-  const validFrom = data.validFrom ? new Date(data.validFrom).toISOString() : null;
-  const validTo = data.validTo ? new Date(data.validTo).toISOString() : null;
   
   // Convert prize tiers to backend format
   const prizes = prizeTiers.map(tier => ({
@@ -51,8 +51,8 @@ const convertComponentToServicePayload = (data: Omit<PrizeStructureData, "prizeT
     name: data.name,
     description: data.description,
     is_active: data.isActive,
-    valid_from: validFrom,
-    valid_to: validTo,
+    valid_from: data.validFrom,
+    valid_to: data.validTo,
     prizes: prizes,
     applicable_days: data.applicableDays // Include applicable_days in the payload
   };
@@ -101,7 +101,7 @@ const convertServiceToComponentData = (data: any): PrizeStructureData => {
     validTo: data.valid_to,
     prizeTiers: prizeTiers,
     createdAt: data.created_at,
-    applicableDays: data.applicable_days || []
+    applicableDays: (data.applicable_days || []) as DayOfWeek[]
   };
   
   console.log("Converted prize structure for UI:", componentData);
@@ -218,6 +218,7 @@ const PrizeStructureListComponent: React.FC = () => {
 
   return (
     <div className="prize-structure-management">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="header-actions">
         <h2>Prize Structure Management</h2>
         <div className="button-group">
@@ -244,9 +245,10 @@ const PrizeStructureListComponent: React.FC = () => {
         <div className="form-container">
           <h3>{isCreating ? "Create New Prize Structure" : "Edit Prize Structure"}</h3>
           <PrizeStructureForm
-            initialData={editingStructure || undefined}
+            isOpen={true}
+            onClose={handleFormCancel}
             onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
+            initialData={editingStructure || undefined}
           />
         </div>
       ) : (
