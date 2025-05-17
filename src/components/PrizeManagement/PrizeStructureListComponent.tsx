@@ -1,5 +1,5 @@
 // src/components/PrizeManagement/PrizeStructureListComponent.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import PrizeStructureForm from "./PrizeStructureForm";
 import { prizeStructureService } from "../../services/prizeStructureService";
@@ -7,7 +7,7 @@ import type {
   ServicePrizeStructureData, 
   ServicePrizeTierData, 
   CreatePrizeStructurePayload,
-  CreatePrizeTierPayload // Import this type for clarity
+  CreatePrizeTierPayload
 } from "../../services/prizeStructureService";
 
 // Define and export DayOfWeek type
@@ -38,8 +38,33 @@ export interface PrizeStructureData {
   applicableDays: DayOfWeek[];
 }
 
+// Success notification component
+const SuccessNotification = ({ message, onClose }: { message: string, onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000); // Auto-close after 5 seconds
+    
+    return () => clearTimeout(timer);
+  }, [onClose]);
+  
+  return (
+    <div style={successNotificationStyle}>
+      <span>{message}</span>
+      <button onClick={onClose} style={closeButtonStyle}>×</button>
+    </div>
+  );
+};
+
 // Convert service data (for listing/display from GET) to component data
 const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): PrizeStructureData => {
+  console.log("Converting service data to component data:", serviceData);
+  
+  // Ensure applicableDays is always an array
+  const applicableDays = Array.isArray(serviceData.applicableDays) 
+    ? serviceData.applicableDays 
+    : [];
+    
   return {
     id: serviceData.id || "",
     name: serviceData.name,
@@ -60,7 +85,7 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
     createdAt: serviceData.createdAt || new Date().toISOString(),
     validFrom: serviceData.valid_from, // Changed to match backend field name
     validTo: serviceData.valid_to, // Changed to match backend field name
-    applicableDays: (serviceData.applicableDays || []) as DayOfWeek[] // applicableDays is part of GET response
+    applicableDays: applicableDays as DayOfWeek[] // applicableDays is part of GET response
   };
 };
 
@@ -68,7 +93,7 @@ const convertServiceToComponentData = (serviceData: ServicePrizeStructureData): 
 const convertComponentToServicePayload = (
   componentData: Omit<PrizeStructureData, "id" | "createdAt"> & { applicableDays: DayOfWeek[] }
 ): CreatePrizeStructurePayload => {
-  return {
+  const payload = {
     name: componentData.name,
     description: componentData.description,
     is_active: componentData.isActive, // Maps to backend json:"is_active"
@@ -85,6 +110,9 @@ const convertComponentToServicePayload = (
     })),
     applicable_days: componentData.applicableDays, // Explicitly include applicable_days in the payload
   };
+  
+  console.log("Converted payload for backend:", payload);
+  return payload;
 };
 
 const PrizeStructureListComponent = () => {
@@ -95,29 +123,39 @@ const PrizeStructureListComponent = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<PrizeStructureData | null>(null);
   const [viewingStructure, setViewingStructure] = useState<PrizeStructureData | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const canManagePrizeStructures = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
 
-  useEffect(() => {
+  // Fetch prize structures function - extracted to be reusable
+  const fetchPrizeStructures = useCallback(async () => {
     if (!canManagePrizeStructures) return;
     
-    const fetchPrizeStructures = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const serviceDataArray = await prizeStructureService.listPrizeStructures(token);
-        const componentDataArray = serviceDataArray.map(convertServiceToComponentData);
-        setPrizeStructures(componentDataArray);
-      } catch (err: any) {
-        console.error("Error fetching prize structures:", err);
-        setError(err.message || "Failed to load prize structures");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPrizeStructures();
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      console.log("Fetching prize structures from API...");
+      const serviceDataArray = await prizeStructureService.listPrizeStructures(token);
+      console.log("Received prize structures:", serviceDataArray);
+      
+      const componentDataArray = serviceDataArray.map(convertServiceToComponentData);
+      console.log("Converted prize structures for UI:", componentDataArray);
+      
+      setPrizeStructures(componentDataArray);
+    } catch (err: any) {
+      console.error("Error fetching prize structures:", err);
+      setError(err.message || "Failed to load prize structures");
+    } finally {
+      setIsRefreshing(false);
+      setIsLoading(false);
+    }
   }, [canManagePrizeStructures, token]);
+
+  // Initial load
+  useEffect(() => {
+    fetchPrizeStructures();
+  }, [fetchPrizeStructures]);
 
   const handleAddStructure = () => {
     setEditingStructure(null);
@@ -134,6 +172,7 @@ const PrizeStructureListComponent = () => {
       try {
         await prizeStructureService.deletePrizeStructure(id, token);
         setPrizeStructures(prizeStructures.filter(ps => ps.id !== id));
+        setSuccessMessage("Prize structure deleted successfully");
       } catch (err: any) {
         console.error("Error deleting prize structure:", err);
         alert(`Failed to delete prize structure: ${err.message}`);
@@ -154,22 +193,30 @@ const PrizeStructureListComponent = () => {
       });
       
       if (editingStructure) {
+        console.log(`Updating prize structure with ID ${editingStructure.id}...`);
         const updatedServiceData = await prizeStructureService.updatePrizeStructure(
           editingStructure.id,
           payload, 
           token
         );
-        const updatedComponentData = convertServiceToComponentData(updatedServiceData);
-        setPrizeStructures(prizeStructures.map(ps => 
-          ps.id === editingStructure.id ? updatedComponentData : ps
-        ));
+        console.log("Update response from backend:", updatedServiceData);
+        
+        // Immediately refresh all prize structures to ensure we have the latest data
+        await fetchPrizeStructures();
+        
+        setSuccessMessage(`Prize structure "${formData.name}" updated successfully`);
       } else {
+        console.log("Creating new prize structure...");
         const newServiceData = await prizeStructureService.createPrizeStructure(
           payload, 
           token
         );
-        const newComponentData = convertServiceToComponentData(newServiceData);
-        setPrizeStructures([...prizeStructures, newComponentData]);
+        console.log("Create response from backend:", newServiceData);
+        
+        // Immediately refresh all prize structures to ensure we have the latest data
+        await fetchPrizeStructures();
+        
+        setSuccessMessage(`Prize structure "${formData.name}" created successfully`);
       }
       
       setIsFormOpen(false);
@@ -180,27 +227,47 @@ const PrizeStructureListComponent = () => {
     }
   };
 
+  const handleRefresh = () => {
+    fetchPrizeStructures();
+  };
+
+  const clearSuccessMessage = () => {
+    setSuccessMessage(null);
+  };
+
   if (!canManagePrizeStructures) {
     return <p>You do not have permission to manage prize structures.</p>;
-  }
-
-  if (isLoading) {
-    return <p>Loading prize structures...</p>;
-  }
-
-  if (error) {
-    return <p>Error: {error}</p>;
   }
 
   return (
     <div>
       <h2>Prize Structure Management</h2>
-      <button onClick={handleAddStructure} style={{ marginBottom: "15px" }}>Add New Prize Structure</button>
       
-      {prizeStructures.length === 0 ? (
+      {successMessage && (
+        <SuccessNotification 
+          message={successMessage} 
+          onClose={clearSuccessMessage} 
+        />
+      )}
+      
+      <div style={actionBarStyle}>
+        <button onClick={handleAddStructure}>Add New Prize Structure</button>
+        <button onClick={handleRefresh} disabled={isRefreshing} style={refreshButtonStyle}>
+          {isRefreshing ? "Refreshing..." : "Refresh List"}
+        </button>
+      </div>
+      
+      {isLoading ? (
+        <p>Loading prize structures...</p>
+      ) : error ? (
+        <div>
+          <p style={errorStyle}>Error: {error}</p>
+          <button onClick={handleRefresh}>Try Again</button>
+        </div>
+      ) : prizeStructures.length === 0 ? (
         <p>No prize structures found. Create one to get started.</p>
       ) : (
-        <table>
+        <table style={tableStyle}>
           <thead>
             <tr>
               <th>ID</th>
@@ -208,6 +275,7 @@ const PrizeStructureListComponent = () => {
               <th>Active</th>
               <th>Prizes Count</th>
               <th>Applicable Days</th>
+              <th>Valid From</th>
               <th>Created At</th>
               <th>Actions</th>
             </tr>
@@ -220,11 +288,12 @@ const PrizeStructureListComponent = () => {
                 <td>{ps.isActive ? "Yes" : "No"}</td>
                 <td>{ps.prizes.length}</td>
                 <td>{ps.applicableDays.join(", ")}</td>
+                <td>{new Date(ps.validFrom).toLocaleDateString()}</td>
                 <td>{new Date(ps.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <button onClick={() => handleViewStructure(ps)} style={{ marginRight: "5px" }}>View</button>
-                  <button onClick={() => handleEditStructure(ps)} style={{ marginRight: "5px" }}>Edit</button>
-                  <button onClick={() => handleDeleteStructure(ps.id)}>Delete</button>
+                  <button onClick={() => handleViewStructure(ps)} style={actionButtonStyle}>View</button>
+                  <button onClick={() => handleEditStructure(ps)} style={actionButtonStyle}>Edit</button>
+                  <button onClick={() => handleDeleteStructure(ps.id)} style={deleteButtonStyle}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -268,7 +337,7 @@ const PrizeStructureListComponent = () => {
               <p>No prizes defined for this structure.</p>
             )}
             
-            <button onClick={() => setViewingStructure(null)} style={{ marginTop: "20px" }}>Close</button>
+            <button onClick={() => setViewingStructure(null)} style={closeViewButtonStyle}>Close</button>
           </div>
         </div>
       )}
@@ -276,6 +345,7 @@ const PrizeStructureListComponent = () => {
   );
 };
 
+// Enhanced styles
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -297,6 +367,82 @@ const modalContentStyle: React.CSSProperties = {
   maxHeight: '90vh',
   overflowY: 'auto',
   boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+};
+
+const successNotificationStyle: React.CSSProperties = {
+  backgroundColor: '#4CAF50',
+  color: 'white',
+  padding: '12px 20px',
+  marginBottom: '20px',
+  borderRadius: '4px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: 'white',
+  fontSize: '20px',
+  cursor: 'pointer',
+  marginLeft: '10px',
+};
+
+const actionBarStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginBottom: '20px',
+};
+
+const refreshButtonStyle: React.CSSProperties = {
+  backgroundColor: '#f0f0f0',
+  border: '1px solid #ddd',
+  padding: '8px 16px',
+  borderRadius: '4px',
+  cursor: 'pointer',
+};
+
+const tableStyle: React.CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  marginBottom: '20px',
+};
+
+const actionButtonStyle: React.CSSProperties = {
+  marginRight: '5px',
+  padding: '5px 10px',
+  backgroundColor: '#f0f0f0',
+  border: '1px solid #ddd',
+  borderRadius: '3px',
+  cursor: 'pointer',
+};
+
+const deleteButtonStyle: React.CSSProperties = {
+  padding: '5px 10px',
+  backgroundColor: '#ffebee',
+  color: '#d32f2f',
+  border: '1px solid #ffcdd2',
+  borderRadius: '3px',
+  cursor: 'pointer',
+};
+
+const closeViewButtonStyle: React.CSSProperties = {
+  marginTop: '20px',
+  padding: '8px 16px',
+  backgroundColor: '#f0f0f0',
+  border: '1px solid #ddd',
+  borderRadius: '4px',
+  cursor: 'pointer',
+};
+
+const errorStyle: React.CSSProperties = {
+  color: '#d32f2f',
+  backgroundColor: '#ffebee',
+  padding: '10px',
+  borderRadius: '4px',
+  marginBottom: '10px',
 };
 
 export default PrizeStructureListComponent;
