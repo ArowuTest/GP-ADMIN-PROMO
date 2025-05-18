@@ -2,10 +2,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { authService } from "../services/authService"; // Assuming authService is set up to call your backend
+import { authService } from "../services/authService";
 
 const LoginPage: React.FC = () => {
-  const [usernameInput, setUsernameInput] = useState<string>(""); // Changed from email to usernameInput
+  const [usernameInput, setUsernameInput] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -17,25 +17,23 @@ const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      // authService.login should return an object like { token: "...", user: { ... } } or just { token: "..." }
-      // The AuthContext expects only the token for its login method.
-      // Corrected to send username field, mapping the input (which might be an email) to the 'username' key
-      const response = await authService.login({ username: usernameInput, password }); 
+      const response = await authService.login({ username: usernameInput, password });
 
       if (response && response.token) {
-        auth.login(response.token); // Pass only the token to AuthContext
+        auth.login(response.token);
         navigate("/admin/dashboard");
       } else {
         throw new Error("Login failed: No token received");
       }
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(
-        err.response?.data?.error ||
-          err.message ||
-          "Failed to login. Please check your credentials."
+        err.message ||
+        "Failed to login. Please check your credentials."
       );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -64,8 +62,8 @@ const LoginPage: React.FC = () => {
             type="text" 
             id="username"
             name="username"
-            value={usernameInput} // Changed from email to usernameInput
-            onChange={(e) => setUsernameInput(e.target.value)} // Changed from setEmail to setUsernameInput
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
             required
             style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
           />
@@ -82,7 +80,7 @@ const LoginPage: React.FC = () => {
             style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
           />
         </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p style={{ color: "red", fontWeight: "bold" }}>{error}</p>}
         <button
           type="submit"
           disabled={loading}
@@ -92,12 +90,10 @@ const LoginPage: React.FC = () => {
         </button>
       </form>
       <p style={{ marginTop: "20px", fontSize: "0.8em", textAlign: "center", maxWidth: "400px" }}>
-        Note: Ensure backend is running. The backend login endpoint expects `username` and `password`.
-        The frontend expects the API at <code>{import.meta.env.VITE_API_BASE_URL || "/api/v1"}</code>.
+        Note: The backend login endpoint expects `username` and `password`.
       </p>
     </div>
   );
 };
 
 export default LoginPage;
-

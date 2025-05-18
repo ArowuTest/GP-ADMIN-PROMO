@@ -6,7 +6,7 @@ export const MOCK_MODE = false;
 
 // Create a base axios instance with common configuration
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -39,8 +39,8 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
     
-    // Handle session expiration
-    if (error.response && error.response.status === 401) {
+    // Handle session expiration - but don't redirect on login page
+    if (error.response && error.response.status === 401 && !window.location.pathname.includes('/login')) {
       // Clear local storage and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
