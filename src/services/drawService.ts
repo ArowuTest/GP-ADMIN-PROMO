@@ -3,6 +3,8 @@ import axios from 'axios';
 import { apiClient } from './apiClient';
 import { MOCK_MODE } from './apiClient';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 // Define interfaces for draw-related data structures
 export interface ExecuteDrawRequestData {
   draw_date: string; // Changed from drawDate to draw_date to match backend expectation
@@ -112,10 +114,7 @@ const executeDraw = async (
   try {
     const response = await apiClient.post<{ message: string; draw: DrawData }>(
       `/admin/draws/execute`,
-      data,
-      {
-        headers: getAuthHeaders(token),
-      }
+      data
     );
     return response.data;
   } catch (error: unknown) {
@@ -143,9 +142,6 @@ const invokeRunnerUp = async (
       {
         winner_id: winnerId,
         reason: reason
-      },
-      {
-        headers: getAuthHeaders(token),
       }
     );
     return response.data;
@@ -165,12 +161,7 @@ const invokeRunnerUp = async (
 // List all draws
 const listDraws = async (token: string | null): Promise<DrawData[]> => {
   try {
-    const response = await apiClient.get<DrawData[]>(
-      `/admin/draws`,
-      {
-        headers: getAuthHeaders(token),
-      }
-    );
+    const response = await apiClient.get<DrawData[]>(`/admin/draws`);
     return response.data;
   } catch (error: unknown) {
     if (MOCK_MODE) {
@@ -193,12 +184,7 @@ const listDraws = async (token: string | null): Promise<DrawData[]> => {
 // Get details of a single draw
 const getDrawDetails = async (id: string, token: string | null): Promise<DrawData> => {
   try {
-    const response = await apiClient.get<DrawData>(
-      `/admin/draws/${id}`,
-      {
-        headers: getAuthHeaders(token),
-      }
-    );
+    const response = await apiClient.get<DrawData>(`/admin/draws/${id}`);
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
@@ -220,12 +206,7 @@ const listWinners = async (token: string | null, drawId?: string): Promise<Winne
     if (drawId) {
       url += `?draw_id=${drawId}`;
     }
-    const response = await apiClient.get<WinnerData[]>(
-      url,
-      {
-        headers: getAuthHeaders(token),
-      }
-    );
+    const response = await apiClient.get<WinnerData[]>(url);
     return response.data;
   } catch (error: unknown) {
     if (MOCK_MODE) {
@@ -255,10 +236,7 @@ const updateWinnerPaymentStatus = async (
   try {
     const response = await apiClient.put<WinnerData>(
       `/admin/winners/${winnerId}/payment-status`,
-      { payment_status: paymentStatus, notes },
-      {
-        headers: getAuthHeaders(token),
-      }
+      { payment_status: paymentStatus, notes }
     );
     return response.data;
   } catch (error: unknown) {

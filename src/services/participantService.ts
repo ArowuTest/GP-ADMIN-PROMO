@@ -54,7 +54,6 @@ const uploadParticipantData = async (
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
       }
     );
@@ -79,10 +78,7 @@ const getParticipantStats = async (
 ): Promise<ParticipantStats> => {
   try {
     const response = await apiClient.get<ParticipantStats>(
-      `/admin/participants/stats?drawDate=${drawDate}`,
-      {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
+      `/admin/participants/stats?drawDate=${drawDate}`
     );
     return response.data;
   } catch (error: unknown) {
@@ -116,10 +112,7 @@ const listUploadAudits = async (
 ): Promise<ParticipantUploadAudit[]> => {
   try {
     const response = await apiClient.get<ParticipantUploadAudit[]>(
-      `/admin/participants/uploads`,
-      {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
+      `/admin/participants/uploads`
     );
     return response.data;
   } catch (error: unknown) {
@@ -149,10 +142,7 @@ const getParticipantsForDraw = async (
 ): Promise<{ data: ParticipantData[], total: number, page: number, totalPages: number }> => {
   try {
     const response = await apiClient.get<{ data: ParticipantData[], total: number, page: number, totalPages: number }>(
-      `/admin/participants?drawDate=${drawDate}&page=${page}&limit=${limit}`,
-      {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
+      `/admin/participants?drawDate=${drawDate}&page=${page}&limit=${limit}`
     );
     return response.data;
   } catch (error: unknown) {
@@ -180,10 +170,7 @@ const deleteUpload = async (
 ): Promise<{ message: string }> => {
   try {
     const response = await apiClient.delete<{ message: string }>(
-      `/admin/participants/uploads/${auditId}`,
-      {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
+      `/admin/participants/uploads/${auditId}`
     );
     return response.data;
   } catch (error: unknown) {

@@ -35,10 +35,13 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     // Check if the username looks like an email
     const isEmail = credentials.username.includes('@');
     
-    // Prepare the login payload based on what the backend expects
-    const payload = isEmail 
-      ? { email: credentials.username, password: credentials.password } 
-      : { username: credentials.username, password: credentials.password };
+    // Always include username field to satisfy backend validation
+    // Additionally include email field if the input looks like an email
+    const payload = {
+      username: credentials.username, // Always include username field
+      password: credentials.password,
+      ...(isEmail && { email: credentials.username }) // Add email field if username looks like an email
+    };
     
     // Remove sensitive logging - only log non-sensitive information
     console.log('Attempting login...');
