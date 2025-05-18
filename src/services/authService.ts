@@ -4,7 +4,7 @@ import { apiClient } from './apiClient';
 interface LoginCredentials {
   username: string;
   password: string;
-  email?: string; // Added email field for flexibility
+  email?: string;
 }
 
 interface LoginResponse {
@@ -35,14 +35,13 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     // Check if the username looks like an email
     const isEmail = credentials.username.includes('@');
     
-    // If it looks like an email, send both username and email fields
-    const payload = {
-      username: credentials.username,
-      password: credentials.password,
-      ...(isEmail && { email: credentials.username }) // Add email field if username looks like an email
-    };
+    // Prepare the login payload based on what the backend expects
+    const payload = isEmail 
+      ? { email: credentials.username, password: credentials.password } 
+      : { username: credentials.username, password: credentials.password };
     
-    console.log('Sending login payload:', payload);
+    // Remove sensitive logging - only log non-sensitive information
+    console.log('Attempting login...');
     
     // Fix: Remove the duplicate /api/v1 prefix
     const response = await loginClient.post<LoginResponse>(`/auth/login`, payload);
