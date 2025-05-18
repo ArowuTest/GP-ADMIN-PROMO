@@ -53,7 +53,12 @@ export interface CreatePrizeStructurePayload {
 
 const listPrizeStructures = async (token: string | null): Promise<ServicePrizeStructureData[]> => {
   try {
-    const response = await apiClient.get<ServicePrizeStructureData[]>(`/admin/prize-structures/`);
+    const response = await apiClient.get<ServicePrizeStructureData[]>(
+      `/admin/prize-structures/`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     console.log("Raw API response from listPrizeStructures:", response.data);
     
     // Transform the response to match our expected format
@@ -101,7 +106,13 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
 const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
     console.log("Sending payload to createPrizeStructure:", JSON.stringify(payload, null, 2));
-    const response = await apiClient.post<ServicePrizeStructureData>(`/admin/prize-structures/`, payload);
+    const response = await apiClient.post<ServicePrizeStructureData>(
+      `/admin/prize-structures/`, 
+      payload,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     console.log("Raw API response from createPrizeStructure:", response.data);
     
     // Transform the response to match our expected format
@@ -137,7 +148,12 @@ const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token:
 
 const getPrizeStructure = async (id: string, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    const response = await apiClient.get<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`);
+    const response = await apiClient.get<ServicePrizeStructureData>(
+      `/admin/prize-structures/${id}/`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     console.log("Raw API response from getPrizeStructure:", response.data);
     
     // Transform the response to match our expected format
@@ -173,7 +189,13 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Serv
 const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
     console.log(`Sending payload to updatePrizeStructure for ID ${id}:`, JSON.stringify(payload, null, 2));
-    const response = await apiClient.put<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`, payload);
+    const response = await apiClient.put<ServicePrizeStructureData>(
+      `/admin/prize-structures/${id}/`, 
+      payload,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     console.log("Raw API response from updatePrizeStructure:", response.data);
     
     // Transform the response to match our expected format
@@ -209,7 +231,12 @@ const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStru
 
 const deletePrizeStructure = async (id: string, token: string | null): Promise<{ message: string }> => {
   try {
-    const response = await apiClient.delete<{ message: string }>(`/admin/prize-structures/${id}/`);
+    const response = await apiClient.delete<{ message: string }>(
+      `/admin/prize-structures/${id}/`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {

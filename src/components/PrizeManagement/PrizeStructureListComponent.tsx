@@ -36,25 +36,25 @@ export interface PrizeStructureData {
 const convertComponentToServicePayload = (data: Omit<PrizeStructureData, "prizeTiers" | "id" | "createdAt">, prizeTiers: PrizeTierData[] = []) => {
   console.log("Converting component data to service payload:", data, prizeTiers);
   
-  // Convert prize tiers to backend format
+  // Convert prize tiers to backend format with snake_case properties
   const prizes = prizeTiers.map(tier => ({
     name: tier.name,
     value: tier.value,
-    prizeType: tier.prizeType, // Use camelCase for backend
+    prize_type: tier.prizeType, // Convert to snake_case for backend
     quantity: tier.quantity,
     order: tier.order,
-    numberOfRunnerUps: tier.numberOfRunnerUps
+    number_of_runner_ups: tier.numberOfRunnerUps // Convert to snake_case for backend
   }));
   
-  // Create the payload with camelCase keys for backend
+  // Create the payload with snake_case keys for backend
   const payload = {
     name: data.name,
     description: data.description,
-    isActive: data.isActive,
-    validFrom: data.validFrom,
-    validTo: data.validTo,
+    is_active: data.isActive, // Convert to snake_case for backend
+    valid_from: data.validFrom, // Convert to snake_case for backend
+    valid_to: data.validTo, // Convert to snake_case for backend
     prizes: prizes,
-    applicableDays: data.applicableDays
+    applicable_days: data.applicableDays // Convert to snake_case for backend
   };
   
   console.log("Converted payload for backend:", payload);
