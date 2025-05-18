@@ -15,11 +15,13 @@ export interface DrawData {
   id: string;
   drawDate: string;
   prizeStructureID: string;
+  prizeStructureName: string; // Added to match backend response
   prizeStructure?: any; // Optional: populated by Preload
   status: string; // e.g., "Pending", "Completed", "Failed"
   totalEligibleMSISDNs: number;
   totalEntries: number;
   executedByAdminID: string;
+  executedByAdminName: string; // Added to match backend response
   executedByAdmin?: any; // Optional: populated by Preload
   winners?: WinnerData[]; // Optional: populated by Preload
   createdAt: string;
@@ -30,7 +32,9 @@ export interface WinnerData {
   id: string;
   drawID: string;
   msisdn: string;
+  maskedMSISDN: string; // Added to match backend response
   prizeTierID: string;
+  prizeTierName: string; // Added to match backend response
   prizeTier?: any; // Optional: populated by Preload
   status: string; // e.g., "PendingNotification", "Notified", "Confirmed"
   paymentStatus?: string; // e.g., "Pending", "Paid", "Failed"
@@ -52,11 +56,13 @@ export interface InvokeRunnerUpResponse {
   forfeited_winner: {
     id: string;
     msisdn: string;
+    maskedMSISDN: string; // Added to match backend response
     status: string;
   };
   promoted_runner_up: {
     id: string;
     msisdn: string;
+    maskedMSISDN: string; // Added to match backend response
     status: string;
   };
 }
@@ -106,12 +112,9 @@ const executeDraw = async (
   console.log("Executing draw with payload:", data);
 
   try {
-    const response = await axios.post<{ message: string; draw: DrawData }>(
-      `${API_URL}/admin/draws/execute`,
-      data,
-      {
-        headers: getAuthHeaders(token),
-      }
+    const response = await apiClient.post<{ message: string; draw: DrawData }>(
+      `/admin/draws/execute`,
+      data
     );
     return response.data;
   } catch (error: unknown) {
@@ -134,14 +137,11 @@ const invokeRunnerUp = async (
   token: string | null
 ): Promise<InvokeRunnerUpResponse> => {
   try {
-    const response = await axios.post<InvokeRunnerUpResponse>(
-      `${API_URL}/admin/draws/invoke-runner-up`,
+    const response = await apiClient.post<InvokeRunnerUpResponse>(
+      `/admin/draws/invoke-runner-up`,
       {
         winner_id: winnerId,
         reason: reason
-      },
-      {
-        headers: getAuthHeaders(token),
       }
     );
     return response.data;
@@ -161,9 +161,7 @@ const invokeRunnerUp = async (
 // List all draws
 const listDraws = async (token: string | null): Promise<DrawData[]> => {
   try {
-    const response = await axios.get<DrawData[]>(`${API_URL}/admin/draws`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.get<DrawData[]>(`/admin/draws`);
     return response.data;
   } catch (error: unknown) {
     if (MOCK_MODE) {
@@ -186,9 +184,7 @@ const listDraws = async (token: string | null): Promise<DrawData[]> => {
 // Get details of a single draw
 const getDrawDetails = async (id: string, token: string | null): Promise<DrawData> => {
   try {
-    const response = await axios.get<DrawData>(`${API_URL}/admin/draws/${id}`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.get<DrawData>(`/admin/draws/${id}`);
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
@@ -206,14 +202,11 @@ const getDrawDetails = async (id: string, token: string | null): Promise<DrawDat
 // List all winners (can be filtered by drawId, etc. on backend)
 const listWinners = async (token: string | null, drawId?: string): Promise<WinnerData[]> => {
   try {
-    let url = `${API_URL}/admin/winners`;
+    let url = `/admin/winners`;
     if (drawId) {
-      // Assuming backend supports filtering by draw_id, adjust if needed
-      // url += `?draw_id=${drawId}`;
+      url += `?draw_id=${drawId}`;
     }
-    const response = await axios.get<WinnerData[]>(url, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.get<WinnerData[]>(url);
     return response.data;
   } catch (error: unknown) {
     if (MOCK_MODE) {
@@ -241,12 +234,9 @@ const updateWinnerPaymentStatus = async (
   token: string | null
 ): Promise<WinnerData> => {
   try {
-    const response = await axios.put<WinnerData>(
-      `${API_URL}/admin/winners/${winnerId}/payment-status`,
-      { paymentStatus, notes },
-      {
-        headers: getAuthHeaders(token),
-      }
+    const response = await apiClient.put<WinnerData>(
+      `/admin/winners/${winnerId}/payment-status`,
+      { payment_status: paymentStatus, notes }
     );
     return response.data;
   } catch (error: unknown) {

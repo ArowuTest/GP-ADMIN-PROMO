@@ -1,13 +1,13 @@
 // src/services/prizeStructureService.ts
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+import { apiClient } from './apiClient';
+import { MOCK_MODE } from './apiClient';
 
 // --- Types for GET responses (data received from backend) ---
 export interface ServicePrizeTierData { // Represents a single prize tier as returned by GET
   id?: string;
   name: string;
-  prize_type: string; // Snake case to match backend
+  prizeType: string; // Changed to camelCase to match backend response
   valueNGN?: number; 
   value: string; // This is the display string like "N1,000,000"
   quantity: number; // Changed from winnerCount to match backend
@@ -19,14 +19,14 @@ export interface ServicePrizeStructureData { // Represents a prize structure as 
   id?: string;
   name: string;
   description: string;
-  is_active: boolean; // Snake case to match backend
-  valid_from: string; // Snake case to match backend
-  valid_to?: string | null; // Snake case to match backend
+  isActive: boolean; // Changed to camelCase to match backend response
+  validFrom: string; // Changed to camelCase to match backend response
+  validTo?: string | null; // Changed to camelCase to match backend response
   prizes: ServicePrizeTierData[]; // Changed from prizeTiers to match backend field name
-  created_at?: string; // Snake case to match backend
-  updated_at?: string; // Snake case to match backend
-  applicable_days?: string[]; // Snake case to match backend
-  day_type?: string; // Snake case to match backend
+  createdAt?: string; // Changed to camelCase to match backend response
+  updatedAt?: string; // Changed to camelCase to match backend response
+  applicableDays?: string[]; // Changed to camelCase to match backend response
+  dayType?: string; // Changed to camelCase to match backend response
 }
 
 // --- Types for POST/PUT payloads (data sent to backend) ---
@@ -37,7 +37,7 @@ export interface CreatePrizeTierPayload {
   prize_type: string; 
   quantity: number; 
   order: number; 
-  numberOfRunnerUps: number; 
+  number_of_runner_ups: number; // Changed to snake_case for backend request
 }
 
 // Matches backend CreatePrizeStructureRequest JSON tags
@@ -51,15 +51,9 @@ export interface CreatePrizeStructurePayload {
   applicable_days?: string[]; // Backend will derive day_type from this
 }
 
-const getAuthHeaders = (token: string | null) => {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const listPrizeStructures = async (token: string | null): Promise<ServicePrizeStructureData[]> => {
   try {
-    const response = await axios.get<ServicePrizeStructureData[]>(`${API_URL}/admin/prize-structures/`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.get<ServicePrizeStructureData[]>(`/admin/prize-structures/`);
     console.log("Raw API response from listPrizeStructures:", response.data);
     
     // Transform the response to match our expected format
@@ -68,10 +62,10 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
       const transformedPrizes = (item.prizes || []).map(prize => ({
         id: prize.id,
         name: prize.name,
-        prize_type: prize.prize_type, // Fixed: use prize_type consistently
+        prizeType: prize.prizeType, // Using camelCase for frontend
         value: prize.value,
         valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-        quantity: prize.quantity, // Fixed: use quantity consistently
+        quantity: prize.quantity,
         order: prize.order,
         numberOfRunnerUps: prize.numberOfRunnerUps
       }));
@@ -79,13 +73,18 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
       return {
         ...item,
         // Ensure these fields exist even if backend doesn't provide them
-        applicable_days: item.applicable_days || [],
+        applicableDays: item.applicableDays || [],
         prizes: transformedPrizes
       };
     });
     
     return transformedData;
   } catch (error: unknown) {
+    if (MOCK_MODE) {
+      console.warn("Using mock prize structure data due to API error:", error);
+      return []; // Return empty array as mock data
+    }
+    
     console.error("Error fetching prize structures:", error);
     if (axios.isAxiosError(error) && error.response) {
       const apiError = error.response.data?.error;
@@ -102,26 +101,24 @@ const listPrizeStructures = async (token: string | null): Promise<ServicePrizeSt
 const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
     console.log("Sending payload to createPrizeStructure:", JSON.stringify(payload, null, 2));
-    const response = await axios.post<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/`, payload, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.post<ServicePrizeStructureData>(`/admin/prize-structures/`, payload);
     console.log("Raw API response from createPrizeStructure:", response.data);
     
     // Transform the response to match our expected format
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type, // Fixed: use prize_type consistently
+      prizeType: prize.prizeType, // Using camelCase for frontend
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity, // Fixed: use quantity consistently
+      quantity: prize.quantity,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
     
     return {
       ...response.data,
-      applicable_days: response.data.applicable_days || [],
+      applicableDays: response.data.applicableDays || [],
       prizes: transformedPrizes
     };
   } catch (error: unknown) {
@@ -140,26 +137,24 @@ const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token:
 
 const getPrizeStructure = async (id: string, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
-    const response = await axios.get<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.get<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`);
     console.log("Raw API response from getPrizeStructure:", response.data);
     
     // Transform the response to match our expected format
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type, // Fixed: use prize_type consistently
+      prizeType: prize.prizeType, // Using camelCase for frontend
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity, // Fixed: use quantity consistently
+      quantity: prize.quantity,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
     
     return {
       ...response.data,
-      applicable_days: response.data.applicable_days || [],
+      applicableDays: response.data.applicableDays || [],
       prizes: transformedPrizes
     };
   } catch (error: unknown) {
@@ -178,26 +173,24 @@ const getPrizeStructure = async (id: string, token: string | null): Promise<Serv
 const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string | null): Promise<ServicePrizeStructureData> => {
   try {
     console.log(`Sending payload to updatePrizeStructure for ID ${id}:`, JSON.stringify(payload, null, 2));
-    const response = await axios.put<ServicePrizeStructureData>(`${API_URL}/admin/prize-structures/${id}/`, payload, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.put<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`, payload);
     console.log("Raw API response from updatePrizeStructure:", response.data);
     
     // Transform the response to match our expected format
     const transformedPrizes = (response.data.prizes || []).map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type, // Fixed: use prize_type consistently
+      prizeType: prize.prizeType, // Using camelCase for frontend
       value: prize.value,
       valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity, // Fixed: use quantity consistently
+      quantity: prize.quantity,
       order: prize.order,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }));
     
     return {
       ...response.data,
-      applicable_days: response.data.applicable_days || [],
+      applicableDays: response.data.applicableDays || [],
       prizes: transformedPrizes
     };
   } catch (error: unknown) {
@@ -216,9 +209,7 @@ const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStru
 
 const deletePrizeStructure = async (id: string, token: string | null): Promise<{ message: string }> => {
   try {
-    const response = await axios.delete<{ message: string }>(`${API_URL}/admin/prize-structures/${id}/`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await apiClient.delete<{ message: string }>(`/admin/prize-structures/${id}/`);
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
