@@ -24,8 +24,8 @@ interface LoginResponse {
 
 const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
-    // Fix: Use the correct API endpoint path that includes /api/v1
-    const response = await apiClient.post<LoginResponse>(`/api/v1/auth/login`, credentials);
+    // Fix: Remove the duplicate /api/v1 prefix
+    const response = await apiClient.post<LoginResponse>(`/auth/login`, credentials);
     
     // Store token and user info in localStorage for session persistence
     localStorage.setItem('token', response.data.token);
@@ -49,7 +49,8 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
 // Validate token with backend (e.g., on app load)
 const validateToken = async (token: string): Promise<boolean> => {
   try {
-    const response = await apiClient.post<{valid: boolean}>(`/api/v1/auth/validate-token`, { token });
+    // Fix: Remove the duplicate /api/v1 prefix
+    const response = await apiClient.post<{valid: boolean}>(`/auth/validate-token`, { token });
     return response.data.valid;
   } catch (error) {
     // If validation fails, clear stored credentials
