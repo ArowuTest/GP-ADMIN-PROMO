@@ -38,6 +38,7 @@ const convertComponentToServicePayload = (data: Omit<PrizeStructureData, "prizeT
   
   // Convert prize tiers to backend format with snake_case properties
   const prizes = prizeTiers.map(tier => ({
+    id: tier.id,
     name: tier.name,
     value: tier.value,
     prize_type: tier.prizeType, // Convert to snake_case for backend
@@ -124,7 +125,7 @@ const PrizeStructureListComponent: React.FC = () => {
       setError(null);
       try {
         console.log("Fetching prize structures from API...");
-        const data = await prizeStructureService.listPrizeStructures(token);
+        const data = await prizeStructureService.listPrizeStructures(token || "");
         console.log("Received prize structures:", data);
         
         // Convert service data to component format
@@ -167,7 +168,7 @@ const PrizeStructureListComponent: React.FC = () => {
     }
 
     try {
-      await prizeStructureService.deletePrizeStructure(id, token);
+      await prizeStructureService.deletePrizeStructure(id, token || "");
       toast.success("Prize structure deleted successfully");
       // Refresh the list
       setRefreshTrigger(prev => prev + 1);
@@ -184,7 +185,7 @@ const PrizeStructureListComponent: React.FC = () => {
         const payload = convertComponentToServicePayload(formData, formData.prizeTiers);
         console.log("Sending payload to createPrizeStructure:", payload);
         
-        const response = await prizeStructureService.createPrizeStructure(payload, token);
+        const response = await prizeStructureService.createPrizeStructure(payload, token || "");
         console.log("Create response from backend:", response);
         
         toast.success("Prize structure created successfully");
@@ -193,7 +194,7 @@ const PrizeStructureListComponent: React.FC = () => {
         const payload = convertComponentToServicePayload(formData, formData.prizeTiers);
         console.log(`Sending payload to updatePrizeStructure for ID ${editingStructure.id}:`, payload);
         
-        const response = await prizeStructureService.updatePrizeStructure(editingStructure.id, payload, token);
+        const response = await prizeStructureService.updatePrizeStructure(editingStructure.id, payload, token || "");
         console.log("Update response from backend:", response);
         
         toast.success("Prize structure updated successfully");

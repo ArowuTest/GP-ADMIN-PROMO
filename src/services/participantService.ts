@@ -31,8 +31,20 @@ export interface ParticipantUploadAudit {
   updatedAt: string;
 }
 
+export interface UploadResponse {
+  message: string;
+  uploadId: string;
+  auditId: string;
+  status: string;
+  totalDataRowsProcessed: number;
+  successfulRowsImported: number;
+  duplicatesSkippedCount: number;
+  errors: string[];
+  skippedDuplicateEventDetails: any[];
+}
+
 // Upload participants from CSV file
-const uploadParticipants = async (file: File, token: string): Promise<{ message: string; uploadId: string }> => {
+const uploadParticipants = async (file: File, token: string): Promise<UploadResponse> => {
   try {
     const formData = new FormData();
     formData.append('file', file);

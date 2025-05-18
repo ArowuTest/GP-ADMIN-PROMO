@@ -9,6 +9,11 @@ export interface DrawData {
   status: string;
   prizeStructureId: string;
   prizeStructureName: string;
+  executedByAdminID: string;
+  totalEligibleMSISDNs: number;
+  totalEntries: number;
+  draw: any; // Added to support draw property access
+  message?: string; // Added for error messages
   createdAt: string;
   updatedAt: string;
   winners: WinnerData[];
@@ -17,12 +22,16 @@ export interface DrawData {
 export interface WinnerData {
   id: string;
   drawId: string;
+  drawID: string; // Added for backward compatibility
   msisdn: string;
   prizeTierId: string;
+  prizeTierID: string; // Added for backward compatibility
   prizeTierName: string;
+  prizeTier: string; // Added for backward compatibility
   prizeValue: string;
   status: string;
   paymentStatus: string;
+  paymentNotes: string; // Added missing property
   isRunnerUp: boolean;
   originalWinnerId?: string;
   createdAt: string;
@@ -112,6 +121,9 @@ const getEligibilityStats = async (token: string): Promise<EligibilityStats> => 
   }
 };
 
+// Alias for getEligibilityStats to maintain backward compatibility
+const getDrawEligibilityStats = getEligibilityStats;
+
 // Update winner payment status
 const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string, token: string): Promise<WinnerData> => {
   try {
@@ -148,6 +160,7 @@ export const drawService = {
   listWinners,
   executeDraw,
   getEligibilityStats,
+  getDrawEligibilityStats, // Added alias for backward compatibility
   updateWinnerPaymentStatus,
   invokeRunnerUp
 };

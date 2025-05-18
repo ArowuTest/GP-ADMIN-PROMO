@@ -36,6 +36,7 @@ export interface PrizeStructureResponse {
     name: string;
     prizeType: string;
     value: string;
+    valueNGN: string;
     quantity: number;
     order: number;
     numberOfRunnerUps: number;
@@ -44,6 +45,10 @@ export interface PrizeStructureResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// Export these types for use in other components
+export interface ServicePrizeStructureData extends PrizeStructureResponse {}
+export interface ServicePrizeTierData extends PrizeStructureResponse['prizes'][0] {}
 
 // List all prize structures
 const listPrizeStructures = async (token: string): Promise<PrizeStructureResponse[]> => {
