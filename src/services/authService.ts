@@ -2,30 +2,50 @@ import axios from 'axios';
 import { apiClient } from './apiClient';
 
 interface LoginCredentials {
-  username: string; // Changed from email to username
+  username: string;
   password: string;
+  email?: string; // Added email field for flexibility
 }
 
 interface LoginResponse {
   message: string;
   token: string;
-  expiresAt: string; // Added to match backend response
+  expiresAt: string;
   user: {
     id: string;
     email: string;
-    username: string; // Added to match backend response
+    username: string;
     role: string;
     firstName: string;
     lastName: string;
-    createdAt: string; // Added to match backend response
-    updatedAt: string; // Added to match backend response
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
 const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
+    // Create a modified axios instance with increased timeout for login
+    const loginClient = axios.create({
+      baseURL: apiClient.defaults.baseURL,
+      timeout: 30000, // Increase timeout to 30 seconds for login requests
+      headers: apiClient.defaults.headers
+    });
+
+    // Check if the username looks like an email
+    const isEmail = credentials.username.includes('@');
+    
+    // If it looks like an email, send both username and email fields
+    const payload = {
+      username: credentials.username,
+      password: credentials.password,
+      ...(isEmail && { email: credentials.username }) // Add email field if username looks like an email
+    };
+    
+    console.log('Sending login payload:', payload);
+    
     // Fix: Remove the duplicate /api/v1 prefix
-    const response = await apiClient.post<LoginResponse>(`/auth/login`, credentials);
+    const response = await loginClient.post<LoginResponse>(`/auth/login`, payload);
     
     // Store token and user info in localStorage for session persistence
     localStorage.setItem('token', response.data.token);
@@ -36,6 +56,9 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   } catch (error) {
     console.error('Login error:', error);
     if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Login request timed out. Please try again later.');
+      }
       // Improved error handling to extract and surface error messages
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 

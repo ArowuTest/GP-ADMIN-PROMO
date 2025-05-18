@@ -6,11 +6,11 @@ export const MOCK_MODE = false;
 
 // Create a base axios instance with common configuration
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 15000, // Increased default timeout to 15 seconds
 });
 
 // Request interceptor to add auth token to requests
