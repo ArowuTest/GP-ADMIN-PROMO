@@ -9,12 +9,12 @@ import type { DrawData as ServiceDrawData } from "../services/drawService";
 export interface PrizeTierData {
   id: string; // uuid
   name: string;
-  prize_type: string;
-  prize_amount: number;
-  prize_description?: string;
-  winner_count: number;
-  sort_order: number;
-  number_of_runner_ups: number;
+  prizeType: string;
+  prizeAmount: number;
+  prizeDescription?: string;
+  winnerCount: number;
+  sortOrder: number;
+  numberOfRunnerUps: number;
   value?: string;
   valueNGN?: number;
 }
@@ -24,71 +24,71 @@ export interface PrizeStructureData {
   id: string; // uuid
   name: string;
   description?: string;
-  is_active: boolean;
-  effective_start_date?: string;
-  effective_end_date?: string;
+  isActive: boolean;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
   prizes: PrizeTierData[];
-  created_at: string;
-  applicable_days?: string[];
+  createdAt: string;
+  applicableDays?: string[];
 }
 
 // Matches backend models.DrawWinner
 export interface DrawWinnerData {
   id: string; // uuid
-  draw_id: string;
-  prize_id: string;
-  prize_tier?: PrizeTierData;
+  drawId: string;
+  prizeId: string;
+  prizeTier?: PrizeTierData;
   msisdn: string;
-  is_runner_up: boolean;
-  runner_up_rank?: number;
-  selection_order_in_tier?: number;
-  original_winner_id?: string;
-  notification_status: string;
-  payment_status: string;
-  payment_remarks?: string;
-  created_at: string;
+  isRunnerUp: boolean;
+  runnerUpRank?: number;
+  selectionOrderInTier?: number;
+  originalWinnerId?: string;
+  notificationStatus: string;
+  paymentStatus: string;
+  paymentRemarks?: string;
+  createdAt: string;
 }
 
 // Matches backend models.Draw
 export interface DrawData {
   id: string; // uuid
-  draw_date: string;
-  executed_by_admin_id?: string;
-  prize_structure_id: string;
-  prize_structure?: PrizeStructureData;
+  drawDate: string;
+  executedByAdminId?: string;
+  prizeStructureId: string;
+  prizeStructure?: PrizeStructureData;
   status: string;
-  total_eligible_msisdns?: number;
-  total_tickets?: number;
-  execution_type: string;
+  totalEligibleMsisdns?: number;
+  totalTickets?: number;
+  executionType: string;
   winners: DrawWinnerData[];
-  created_at: string;
+  createdAt: string;
 }
 
 // Function to convert from service DrawData to page DrawData
 const convertServiceDrawToPageDraw = (serviceDraw: ServiceDrawData): DrawData => {
   return {
     id: serviceDraw.id,
-    draw_date: serviceDraw.drawDate,
-    executed_by_admin_id: serviceDraw.executedByAdminID,
-    prize_structure_id: serviceDraw.prizeStructureID,
-    prize_structure: serviceDraw.prizeStructure,
+    drawDate: serviceDraw.drawDate,
+    executedByAdminId: serviceDraw.executedByAdminID,
+    prizeStructureId: serviceDraw.prizeStructureID,
+    prizeStructure: serviceDraw.prizeStructure,
     status: serviceDraw.status,
-    total_eligible_msisdns: serviceDraw.totalEligibleMSISDNs,
-    total_tickets: serviceDraw.totalEntries,
-    execution_type: "MANUAL", // Default value if not provided
+    totalEligibleMsisdns: serviceDraw.totalEligibleMSISDNs,
+    totalTickets: serviceDraw.totalEntries,
+    executionType: "MANUAL", // Default value if not provided
     winners: serviceDraw.winners?.map(w => ({
       id: w.id,
-      draw_id: w.drawID,
-      prize_id: w.prizeTierID,
-      prize_tier: w.prizeTier,
+      drawId: w.drawID,
+      prizeId: w.prizeTierID,
+      prizeTier: w.prizeTier,
       msisdn: w.msisdn,
-      is_runner_up: false, // Default value
-      notification_status: w.status,
-      payment_status: w.paymentStatus || "PENDING",
-      payment_remarks: w.paymentNotes,
-      created_at: w.createdAt
+      isRunnerUp: false, // Default value
+      notificationStatus: w.status,
+      paymentStatus: w.paymentStatus || "PENDING",
+      paymentRemarks: w.paymentNotes,
+      createdAt: w.createdAt
     })) || [],
-    created_at: serviceDraw.createdAt
+    createdAt: serviceDraw.createdAt
   };
 };
 
@@ -284,9 +284,9 @@ const DrawManagementPage: React.FC = () => {
       try {
         const structures = await prizeStructureService.listPrizeStructures(token);
         const activeValidStructures = structures.filter(s => 
-          s.is_active && 
-          new Date(s.valid_from) <= new Date() && 
-          (!s.valid_to || new Date(s.valid_to) >= new Date())
+          s.isActive && 
+          new Date(s.validFrom) <= new Date() && 
+          (!s.validTo || new Date(s.validTo) >= new Date())
         );
         
         // Map to match backend model format
@@ -294,21 +294,21 @@ const DrawManagementPage: React.FC = () => {
           id: s.id || "",
           name: s.name,
           description: s.description,
-          is_active: s.is_active,
-          effective_start_date: s.valid_from,
-          effective_end_date: s.valid_to || undefined,
+          isActive: s.isActive,
+          effectiveStartDate: s.validFrom,
+          effectiveEndDate: s.validTo || undefined,
           prizes: (s.prizes || []).map(pt => ({
             id: pt.id || "",
             name: pt.name,
-            prize_type: pt.prize_type,
-            prize_amount: pt.valueNGN || 0,
-            winner_count: pt.quantity,
-            sort_order: pt.order,
-            number_of_runner_ups: pt.numberOfRunnerUps || 2, // Default value
+            prizeType: pt.prizeType,
+            prizeAmount: pt.valueNGN || 0,
+            winnerCount: pt.quantity,
+            sortOrder: pt.order,
+            numberOfRunnerUps: pt.numberOfRunnerUps || 2, // Default value
             value: pt.value || `N${pt.valueNGN?.toLocaleString() || 0}`
           })),
-          created_at: s.created_at || new Date().toISOString(),
-          applicable_days: s.applicable_days
+          createdAt: s.createdAt || new Date().toISOString(),
+          applicableDays: s.applicableDays
         }));
         
         setAvailablePrizeStructures(mappedStructures);
@@ -333,7 +333,7 @@ const DrawManagementPage: React.FC = () => {
   const totalPrizeValue = useMemo(() => {
     if (!selectedStructureDetails) return 0;
     return selectedStructureDetails.prizes.reduce((total, prize) => {
-      return total + (prize.prize_amount * prize.winner_count);
+      return total + (prize.prizeAmount * prize.winnerCount);
     }, 0);
   }, [selectedStructureDetails]);
 
@@ -506,7 +506,7 @@ const DrawManagementPage: React.FC = () => {
               <option value="">-- Select Prize Structure --</option>
               {availablePrizeStructures.map(ps => (
                 <option key={ps.id} value={ps.id}>
-                  {ps.name} ({ps.applicable_days?.join(', ')})
+                  {ps.name} ({ps.applicableDays?.join(', ')})
                 </option>
               ))}
             </select>
@@ -525,10 +525,10 @@ const DrawManagementPage: React.FC = () => {
               <h3>Prize Structure Details</h3>
               <p><strong>Name:</strong> {selectedStructureDetails.name}</p>
               <p><strong>Description:</strong> {selectedStructureDetails.description || "N/A"}</p>
-              <p><strong>Applicable Days:</strong> {selectedStructureDetails.applicable_days?.join(', ') || "All days"}</p>
-              <p><strong>Valid From:</strong> {new Date(selectedStructureDetails.effective_start_date || "").toLocaleDateString()}</p>
-              {selectedStructureDetails.effective_end_date && (
-                <p><strong>Valid To:</strong> {new Date(selectedStructureDetails.effective_end_date).toLocaleDateString()}</p>
+              <p><strong>Active:</strong> {selectedStructureDetails.isActive ? "Yes" : "No"}</p>
+              <p><strong>Valid From:</strong> {new Date(selectedStructureDetails.effectiveStartDate || "").toLocaleDateString()}</p>
+              {selectedStructureDetails.effectiveEndDate && (
+                <p><strong>Valid To:</strong> {new Date(selectedStructureDetails.effectiveEndDate).toLocaleDateString()}</p>
               )}
               
               <h4>Prize Tiers:</h4>
@@ -536,125 +536,150 @@ const DrawManagementPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Type</th>
                     <th style={styles.th}>Value</th>
-                    <th style={styles.th}>Quantity</th>
+                    <th style={styles.th}>Winners</th>
                     <th style={styles.th}>Runner-ups</th>
-                    <th style={styles.th}>Total Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedStructureDetails.prizes.map((prize, index) => (
-                    <tr key={prize.id || index}>
+                    <tr key={index}>
                       <td style={styles.td}>{prize.name}</td>
-                      <td style={styles.td}>{prize.value}</td>
-                      <td style={styles.td}>{prize.winner_count}</td>
-                      <td style={styles.td}>{prize.number_of_runner_ups}</td>
-                      <td style={styles.td}>N{(prize.prize_amount * prize.winner_count).toLocaleString()}</td>
+                      <td style={styles.td}>{prize.prizeType}</td>
+                      <td style={styles.td}>{prize.value || `N${prize.prizeAmount.toLocaleString()}`}</td>
+                      <td style={styles.td}>{prize.winnerCount}</td>
+                      <td style={styles.td}>{prize.numberOfRunnerUps}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               
-              <div style={styles.totalPot}>
-                Total Prize Pot: N{totalPrizeValue.toLocaleString()}
-              </div>
+              <p style={styles.totalPot}>
+                Total Prize Pot: {totalPrizeValue.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}
+              </p>
+              
+              <p><strong>Created:</strong> {new Date(selectedStructureDetails.createdAt).toLocaleDateString()}</p>
+              <p><strong>Applicable Days:</strong> {selectedStructureDetails.applicableDays?.join(', ') || "All days"}</p>
             </div>
           )}
-          
+        </div>
+        
+        <div style={styles.rightPanel}>
           {eligibleParticipantsCount > 0 && (
             <div style={styles.infoSection}>
               <h3>Eligibility Results</h3>
               <p><strong>Eligible Participants:</strong> {eligibleParticipantsCount.toLocaleString()}</p>
               <p><strong>Total Points in Draw:</strong> {totalPointsInDraw.toLocaleString()}</p>
               
-              {canExecuteDraw && !drawResult && (
+              {canExecuteDraw && (
                 <button
                   onClick={handleExecuteDraw}
                   style={styles.confirmButton}
-                  disabled={isExecuting}
+                  disabled={isExecuting || loading}
                 >
                   {isExecuting ? "Executing Draw..." : "Execute Draw"}
                 </button>
               )}
               
-              {drawResult && canExecuteDraw && (
-                <button
-                  onClick={handleRerunDraw}
-                  style={styles.button}
-                  disabled={isExecuting}
-                >
-                  Re-run Draw
-                </button>
+              {!canExecuteDraw && (
+                <p style={styles.warning}>
+                  Only Super Admins can execute draws. Please contact a Super Admin to execute this draw.
+                </p>
               )}
             </div>
           )}
-        </div>
-        
-        <div style={styles.rightPanel}>
+          
           {isExecuting && (
             <div style={styles.animationPlaceholder}>
-              <div>Executing Draw...</div>
-              <div>Please wait while we select winners</div>
+              <p>Drawing Winners...</p>
+              <p>Please wait while we select winners from {eligibleParticipantsCount.toLocaleString()} participants</p>
             </div>
           )}
           
-          {showRerunConfirm && (
-            <div style={styles.warning}>
-              <h3>Confirm Re-run</h3>
-              <p>Re-running the draw will replace all current winners. This action cannot be undone.</p>
-              <p>Type "RERUN" to confirm:</p>
-              <input
-                type="text"
-                value={rerunConfirmText}
-                onChange={(e) => setRerunConfirmText(e.target.value)}
-                style={styles.input}
-              />
-              <div>
-                <button onClick={confirmRerun} style={styles.confirmButton}>Confirm Re-run</button>
-                <button onClick={cancelRerun} style={styles.cancelButton}>Cancel</button>
-              </div>
-            </div>
-          )}
-          
-          {drawResult && (
+          {drawResult && !isExecuting && (
             <div style={styles.resultsSection}>
               <h3>Draw Results</h3>
               <p><strong>Draw ID:</strong> {drawResult.id}</p>
-              <p><strong>Draw Date:</strong> {new Date(drawResult.draw_date).toLocaleDateString()}</p>
+              <p><strong>Draw Date:</strong> {new Date(drawResult.drawDate).toLocaleDateString()}</p>
               <p><strong>Status:</strong> {drawResult.status}</p>
-              <p><strong>Total Winners:</strong> {drawResult.winners.length}</p>
+              <p><strong>Eligible Participants:</strong> {drawResult.totalEligibleMsisdns?.toLocaleString() || "N/A"}</p>
+              <p><strong>Total Points:</strong> {drawResult.totalTickets?.toLocaleString() || "N/A"}</p>
               
               <h4>Winners:</h4>
-              {drawResult.winners.length > 0 ? (
-                <ul style={styles.list}>
-                  {drawResult.winners.map(winner => (
-                    <li key={winner.id} style={styles.listItem}>
-                      <div>
-                        <strong>{winner.prize_tier?.name || "Unknown Prize"}:</strong>{" "}
-                        {winner.msisdn.replace(/(\d{3})(\d{4})(\d{4})/, "$1****$3")}{" "}
-                        <span style={{ color: winner.is_runner_up ? "orange" : "green" }}>
-                          ({winner.is_runner_up ? "Runner-up" : "Winner"})
-                        </span>
-                      </div>
-                      <div>
-                        <span style={{ marginRight: "10px" }}>
-                          Status: {winner.notification_status}
-                        </span>
-                        {canExecuteDraw && !winner.is_runner_up && (
+              {drawResult.winners.length === 0 ? (
+                <p>No winners selected yet.</p>
+              ) : (
+                <table style={styles.prizeTierTable}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>MSISDN</th>
+                      <th style={styles.th}>Prize</th>
+                      <th style={styles.th}>Status</th>
+                      <th style={styles.th}>Payment</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drawResult.winners.map((winner, index) => (
+                      <tr key={index}>
+                        <td style={styles.td}>{winner.msisdn}</td>
+                        <td style={styles.td}>{winner.prizeTier?.name || "Unknown Prize"}</td>
+                        <td style={styles.td}>{winner.notificationStatus}</td>
+                        <td style={styles.td}>{winner.paymentStatus}</td>
+                        <td style={styles.td}>
                           <button
                             onClick={() => handleInvokeRunnerUp(winner.id)}
                             style={styles.invokeButton}
-                            disabled={loading}
+                            disabled={loading || winner.isRunnerUp || winner.paymentStatus === "PAID"}
                           >
                             Invoke Runner-up
                           </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No winners found for this draw.</p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              
+              {canExecuteDraw && (
+                <div style={{marginTop: "20px"}}>
+                  <button
+                    onClick={handleRerunDraw}
+                    style={styles.button}
+                    disabled={isExecuting || loading}
+                  >
+                    Re-run Draw
+                  </button>
+                </div>
+              )}
+              
+              {showRerunConfirm && (
+                <div style={{marginTop: "20px", padding: "15px", border: "1px solid #f5c6cb", borderRadius: "4px", backgroundColor: "#f8d7da"}}>
+                  <p><strong>Warning:</strong> Re-running the draw will replace all current winners. This action cannot be undone.</p>
+                  <p>Type "RERUN" to confirm:</p>
+                  <input
+                    type="text"
+                    value={rerunConfirmText}
+                    onChange={(e) => setRerunConfirmText(e.target.value)}
+                    style={styles.input}
+                  />
+                  <div>
+                    <button
+                      onClick={confirmRerun}
+                      style={styles.confirmButton}
+                      disabled={rerunConfirmText !== "RERUN"}
+                    >
+                      Confirm Re-run
+                    </button>
+                    <button
+                      onClick={cancelRerun}
+                      style={{...styles.cancelButton, marginLeft: "10px"}}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}

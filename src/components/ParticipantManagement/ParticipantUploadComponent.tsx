@@ -4,15 +4,14 @@ import { participantService, type UploadResponse as BackendUploadResponse } from
 // Define a more comprehensive frontend UploadResponse type if needed, or ensure BackendUploadResponse includes all fields
 // For this example, we assume BackendUploadResponse from the service includes:
 // errors?: string[]; (for processing_error_messages)
-// skipped_duplicate_event_details?: string[];
-// duplicates_skipped_count?: number;
-// successful_rows_imported: number; // (ensure this matches backend field name, e.g. successfully_imported_rows)
-// total_data_rows_processed: number;
+// skippedDuplicateEventDetails?: string[];
+// duplicatesSkippedCount?: number;
+// successfulRowsImported: number;
+// totalDataRowsProcessed: number;
 
 interface UploadResponse extends BackendUploadResponse {
     // Add any frontend specific transformations if necessary
     // For now, assume BackendUploadResponse is sufficient and includes all necessary fields
-    // like errors, skipped_duplicate_event_details, duplicates_skipped_count, successful_rows_imported
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -108,11 +107,11 @@ const ParticipantUploadComponent: React.FC = () => {
 
   const generateErrorFileContent = (response: UploadResponse): string => {
     let content = "Participant Upload Error Report\n";
-    content += `Audit ID: ${response.audit_id}\n`;
+    content += `Audit ID: ${response.auditId}\n`;
     content += `Status: ${response.status}\n`;
-    content += `Total Data Rows Processed: ${response.total_data_rows_processed}\n`;
-    content += `Successfully Imported Rows: ${response.successful_rows_imported}\n`;
-    content += `Duplicates Skipped: ${response.duplicates_skipped_count || 0}\n\n`;
+    content += `Total Data Rows Processed: ${response.totalDataRowsProcessed}\n`;
+    content += `Successfully Imported Rows: ${response.successfulRowsImported}\n`;
+    content += `Duplicates Skipped: ${response.duplicatesSkippedCount || 0}\n\n`;
 
     if (response.errors && response.errors.length > 0) {
       content += "Processing Errors:\n";
@@ -122,15 +121,15 @@ const ParticipantUploadComponent: React.FC = () => {
       content += "\n";
     }
 
-    if (response.skipped_duplicate_event_details && response.skipped_duplicate_event_details.length > 0) {
+    if (response.skippedDuplicateEventDetails && response.skippedDuplicateEventDetails.length > 0) {
       content += "Skipped Duplicate Event Details:\n";
-      response.skipped_duplicate_event_details.forEach(detail => {
+      response.skippedDuplicateEventDetails.forEach(detail => {
         content += `- ${detail}\n`;
       });
       content += "\n";
     }
     
-    if ((!response.errors || response.errors.length === 0) && (!response.skipped_duplicate_event_details || response.skipped_duplicate_event_details.length === 0) && response.status !== "Success"){
+    if ((!response.errors || response.errors.length === 0) && (!response.skippedDuplicateEventDetails || response.skippedDuplicateEventDetails.length === 0) && response.status !== "Success"){
         content += "No specific row errors reported, but upload was not fully successful. General message: " + response.message + "\n";
     }
 
@@ -141,7 +140,7 @@ const ParticipantUploadComponent: React.FC = () => {
     if (!uploadResponse) return;
 
     const errorsExist = (uploadResponse.errors && uploadResponse.errors.length > 0) || 
-                        (uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0);
+                        (uploadResponse.skippedDuplicateEventDetails && uploadResponse.skippedDuplicateEventDetails.length > 0);
     
     if (!errorsExist && uploadResponse.status === "Success") {
         // Optionally, prevent download if no errors and successful, or provide a success summary.
@@ -152,7 +151,7 @@ const ParticipantUploadComponent: React.FC = () => {
     const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `upload_error_report_${uploadResponse.audit_id || "details"}.txt`;
+    link.download = `upload_error_report_${uploadResponse.auditId || "details"}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -173,7 +172,7 @@ const ParticipantUploadComponent: React.FC = () => {
     const token = localStorage.getItem("authToken");
 
     try {
-      // Ensure the service returns all fields: processing_error_messages as errors, skipped_duplicate_event_details, duplicates_skipped_count
+      // Ensure the service returns all fields with camelCase naming
       const response: UploadResponse = await participantService.uploadParticipantData(selectedFile, token);
       setUploadResponse(response);
       if (response.status !== "Success" && response.status !== "Partial Success") {
@@ -188,7 +187,7 @@ const ParticipantUploadComponent: React.FC = () => {
 
   const hasErrorsToReport = uploadResponse && 
                            ((uploadResponse.errors && uploadResponse.errors.length > 0) || 
-                            (uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0) ||
+                            (uploadResponse.skippedDuplicateEventDetails && uploadResponse.skippedDuplicateEventDetails.length > 0) ||
                             (uploadResponse.status !== "Success" && uploadResponse.status !== "Partial Success"));
 
   return (
@@ -221,10 +220,10 @@ const ParticipantUploadComponent: React.FC = () => {
         <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" ? {...styles.messageContainer, ...styles.successMessage} : {...styles.messageContainer, ...styles.errorMessageContainer}}>
           <strong>{uploadResponse.status}:</strong> {uploadResponse.message}
           <div style={styles.details}>
-            <p>Audit ID: {uploadResponse.audit_id}</p>
-            <p>Total Data Rows Processed: {uploadResponse.total_data_rows_processed}</p>
-            <p>Successfully Imported Rows: {uploadResponse.successful_rows_imported}</p>
-            <p>Duplicates Skipped: {uploadResponse.duplicates_skipped_count || 0}</p>
+            <p>Audit ID: {uploadResponse.auditId}</p>
+            <p>Total Data Rows Processed: {uploadResponse.totalDataRowsProcessed}</p>
+            <p>Successfully Imported Rows: {uploadResponse.successfulRowsImported}</p>
+            <p>Duplicates Skipped: {uploadResponse.duplicatesSkippedCount || 0}</p>
           </div>
           {(uploadResponse.errors && uploadResponse.errors.length > 0) && (
             <>
@@ -236,11 +235,11 @@ const ParticipantUploadComponent: React.FC = () => {
               </ul>
             </>
           )}
-          {(uploadResponse.skipped_duplicate_event_details && uploadResponse.skipped_duplicate_event_details.length > 0) && (
+          {(uploadResponse.skippedDuplicateEventDetails && uploadResponse.skippedDuplicateEventDetails.length > 0) && (
             <>
               <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Event Details:</strong></p>
               <ul style={styles.errorList}>
-                {uploadResponse.skipped_duplicate_event_details.map((detailMsg, index) => (
+                {uploadResponse.skippedDuplicateEventDetails.map((detailMsg: string, index: number) => (
                   <li key={`skip-err-${index}`}>{detailMsg}</li>
                 ))}
               </ul>
@@ -259,4 +258,3 @@ const ParticipantUploadComponent: React.FC = () => {
 };
 
 export default ParticipantUploadComponent;
-

@@ -40,21 +40,21 @@ const convertComponentToServicePayload = (data: Omit<PrizeStructureData, "prizeT
   const prizes = prizeTiers.map(tier => ({
     name: tier.name,
     value: tier.value,
-    prize_type: tier.prizeType, // Convert to snake_case for backend
-    quantity: tier.quantity, // Use quantity as expected by backend
+    prizeType: tier.prizeType, // Use camelCase for backend
+    quantity: tier.quantity,
     order: tier.order,
     numberOfRunnerUps: tier.numberOfRunnerUps
   }));
   
-  // Create the payload with snake_case keys for backend
+  // Create the payload with camelCase keys for backend
   const payload = {
     name: data.name,
     description: data.description,
-    is_active: data.isActive,
-    valid_from: data.validFrom,
-    valid_to: data.validTo,
+    isActive: data.isActive,
+    validFrom: data.validFrom,
+    validTo: data.validTo,
     prizes: prizes,
-    applicable_days: data.applicableDays // Include applicable_days in the payload
+    applicableDays: data.applicableDays
   };
   
   console.log("Converted payload for backend:", payload);
@@ -84,9 +84,9 @@ const convertServiceToComponentData = (data: any): PrizeStructureData => {
   const prizeTiers = (data.prizes || []).map((prize: any) => ({
     id: prize.id,
     name: prize.name,
-    prizeType: prize.prize_type, // Convert from snake_case
+    prizeType: prize.prizeType, // Use camelCase from backend
     value: prize.value,
-    quantity: prize.quantity, // Use quantity as provided by backend
+    quantity: prize.quantity,
     order: prize.order,
     numberOfRunnerUps: prize.numberOfRunnerUps
   }));
@@ -96,12 +96,12 @@ const convertServiceToComponentData = (data: any): PrizeStructureData => {
     id: data.id,
     name: data.name,
     description: data.description || "",
-    isActive: data.is_active,
-    validFrom: data.valid_from,
-    validTo: data.valid_to,
+    isActive: data.isActive,
+    validFrom: data.validFrom,
+    validTo: data.validTo,
     prizeTiers: prizeTiers,
-    createdAt: data.created_at,
-    applicableDays: (data.applicable_days || []) as DayOfWeek[]
+    createdAt: data.createdAt,
+    applicableDays: (data.applicableDays || []) as DayOfWeek[]
   };
   
   console.log("Converted prize structure for UI:", componentData);

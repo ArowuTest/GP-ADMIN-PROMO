@@ -51,15 +51,15 @@ const convertToPrizeStructure = (data: ServicePrizeStructureData): PrizeStructur
     id: data.id || '',
     name: data.name,
     description: data.description,
-    isActive: data.is_active,
-    validFrom: data.valid_from,
-    validTo: data.valid_to || null,
-    applicableDays: ensureArray(data.applicable_days),
+    isActive: data.isActive,
+    validFrom: data.validFrom,
+    validTo: data.validTo || null,
+    applicableDays: ensureArray(data.applicableDays),
     prizeTiers: (ensureArray(data.prizes)).map((prize: ServicePrizeTierData) => ({
       id: prize.id || '',
       name: prize.name,
       value: prize.value,
-      prizeType: prize.prize_type,
+      prizeType: prize.prizeType,
       quantity: prize.quantity,
       numberOfRunnerUps: prize.numberOfRunnerUps
     }))
@@ -168,7 +168,7 @@ const DrawExecutionPage: React.FC = () => {
       const winners: DrawWinner[] = ensureArray(result.draw.winners).map(winner => ({
         id: winner.id,
         msisdn: maskMSISDN(winner.msisdn),
-        prizeName: winner.prizeTier?.name || 'Unknown Prize',
+        prizeName: winner.prizeTierName || 'Unknown Prize',
         isRunnerUp: winner.isRunnerUp || false,
         runnerUpRank: winner.runnerUpRank || 0
       }));
@@ -493,29 +493,22 @@ const DrawExecutionPage: React.FC = () => {
           color: white;
         }
         
+        .view-details-button:hover {
+          background-color: #40a9ff;
+        }
+        
         .invoke-runner-up-button {
           background-color: #faad14;
           color: white;
         }
         
-        .total-prize-pot {
-          margin-top: 15px;
-          font-size: 18px;
-          color: #52c41a;
+        .invoke-runner-up-button:hover {
+          background-color: #ffc53d;
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .draw-management-container {
-            grid-template-columns: 1fr;
-          }
-          
-          .draw-setup-section,
-          .prize-structure-section,
-          .draw-animation-section,
-          .draw-results-section {
-            grid-column: 1;
-          }
+        .invoke-runner-up-button:disabled {
+          background-color: #d9d9d9;
+          cursor: not-allowed;
         }
         `}
       </style>
