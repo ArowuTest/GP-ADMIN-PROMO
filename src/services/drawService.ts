@@ -1,263 +1,153 @@
-// src/services/drawService.ts - Update to add invokeRunnerUp method
+// src/services/drawService.ts
 import axios from 'axios';
-import { apiClient } from './apiClient';
-import { MOCK_MODE } from './apiClient';
+import { apiClient, getAuthHeaders } from './apiClient';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-
-// Define interfaces for draw-related data structures
-export interface ExecuteDrawRequestData {
-  draw_date: string; // Changed from drawDate to draw_date to match backend expectation
-  prize_structure_id: string; // Changed from prizeStructureID to prize_structure_id to match backend expectation
-}
-
+// Define types for draw-related data
 export interface DrawData {
   id: string;
   drawDate: string;
-  prizeStructureID: string;
-  prizeStructureName: string; // Added to match backend response
-  prizeStructure?: any; // Optional: populated by Preload
-  status: string; // e.g., "Pending", "Completed", "Failed"
-  totalEligibleMSISDNs: number;
-  totalEntries: number;
-  executedByAdminID: string;
-  executedByAdminName: string; // Added to match backend response
-  executedByAdmin?: any; // Optional: populated by Preload
-  winners?: WinnerData[]; // Optional: populated by Preload
+  status: string;
+  prizeStructureId: string;
+  prizeStructureName: string;
   createdAt: string;
   updatedAt: string;
+  winners: WinnerData[];
 }
 
 export interface WinnerData {
   id: string;
-  drawID: string;
+  drawId: string;
   msisdn: string;
-  maskedMSISDN: string; // Added to match backend response
-  prizeTierID: string;
-  prizeTierName: string; // Added to match backend response
-  prizeTier?: any; // Optional: populated by Preload
-  status: string; // e.g., "PendingNotification", "Notified", "Confirmed"
-  paymentStatus?: string; // e.g., "Pending", "Paid", "Failed"
-  paymentNotes?: string;
-  paidAt?: string | null;
+  prizeTierId: string;
+  prizeTierName: string;
+  prizeValue: string;
+  status: string;
+  paymentStatus: string;
   isRunnerUp: boolean;
-  runnerUpRank: number;
+  originalWinnerId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface DrawEligibilityStats {
-  totalEligibleMSISDNs: number;
-  totalEntries: number;
+export interface EligibilityStats {
+  totalEligibleParticipants: number;
+  totalEligibleEntries: number;
+  participantsByPoints: {
+    points: number;
+    count: number;
+  }[];
 }
 
-export interface InvokeRunnerUpResponse {
+export interface RunnerUpInvocationResult {
   message: string;
-  forfeited_winner: {
-    id: string;
-    msisdn: string;
-    maskedMSISDN: string; // Added to match backend response
-    status: string;
-  };
-  promoted_runner_up: {
-    id: string;
-    msisdn: string;
-    maskedMSISDN: string; // Added to match backend response
-    status: string;
-  };
+  originalWinner: WinnerData;
+  newWinner: WinnerData;
 }
-
-const getAuthHeaders = (token: string | null) => {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-/**
- * Get eligibility statistics for a draw on a specific date
- * This fetches the number of eligible participants and total entries for a draw
- */
-const getDrawEligibilityStats = async (
-  drawDate: string,
-  token: string | null
-): Promise<DrawEligibilityStats> => {
-  try {
-    const response = await apiClient.get<DrawEligibilityStats>(
-      `/admin/draws/eligibility-stats?drawDate=${drawDate}`,
-      {
-        headers: getAuthHeaders(token),
-      }
-    );
-    return response.data;
-  } catch (error: unknown) {
-    // If the API endpoint doesn't exist yet or returns an error, return mock data
-    // This allows development to continue while the backend is being implemented
-    console.warn("Using mock eligibility stats due to API error:", error);
-    return {
-      totalEligibleMSISDNs: Math.floor(Math.random() * 10000) + 500,
-      totalEntries: Math.floor(Math.random() * 100000) + 5000
-    };
-  }
-};
-
-// Execute a draw
-const executeDraw = async (
-  drawDate: string,
-  prizeStructureId: string,
-  token: string | null
-): Promise<{ message: string; draw: DrawData }> => {
-  const data: ExecuteDrawRequestData = {
-    draw_date: drawDate, // Changed from drawDate to draw_date
-    prize_structure_id: prizeStructureId // Changed from prizeStructureID to prize_structure_id
-  };
-
-  console.log("Executing draw with payload:", data);
-
-  try {
-    const response = await apiClient.post<{ message: string; draw: DrawData }>(
-      `/admin/draws/execute`,
-      data
-    );
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to execute draw due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to execute draw due to an unexpected error.');
-    } else {
-      throw new Error('Failed to execute draw due to an unexpected error.');
-    }
-  }
-};
-
-// Invoke a runner-up when a winner forfeits
-const invokeRunnerUp = async (
-  winnerId: string,
-  reason: string,
-  token: string | null
-): Promise<InvokeRunnerUpResponse> => {
-  try {
-    const response = await apiClient.post<InvokeRunnerUpResponse>(
-      `/admin/draws/invoke-runner-up`,
-      {
-        winner_id: winnerId,
-        reason: reason
-      }
-    );
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to invoke runner-up due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to invoke runner-up due to an unexpected error.');
-    } else {
-      throw new Error('Failed to invoke runner-up due to an unexpected error.');
-    }
-  }
-};
 
 // List all draws
-const listDraws = async (token: string | null): Promise<DrawData[]> => {
+const listDraws = async (token: string): Promise<DrawData[]> => {
   try {
-    const response = await apiClient.get<DrawData[]>(`/admin/draws`);
-    return response.data;
-  } catch (error: unknown) {
-    if (MOCK_MODE) {
-      console.warn("Using mock draw list data due to API error:", error);
-      return []; // Return empty array as mock data
-    }
-    
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to fetch draws due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch draws due to an unexpected error.');
-    } else {
-      throw new Error('Failed to fetch draws due to an unexpected error.');
-    }
+    const response = await apiClient.get('/admin/draws', {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing draws:', error);
+    throw error;
   }
 };
 
-// Get details of a single draw
-const getDrawDetails = async (id: string, token: string | null): Promise<DrawData> => {
+// Get a specific draw by ID
+const getDrawById = async (id: string, token: string): Promise<DrawData> => {
   try {
-    const response = await apiClient.get<DrawData>(`/admin/draws/${id}`);
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to fetch draw details due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch draw details due to an unexpected error.');
-    } else {
-      throw new Error('Failed to fetch draw details due to an unexpected error.');
-    }
+    const response = await apiClient.get(`/admin/draws/${id}`, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error getting draw ${id}:`, error);
+    throw error;
   }
 };
 
-// List all winners (can be filtered by drawId, etc. on backend)
-const listWinners = async (token: string | null, drawId?: string): Promise<WinnerData[]> => {
+// List all winners
+const listWinners = async (token: string): Promise<WinnerData[]> => {
   try {
-    let url = `/admin/winners`;
-    if (drawId) {
-      url += `?draw_id=${drawId}`;
-    }
-    const response = await apiClient.get<WinnerData[]>(url);
-    return response.data;
-  } catch (error: unknown) {
-    if (MOCK_MODE) {
-      console.warn("Using mock winners data due to API error:", error);
-      return []; // Return empty array as mock data
-    }
-    
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to fetch winners due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch winners due to an unexpected error.');
-    } else {
-      throw new Error('Failed to fetch winners due to an unexpected error.');
-    }
+    const response = await apiClient.get('/admin/winners', {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing winners:', error);
+    throw error;
+  }
+};
+
+// Execute a new draw
+const executeDraw = async (prizeStructureId: string, drawDate: string, token: string): Promise<DrawData> => {
+  try {
+    const response = await apiClient.post('/admin/draws/execute', {
+      prize_structure_id: prizeStructureId,
+      draw_date: drawDate
+    }, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error executing draw:', error);
+    throw error;
+  }
+};
+
+// Get eligibility statistics for a potential draw
+const getEligibilityStats = async (token: string): Promise<EligibilityStats> => {
+  try {
+    const response = await apiClient.get('/admin/draws/eligibility-stats', {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error getting eligibility stats:', error);
+    throw error;
   }
 };
 
 // Update winner payment status
-const updateWinnerPaymentStatus = async (
-  winnerId: string,
-  paymentStatus: string,
-  notes: string | undefined,
-  token: string | null
-): Promise<WinnerData> => {
+const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string, token: string): Promise<WinnerData> => {
   try {
-    const response = await apiClient.put<WinnerData>(
-      `/admin/winners/${winnerId}/payment-status`,
-      { payment_status: paymentStatus, notes }
-    );
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = 'Failed to update winner payment status due to server error.';
-      throw new Error(typeof apiError === 'string' && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to update winner payment status due to an unexpected error.');
-    } else {
-      throw new Error('Failed to update winner payment status due to an unexpected error.');
-    }
+    const response = await apiClient.put(`/admin/winners/${winnerId}/payment-status`, {
+      payment_status: paymentStatus
+    }, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating payment status for winner ${winnerId}:`, error);
+    throw error;
+  }
+};
+
+// Invoke a runner-up for a prize
+const invokeRunnerUp = async (winnerId: string, token: string): Promise<RunnerUpInvocationResult> => {
+  try {
+    const response = await apiClient.post('/admin/draws/invoke-runner-up', {
+      winner_id: winnerId
+    }, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error invoking runner-up for winner ${winnerId}:`, error);
+    throw error;
   }
 };
 
 export const drawService = {
-  getDrawEligibilityStats,
-  executeDraw,
-  invokeRunnerUp,
   listDraws,
-  getDrawDetails,
+  getDrawById,
   listWinners,
+  executeDraw,
+  getEligibilityStats,
   updateWinnerPaymentStatus,
+  invokeRunnerUp
 };

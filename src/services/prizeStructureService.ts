@@ -1,233 +1,119 @@
 // src/services/prizeStructureService.ts
-import axios from "axios";
-import { apiClient } from './apiClient';
-import { MOCK_MODE } from './apiClient';
+import axios from 'axios';
+import { apiClient, getAuthHeaders } from './apiClient';
+import { DayOfWeek } from '../components/PrizeManagement/PrizeStructureListComponent';
 
-// --- Types for GET responses (data received from backend) ---
-export interface ServicePrizeTierData { // Represents a single prize tier as returned by GET
+// Define types for prize structure-related data
+export interface PrizeTierPayload {
   id?: string;
   name: string;
-  prizeType: string; // Changed to camelCase to match backend response
-  valueNGN?: number; 
-  value: string; // This is the display string like "N1,000,000"
-  quantity: number; // Changed from winnerCount to match backend
+  prize_type: string;
+  value: string;
+  quantity: number;
   order: number;
-  numberOfRunnerUps: number;
+  number_of_runner_ups: number;
 }
 
-export interface ServicePrizeStructureData { // Represents a prize structure as returned by GET
-  id?: string;
+export interface CreatePrizeStructurePayload {
   name: string;
   description: string;
-  isActive: boolean; // Changed to camelCase to match backend response
-  validFrom: string; // Changed to camelCase to match backend response
-  validTo?: string | null; // Changed to camelCase to match backend response
-  prizes: ServicePrizeTierData[]; // Changed from prizeTiers to match backend field name
-  createdAt?: string; // Changed to camelCase to match backend response
-  updatedAt?: string; // Changed to camelCase to match backend response
-  applicableDays?: string[]; // Changed to camelCase to match backend response
-  dayType?: string; // Changed to camelCase to match backend response
+  is_active: boolean;
+  valid_from: string;
+  valid_to?: string | null;
+  prizes: PrizeTierPayload[];
+  applicable_days: DayOfWeek[];
 }
 
-// --- Types for POST/PUT payloads (data sent to backend) ---
-// Matches backend models.CreatePrizeRequest JSON tags
-export interface CreatePrizeTierPayload {
-  name: string;
-  value: string; 
-  prize_type: string; 
-  quantity: number; 
-  order: number; 
-  number_of_runner_ups: number; // Changed to snake_case for backend request
-}
-
-// Matches backend CreatePrizeStructureRequest JSON tags
-export interface CreatePrizeStructurePayload { 
+export interface PrizeStructureResponse {
+  id: string;
   name: string;
   description: string;
-  is_active: boolean; 
-  valid_from: string; 
-  valid_to?: string | null; 
-  prizes: CreatePrizeTierPayload[]; 
-  applicable_days?: string[]; // Backend will derive day_type from this
+  isActive: boolean;
+  validFrom: string;
+  validTo: string | null;
+  prizes: {
+    id: string;
+    name: string;
+    prizeType: string;
+    value: string;
+    quantity: number;
+    order: number;
+    numberOfRunnerUps: number;
+  }[];
+  applicableDays: DayOfWeek[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-const listPrizeStructures = async (token: string | null): Promise<ServicePrizeStructureData[]> => {
+// List all prize structures
+const listPrizeStructures = async (token: string): Promise<PrizeStructureResponse[]> => {
   try {
-    const response = await apiClient.get<ServicePrizeStructureData[]>(`/admin/prize-structures/`);
-    console.log("Raw API response from listPrizeStructures:", response.data);
-    
-    // Transform the response to match our expected format
-    const transformedData = response.data.map(item => {
-      // Map prizes array from backend format to our ServicePrizeTierData format
-      const transformedPrizes = (item.prizes || []).map(prize => ({
-        id: prize.id,
-        name: prize.name,
-        prizeType: prize.prizeType, // Using camelCase for frontend
-        value: prize.value,
-        valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-        quantity: prize.quantity,
-        order: prize.order,
-        numberOfRunnerUps: prize.numberOfRunnerUps
-      }));
-      
-      return {
-        ...item,
-        // Ensure these fields exist even if backend doesn't provide them
-        applicableDays: item.applicableDays || [],
-        prizes: transformedPrizes
-      };
+    const response = await apiClient.get('/admin/prize-structures', {
+      headers: getAuthHeaders(token)
     });
-    
-    return transformedData;
-  } catch (error: unknown) {
-    if (MOCK_MODE) {
-      console.warn("Using mock prize structure data due to API error:", error);
-      return []; // Return empty array as mock data
-    }
-    
-    console.error("Error fetching prize structures:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = "Failed to fetch prize structures due to server error.";
-      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || "Failed to fetch prize structures due to an unexpected error.");
-    } else {
-      throw new Error("Failed to fetch prize structures due to an unexpected error.");
-    }
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing prize structures:', error);
+    throw error;
   }
 };
 
-const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string | null): Promise<ServicePrizeStructureData> => {
+// Get a specific prize structure by ID
+const getPrizeStructure = async (id: string, token: string): Promise<PrizeStructureResponse> => {
   try {
-    console.log("Sending payload to createPrizeStructure:", JSON.stringify(payload, null, 2));
-    const response = await apiClient.post<ServicePrizeStructureData>(`/admin/prize-structures/`, payload);
-    console.log("Raw API response from createPrizeStructure:", response.data);
-    
-    // Transform the response to match our expected format
-    const transformedPrizes = (response.data.prizes || []).map(prize => ({
-      id: prize.id,
-      name: prize.name,
-      prizeType: prize.prizeType, // Using camelCase for frontend
-      value: prize.value,
-      valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity,
-      order: prize.order,
-      numberOfRunnerUps: prize.numberOfRunnerUps
-    }));
-    
-    return {
-      ...response.data,
-      applicableDays: response.data.applicableDays || [],
-      prizes: transformedPrizes
-    };
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = `Failed to create prize structure: ${typeof apiError === "string" && apiError ? apiError : "Invalid request payload or server error."}`;
-      console.error("Full error creating prize structure:", error.response.data);
-      throw new Error(defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || "Failed to create prize structure due to an unexpected error.");
-    } else {
-      throw new Error("Failed to create prize structure due to an unexpected error.");
-    }
+    const response = await apiClient.get(`/admin/prize-structures/${id}`, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error getting prize structure ${id}:`, error);
+    throw error;
   }
 };
 
-const getPrizeStructure = async (id: string, token: string | null): Promise<ServicePrizeStructureData> => {
+// Create a new prize structure
+const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string): Promise<PrizeStructureResponse> => {
   try {
-    const response = await apiClient.get<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`);
-    console.log("Raw API response from getPrizeStructure:", response.data);
-    
-    // Transform the response to match our expected format
-    const transformedPrizes = (response.data.prizes || []).map(prize => ({
-      id: prize.id,
-      name: prize.name,
-      prizeType: prize.prizeType, // Using camelCase for frontend
-      value: prize.value,
-      valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity,
-      order: prize.order,
-      numberOfRunnerUps: prize.numberOfRunnerUps
-    }));
-    
-    return {
-      ...response.data,
-      applicableDays: response.data.applicableDays || [],
-      prizes: transformedPrizes
-    };
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = "Failed to fetch prize structure due to server error.";
-      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || "Failed to fetch prize structure due to an unexpected error.");
-    } else {
-      throw new Error("Failed to fetch prize structure due to an unexpected error.");
-    }
+    const response = await apiClient.post('/admin/prize-structures', payload, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating prize structure:', error);
+    throw error;
   }
 };
 
-const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string | null): Promise<ServicePrizeStructureData> => {
+// Update an existing prize structure
+const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string): Promise<PrizeStructureResponse> => {
   try {
-    console.log(`Sending payload to updatePrizeStructure for ID ${id}:`, JSON.stringify(payload, null, 2));
-    const response = await apiClient.put<ServicePrizeStructureData>(`/admin/prize-structures/${id}/`, payload);
-    console.log("Raw API response from updatePrizeStructure:", response.data);
-    
-    // Transform the response to match our expected format
-    const transformedPrizes = (response.data.prizes || []).map(prize => ({
-      id: prize.id,
-      name: prize.name,
-      prizeType: prize.prizeType, // Using camelCase for frontend
-      value: prize.value,
-      valueNGN: parseInt(prize.value?.replace(/[^0-9]/g, '') || '0'),
-      quantity: prize.quantity,
-      order: prize.order,
-      numberOfRunnerUps: prize.numberOfRunnerUps
-    }));
-    
-    return {
-      ...response.data,
-      applicableDays: response.data.applicableDays || [],
-      prizes: transformedPrizes
-    };
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = `Failed to update prize structure: ${typeof apiError === "string" && apiError ? apiError : "Invalid request payload or server error."}`;
-      console.error("Full error updating prize structure:", error.response.data);
-      throw new Error(defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || "Failed to update prize structure due to an unexpected error.");
-    } else {
-      throw new Error("Failed to update prize structure due to an unexpected error.");
-    }
+    const response = await apiClient.put(`/admin/prize-structures/${id}`, payload, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating prize structure ${id}:`, error);
+    throw error;
   }
 };
 
-const deletePrizeStructure = async (id: string, token: string | null): Promise<{ message: string }> => {
+// Delete a prize structure
+const deletePrizeStructure = async (id: string, token: string): Promise<{ message: string }> => {
   try {
-    const response = await apiClient.delete<{ message: string }>(`/admin/prize-structures/${id}/`);
+    const response = await apiClient.delete(`/admin/prize-structures/${id}`, {
+      headers: getAuthHeaders(token)
+    });
     return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      const apiError = error.response.data?.error;
-      const defaultMessage = "Failed to delete prize structure due to server error.";
-      throw new Error(typeof apiError === "string" && apiError ? apiError : defaultMessage);
-    } else if (error instanceof Error) {
-      throw new Error(error.message || "Failed to delete prize structure due to an unexpected error.");
-    } else {
-      throw new Error("Failed to delete prize structure due to an unexpected error.");
-    }
+  } catch (error) {
+    console.error(`Error deleting prize structure ${id}:`, error);
+    throw error;
   }
 };
 
 export const prizeStructureService = {
   listPrizeStructures,
-  createPrizeStructure,
   getPrizeStructure,
+  createPrizeStructure,
   updatePrizeStructure,
-  deletePrizeStructure,
+  deletePrizeStructure
 };
