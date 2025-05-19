@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { DayOfWeek } from '../services/prizeStructureService';
-import { PrizeStructureData, PrizeTierData } from '../services/prizeStructureService';
+import type { DayOfWeek } from '../../services/prizeStructureService';
+import { PrizeStructureData, PrizeTierData } from '../../services/prizeStructureService';
 
 interface PrizeStructureFormProps {
   isOpen: boolean;

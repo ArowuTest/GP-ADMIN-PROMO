@@ -3,7 +3,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { prizeStructureService } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { DayOfWeek } from './PrizeStructureListComponent';
+
+// Define DayOfWeek type directly here to avoid circular import
+export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
 // Define types for prize structure form
 interface PrizeTier {
@@ -448,7 +450,8 @@ const PrizeStructureListComponent: React.FC = () => {
         <p>No prize structures found. Create one to get started.</p>
       )}
       
-      <style jsx>{`
+      <style>
+        {`
         .prize-structure-list-container {
           padding: 20px;
         }
@@ -509,11 +512,6 @@ const PrizeStructureListComponent: React.FC = () => {
           margin-bottom: 15px;
         }
         
-        .form-group label {
-          display: block;
-          margin-bottom: 5px;
-        }
-        
         .form-control {
           width: 100%;
           padding: 8px;
@@ -524,15 +522,17 @@ const PrizeStructureListComponent: React.FC = () => {
         .days-checkboxes {
           display: flex;
           flex-wrap: wrap;
+          gap: 10px;
         }
         
         .day-checkbox {
-          margin-right: 15px;
-          margin-bottom: 5px;
+          display: flex;
+          align-items: center;
+          margin-right: 10px;
         }
         
         .prize-tier-form {
-          margin-top: 15px;
+          margin-bottom: 20px;
           padding: 15px;
           border: 1px solid #ddd;
           border-radius: 4px;
@@ -541,7 +541,6 @@ const PrizeStructureListComponent: React.FC = () => {
         
         .add-tier-button,
         .remove-tier-button {
-          margin-top: 10px;
           padding: 5px 10px;
           border: none;
           border-radius: 4px;
@@ -556,24 +555,26 @@ const PrizeStructureListComponent: React.FC = () => {
         .remove-tier-button {
           background-color: #ff4d4f;
           color: white;
+          margin-top: 10px;
         }
         
         .form-actions {
           margin-top: 20px;
           display: flex;
+          justify-content: flex-end;
           gap: 10px;
         }
         
         .save-button,
         .cancel-button {
-          padding: 10px 15px;
+          padding: 8px 15px;
           border: none;
           border-radius: 4px;
           cursor: pointer;
         }
         
         .save-button {
-          background-color: #52c41a;
+          background-color: #1890ff;
           color: white;
         }
         
@@ -583,21 +584,19 @@ const PrizeStructureListComponent: React.FC = () => {
         }
         
         .cancel-button {
-          background-color: #d9d9d9;
-          color: rgba(0, 0, 0, 0.65);
+          background-color: #f5f5f5;
+          color: #333;
+          border: 1px solid #d9d9d9;
         }
         
         .error-message {
-          padding: 10px;
-          background-color: #fff1f0;
-          border: 1px solid #ffa39e;
-          border-radius: 4px;
-          color: #f5222d;
+          color: #ff4d4f;
+          margin-bottom: 15px;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
 
 export default PrizeStructureListComponent;
-export type { DayOfWeek };

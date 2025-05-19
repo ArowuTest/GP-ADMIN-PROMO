@@ -1,6 +1,9 @@
 // src/services/apiClient.ts
 import axios from 'axios';
 
+// Flag to control mock data usage
+export const MOCK_MODE = false;
+
 // Create an axios instance with default configuration
 export const apiClient = axios.create({
   baseURL: 'https://gp-backend-promo.onrender.com/api/v1',

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { drawService } from '../../services/drawService';
 import { prizeStructureService } from '../../services/prizeStructureService';
-import type { ServicePrizeStructureData, ServicePrizeTierData } from '../../services/prizeStructureService';
+import type { ServicePrizeStructureData } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DrawAnimationComponent from './DrawAnimationComponent';
@@ -488,10 +488,33 @@ const DrawExecutionPage: React.FC = () => {
         }
         
         .view-details-button, .invoke-runner-up-button {
-          padding: 5px 10px;
+          padding: 6px 12px;
           border: none;
           border-radius: 4px;
           cursor: pointer;
+        }
+        
+        .view-details-button {
+          background-color: #1890ff;
+          color: white;
+        }
+        
+        .invoke-runner-up-button {
+          background-color: #faad14;
+          color: white;
+        }
+        
+        .view-details-button:hover {
+          background-color: #40a9ff;
+        }
+        
+        .invoke-runner-up-button:hover {
+          background-color: #ffc53d;
+        }
+        
+        .invoke-runner-up-button:disabled {
+          background-color: #d9d9d9;
+          cursor: not-allowed;
         }
         `}
       </style>
