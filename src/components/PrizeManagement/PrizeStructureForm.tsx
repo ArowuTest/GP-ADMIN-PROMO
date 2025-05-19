@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { DayOfWeek } from '../../services/prizeStructureService';
-import { PrizeStructureData, PrizeTierData } from '../../services/prizeStructureService';
+import type { PrizeStructureData, PrizeTierData } from '../../services/prizeStructureService';
 
 interface PrizeStructureFormProps {
   isOpen: boolean;
@@ -27,7 +27,8 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       setIsActive(initialData.isActive);
       setPrizeTiers(initialData.prizes.map(p => ({ 
         name: p.name, 
-        value: p.value, 
+        value: p.value,
+        valueNGN: p.valueNGN || '0', // Add valueNGN property
         quantity: p.quantity, 
         prizeType: p.prizeType || 'Cash', 
         order: p.order || 0,
@@ -40,7 +41,15 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       setName('');
       setDescription('');
       setIsActive(true);
-      setPrizeTiers([{ name: '', value: '', quantity: 1, prizeType: 'Cash', order: 0, numberOfRunnerUps: 1 }]);
+      setPrizeTiers([{ 
+        name: '', 
+        value: '', 
+        valueNGN: '0', // Add valueNGN property
+        quantity: 1, 
+        prizeType: 'Cash', 
+        order: 0, 
+        numberOfRunnerUps: 1 
+      }]);
       setApplicableDays([]);
       setValidFrom(new Date().toISOString().split('T')[0]);
       setValidTo(null);
@@ -66,6 +75,14 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       if (field === 'quantity' && updatedTiers[index].quantity < 1) {
         updatedTiers[index].quantity = 1;
       }
+    } else if (field === 'value') {
+      // When value changes, also update valueNGN with a numeric representation
+      const numericValueNGN = value.replace(/[^0-9.]/g, '');
+      updatedTiers[index] = { 
+        ...updatedTiers[index], 
+        [field]: value,
+        valueNGN: numericValueNGN || '0'
+      };
     } else {
       updatedTiers[index] = { ...updatedTiers[index], [field]: value };
     }
@@ -73,7 +90,15 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
   };
 
   const addTier = () => {
-    setPrizeTiers([...prizeTiers, { name: '', value: '', quantity: 1, prizeType: 'Cash', order: prizeTiers.length, numberOfRunnerUps: 1 }]);
+    setPrizeTiers([...prizeTiers, { 
+      name: '', 
+      value: '', 
+      valueNGN: '0', // Add valueNGN property
+      quantity: 1, 
+      prizeType: 'Cash', 
+      order: prizeTiers.length, 
+      numberOfRunnerUps: 1 
+    }]);
   };
 
   const removeTier = (index: number) => {
@@ -97,8 +122,10 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       description,
       isActive,
       prizes: prizeTiers.map(pt => ({ 
+          id: '', // Add empty id for new prizes
           name: pt.name, 
-          value: pt.value, 
+          value: pt.value,
+          valueNGN: pt.valueNGN || '0', // Include valueNGN
           quantity: pt.quantity, 
           prizeType: pt.prizeType, 
           order: pt.order,
