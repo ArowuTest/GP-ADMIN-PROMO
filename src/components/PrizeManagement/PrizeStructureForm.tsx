@@ -134,6 +134,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       applicableDays,
       validFrom: new Date(validFrom).toISOString(),
       validTo: validTo ? new Date(validTo).toISOString() : null,
+      updatedAt: new Date().toISOString(), // Add updatedAt field
     };
     onSubmit(structureToSubmit);
     onClose();
