@@ -4,7 +4,6 @@ import { apiClient } from './apiClient';
 interface LoginCredentials {
   username: string;
   password: string;
-  email?: string;
 }
 
 interface LoginResponse {
@@ -31,7 +30,7 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
       timeout: 30000, // Increase timeout to 30 seconds for login requests
       headers: apiClient.defaults.headers
     });
-
+    
     // Check if the username looks like an email
     const isEmail = credentials.username.includes('@');
     

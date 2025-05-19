@@ -1,7 +1,6 @@
 // src/services/prizeStructureService.ts
-import axios from 'axios';
 import { apiClient, getAuthHeaders } from './apiClient';
-import { DayOfWeek } from '../components/PrizeManagement/PrizeStructureListComponent';
+import type { DayOfWeek } from '../components/PrizeManagement/PrizeStructureListComponent';
 
 // Define types for prize structure-related data
 export interface PrizeTierPayload {

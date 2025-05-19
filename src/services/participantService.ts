@@ -1,4 +1,3 @@
-import axios from "axios";
 import { apiClient, getAuthHeaders } from './apiClient';
 
 // Define types for participant-related data

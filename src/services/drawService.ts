@@ -1,5 +1,4 @@
 // src/services/drawService.ts
-import axios from 'axios';
 import { apiClient, getAuthHeaders } from './apiClient';
 
 // Define types for draw-related data
@@ -34,6 +33,7 @@ export interface WinnerData {
   paymentNotes: string; // Added missing property
   isRunnerUp: boolean;
   originalWinnerId?: string;
+  runnerUpRank?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +41,8 @@ export interface WinnerData {
 export interface EligibilityStats {
   totalEligibleParticipants: number;
   totalEligibleEntries: number;
+  totalEligibleMSISDNs: number;
+  totalEntries: number;
   participantsByPoints: {
     points: number;
     count: number;
@@ -93,11 +95,11 @@ const listWinners = async (token: string): Promise<WinnerData[]> => {
 };
 
 // Execute a new draw
-const executeDraw = async (prizeStructureId: string, drawDate: string, token: string): Promise<DrawData> => {
+const executeDraw = async (drawDate: string, prizeStructureId: string, token: string): Promise<DrawData> => {
   try {
     const response = await apiClient.post('/admin/draws/execute', {
-      prize_structure_id: prizeStructureId,
-      draw_date: drawDate
+      draw_date: drawDate,
+      prize_structure_id: prizeStructureId
     }, {
       headers: getAuthHeaders(token)
     });
@@ -109,9 +111,10 @@ const executeDraw = async (prizeStructureId: string, drawDate: string, token: st
 };
 
 // Get eligibility statistics for a potential draw
-const getEligibilityStats = async (token: string): Promise<EligibilityStats> => {
+const getEligibilityStats = async (date: string, token: string): Promise<EligibilityStats> => {
   try {
     const response = await apiClient.get('/admin/draws/eligibility-stats', {
+      params: { date },
       headers: getAuthHeaders(token)
     });
     return response.data.data;
