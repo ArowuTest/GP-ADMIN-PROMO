@@ -1,6 +1,8 @@
 // src/services/prizeStructureService.ts
 import { apiClient, getAuthHeaders } from './apiClient';
-import type { DayOfWeek } from '../components/PrizeManagement/PrizeStructureListComponent';
+
+// Define DayOfWeek type here to avoid circular imports
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
 
 // Define types for prize structure-related data
 export interface PrizeTierPayload {
@@ -47,7 +49,20 @@ export interface PrizeStructureResponse {
 
 // Export these types for use in other components
 export interface ServicePrizeStructureData extends PrizeStructureResponse {}
-export interface ServicePrizeTierData extends PrizeStructureResponse['prizes'][0] {}
+export interface ServicePrizeTierData {
+  id: string;
+  name: string;
+  prizeType: string;
+  value: string;
+  valueNGN: string;
+  quantity: number;
+  order: number;
+  numberOfRunnerUps: number;
+}
+
+// Export these for backward compatibility
+export interface PrizeStructureData extends PrizeStructureResponse {}
+export interface PrizeTierData extends ServicePrizeTierData {}
 
 // List all prize structures
 const listPrizeStructures = async (token: string): Promise<PrizeStructureResponse[]> => {

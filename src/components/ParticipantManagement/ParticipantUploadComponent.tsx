@@ -172,8 +172,8 @@ const ParticipantUploadComponent: React.FC = () => {
     const token = localStorage.getItem("authToken");
 
     try {
-      // Ensure the service returns all fields with camelCase naming
-      const response: UploadResponse = await participantService.uploadParticipantData(selectedFile, token);
+      // Fixed method name from uploadParticipantData to uploadParticipants
+      const response: UploadResponse = await participantService.uploadParticipants(selectedFile, token || "");
       setUploadResponse(response);
       if (response.status !== "Success" && response.status !== "Partial Success") {
         setError(response.message || "Upload failed. Check details below.");

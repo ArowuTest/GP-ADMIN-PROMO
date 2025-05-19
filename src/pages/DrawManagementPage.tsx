@@ -10,7 +10,7 @@ export interface PrizeTierData {
   id: string; // uuid
   name: string;
   prizeType: string;
-  prizeAmount: number;
+  prizeAmount: number | string;
   prizeDescription?: string;
   winnerCount: number;
   sortOrder: number;
@@ -37,7 +37,7 @@ export interface DrawWinnerData {
   id: string; // uuid
   drawId: string;
   prizeId: string;
-  prizeTier?: PrizeTierData;
+  prizeTier: string | PrizeTierData;
   msisdn: string;
   isRunnerUp: boolean;
   runnerUpRank?: number;
@@ -70,19 +70,19 @@ const convertServiceDrawToPageDraw = (serviceDraw: ServiceDrawData): DrawData =>
     id: serviceDraw.id,
     drawDate: serviceDraw.drawDate,
     executedByAdminId: serviceDraw.executedByAdminID,
-    prizeStructureId: serviceDraw.prizeStructureID,
-    prizeStructure: serviceDraw.prizeStructure,
+    prizeStructureId: serviceDraw.prizeStructureId || "", // Fixed property name
+    prizeStructure: serviceDraw.prizeStructure || undefined, // Fixed property name
     status: serviceDraw.status,
     totalEligibleMsisdns: serviceDraw.totalEligibleMSISDNs,
     totalTickets: serviceDraw.totalEntries,
     executionType: "MANUAL", // Default value if not provided
     winners: serviceDraw.winners?.map(w => ({
       id: w.id,
-      drawId: w.drawID,
-      prizeId: w.prizeTierID,
-      prizeTier: w.prizeTier,
+      drawId: w.drawId || w.drawID || "", // Support both property names
+      prizeId: w.prizeTierId || w.prizeTierID || "", // Support both property names
+      prizeTier: w.prizeTier || w.prizeTierName || "", // Support both property names
       msisdn: w.msisdn,
-      isRunnerUp: false, // Default value
+      isRunnerUp: w.isRunnerUp || false, // Default value
       notificationStatus: w.status,
       paymentStatus: w.paymentStatus || "PENDING",
       paymentRemarks: w.paymentNotes,
@@ -282,7 +282,7 @@ const DrawManagementPage: React.FC = () => {
     const fetchPrizeStructures = async () => {
       setLoading(true);
       try {
-        const structures = await prizeStructureService.listPrizeStructures(token);
+        const structures = await prizeStructureService.listPrizeStructures(token || "");
         const activeValidStructures = structures.filter(s => 
           s.isActive && 
           new Date(s.validFrom) <= new Date() && 
@@ -333,7 +333,10 @@ const DrawManagementPage: React.FC = () => {
   const totalPrizeValue = useMemo(() => {
     if (!selectedStructureDetails) return 0;
     return selectedStructureDetails.prizes.reduce((total, prize) => {
-      return total + (prize.prizeAmount * prize.winnerCount);
+      const amount = typeof prize.prizeAmount === 'string' 
+        ? parseFloat(prize.prizeAmount.replace(/[^0-9.]/g, '')) || 0
+        : prize.prizeAmount;
+      return total + (amount * prize.winnerCount);
     }, 0);
   }, [selectedStructureDetails]);
 
@@ -355,7 +358,7 @@ const DrawManagementPage: React.FC = () => {
     setError(null);
     try {
       // Get eligibility stats from the API
-      const stats = await drawService.getDrawEligibilityStats(drawDate, token);
+      const stats = await drawService.getDrawEligibilityStats(drawDate, token || "");
       
       setEligibleParticipantsCount(stats.totalEligibleMSISDNs);
       setTotalPointsInDraw(stats.totalEntries);
@@ -386,13 +389,12 @@ const DrawManagementPage: React.FC = () => {
     setError(null);
     try {
       // Call the draw service to execute the draw
-      // Fixed: Pass the correct parameters according to the API
-      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token);
+      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token || "");
       
-      // Fixed: Handle the response correctly
-      if (drawData && drawData.draw) {
+      // Handle the response correctly
+      if (drawData) {
         // Convert service data to page data format
-        const pageDrawData = convertServiceDrawToPageDraw(drawData.draw);
+        const pageDrawData = convertServiceDrawToPageDraw(drawData);
         setDrawResult(pageDrawData);
         setSuccessMessage(drawData.message || "Draw executed successfully");
       } else {
@@ -418,13 +420,12 @@ const DrawManagementPage: React.FC = () => {
     setError(null);
     try {
       // Call the draw service to re-execute the draw
-      // Fixed: Use the correct API method and parameters
-      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token);
+      const drawData = await drawService.executeDraw(drawDate, selectedPrizeStructureId, token || "");
       
-      // Fixed: Handle the response correctly
-      if (drawData && drawData.draw) {
+      // Handle the response correctly
+      if (drawData) {
         // Convert service data to page data format
-        const pageDrawData = convertServiceDrawToPageDraw(drawData.draw);
+        const pageDrawData = convertServiceDrawToPageDraw(drawData);
         setDrawResult(pageDrawData);
         setSuccessMessage(drawData.message || "Draw re-executed successfully");
         setShowRerunConfirm(false);
@@ -452,14 +453,13 @@ const DrawManagementPage: React.FC = () => {
     
     setLoading(true);
     try {
-      // Fixed: Use the correct API method for invoking runner-ups
-      // Since invokeRunnerUpForWinner doesn't exist in drawService, we'll use updateWinnerPaymentStatus as a workaround
-      await drawService.updateWinnerPaymentStatus(winnerId, "FORFEITED", "Runner-up invoked by admin", token);
+      // Use the correct API method for invoking runner-ups
+      await drawService.invokeRunnerUp(winnerId, token || "");
       
       // Refresh the draw result
       if (drawResult?.id) {
-        // Fixed: Use the correct API method for getting draw details
-        const updatedDraw = await drawService.getDrawDetails(drawResult.id, token);
+        // Use the correct API method for getting draw details
+        const updatedDraw = await drawService.getDrawById(drawResult.id, token || "");
         if (updatedDraw) {
           const pageDrawData = convertServiceDrawToPageDraw(updatedDraw);
           setDrawResult(pageDrawData);
@@ -524,18 +524,14 @@ const DrawManagementPage: React.FC = () => {
             <div style={styles.prizeBreakdownSection}>
               <h3>Prize Structure Details</h3>
               <p><strong>Name:</strong> {selectedStructureDetails.name}</p>
-              <p><strong>Description:</strong> {selectedStructureDetails.description || "N/A"}</p>
-              <p><strong>Active:</strong> {selectedStructureDetails.isActive ? "Yes" : "No"}</p>
-              <p><strong>Valid From:</strong> {new Date(selectedStructureDetails.effectiveStartDate || "").toLocaleDateString()}</p>
-              {selectedStructureDetails.effectiveEndDate && (
-                <p><strong>Valid To:</strong> {new Date(selectedStructureDetails.effectiveEndDate).toLocaleDateString()}</p>
-              )}
+              <p><strong>Description:</strong> {selectedStructureDetails.description}</p>
+              <p><strong>Applicable Days:</strong> {selectedStructureDetails.applicableDays?.join(', ') || 'All days'}</p>
               
               <h4>Prize Tiers:</h4>
               <table style={styles.prizeTierTable}>
                 <thead>
                   <tr>
-                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Prize</th>
                     <th style={styles.th}>Type</th>
                     <th style={styles.th}>Value</th>
                     <th style={styles.th}>Winners</th>
@@ -547,7 +543,7 @@ const DrawManagementPage: React.FC = () => {
                     <tr key={index}>
                       <td style={styles.td}>{prize.name}</td>
                       <td style={styles.td}>{prize.prizeType}</td>
-                      <td style={styles.td}>{prize.value || `N${prize.prizeAmount.toLocaleString()}`}</td>
+                      <td style={styles.td}>{prize.value || `N${prize.prizeAmount}`}</td>
                       <td style={styles.td}>{prize.winnerCount}</td>
                       <td style={styles.td}>{prize.numberOfRunnerUps}</td>
                     </tr>
@@ -556,44 +552,46 @@ const DrawManagementPage: React.FC = () => {
               </table>
               
               <p style={styles.totalPot}>
-                Total Prize Pot: {totalPrizeValue.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}
+                Total Prize Pot: N{totalPrizeValue.toLocaleString()}
               </p>
-              
-              <p><strong>Created:</strong> {new Date(selectedStructureDetails.createdAt).toLocaleDateString()}</p>
-              <p><strong>Applicable Days:</strong> {selectedStructureDetails.applicableDays?.join(', ') || "All days"}</p>
             </div>
           )}
         </div>
         
         <div style={styles.rightPanel}>
-          {eligibleParticipantsCount > 0 && (
-            <div style={styles.infoSection}>
-              <h3>Eligibility Results</h3>
-              <p><strong>Eligible Participants:</strong> {eligibleParticipantsCount.toLocaleString()}</p>
-              <p><strong>Total Points in Draw:</strong> {totalPointsInDraw.toLocaleString()}</p>
-              
-              {canExecuteDraw && (
-                <button
-                  onClick={handleExecuteDraw}
-                  style={styles.confirmButton}
-                  disabled={isExecuting || loading}
-                >
-                  {isExecuting ? "Executing Draw..." : "Execute Draw"}
-                </button>
-              )}
-              
-              {!canExecuteDraw && (
-                <p style={styles.warning}>
-                  Only Super Admins can execute draws. Please contact a Super Admin to execute this draw.
-                </p>
-              )}
-            </div>
-          )}
+          <div style={styles.formSection}>
+            <h3>Eligibility Check</h3>
+            
+            {eligibleParticipantsCount > 0 ? (
+              <>
+                <p><strong>Eligible Participants:</strong> {eligibleParticipantsCount.toLocaleString()}</p>
+                <p><strong>Total Points in Draw:</strong> {totalPointsInDraw.toLocaleString()}</p>
+                
+                {canExecuteDraw && (
+                  <button
+                    onClick={handleExecuteDraw}
+                    style={styles.confirmButton}
+                    disabled={isExecuting || loading}
+                  >
+                    {isExecuting ? "Executing Draw..." : "Execute Draw"}
+                  </button>
+                )}
+                
+                {!canExecuteDraw && (
+                  <p style={styles.warning}>
+                    Only Super Admins can execute draws. Please contact a Super Admin to execute this draw.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p>Click "Check Eligibility" to see how many participants are eligible for this draw.</p>
+            )}
+          </div>
           
           {isExecuting && (
             <div style={styles.animationPlaceholder}>
-              <p>Drawing Winners...</p>
-              <p>Please wait while we select winners from {eligibleParticipantsCount.toLocaleString()} participants</p>
+              <p>Executing Draw...</p>
+              <p>Selecting winners from {eligibleParticipantsCount.toLocaleString()} participants</p>
             </div>
           )}
           
@@ -603,60 +601,44 @@ const DrawManagementPage: React.FC = () => {
               <p><strong>Draw ID:</strong> {drawResult.id}</p>
               <p><strong>Draw Date:</strong> {new Date(drawResult.drawDate).toLocaleDateString()}</p>
               <p><strong>Status:</strong> {drawResult.status}</p>
-              <p><strong>Eligible Participants:</strong> {drawResult.totalEligibleMsisdns?.toLocaleString() || "N/A"}</p>
-              <p><strong>Total Points:</strong> {drawResult.totalTickets?.toLocaleString() || "N/A"}</p>
               
               <h4>Winners:</h4>
-              {drawResult.winners.length === 0 ? (
-                <p>No winners selected yet.</p>
-              ) : (
-                <table style={styles.prizeTierTable}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>MSISDN</th>
-                      <th style={styles.th}>Prize</th>
-                      <th style={styles.th}>Status</th>
-                      <th style={styles.th}>Payment</th>
-                      <th style={styles.th}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drawResult.winners.map((winner, index) => (
-                      <tr key={index}>
-                        <td style={styles.td}>{winner.msisdn}</td>
-                        <td style={styles.td}>{winner.prizeTier?.name || "Unknown Prize"}</td>
-                        <td style={styles.td}>{winner.notificationStatus}</td>
-                        <td style={styles.td}>{winner.paymentStatus}</td>
-                        <td style={styles.td}>
-                          <button
-                            onClick={() => handleInvokeRunnerUp(winner.id)}
-                            style={styles.invokeButton}
-                            disabled={loading || winner.isRunnerUp || winner.paymentStatus === "PAID"}
-                          >
-                            Invoke Runner-up
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+              <ul style={styles.list}>
+                {drawResult.winners.map((winner, index) => (
+                  <li key={index} style={styles.listItem}>
+                    <div>
+                      <strong>MSISDN:</strong> {winner.msisdn} <br />
+                      <strong>Prize:</strong> {typeof winner.prizeTier === 'string' ? winner.prizeTier : winner.prizeTier.name} <br />
+                      <strong>Status:</strong> {winner.paymentStatus}
+                    </div>
+                    <div>
+                      {winner.paymentStatus !== "PAID" && winner.paymentStatus !== "FORFEITED" && (
+                        <button
+                          onClick={() => handleInvokeRunnerUp(winner.id)}
+                          style={styles.invokeButton}
+                          disabled={loading}
+                        >
+                          Invoke Runner-up
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
               
               {canExecuteDraw && (
-                <div style={{marginTop: "20px"}}>
-                  <button
-                    onClick={handleRerunDraw}
-                    style={styles.button}
-                    disabled={isExecuting || loading}
-                  >
-                    Re-run Draw
-                  </button>
-                </div>
+                <button
+                  onClick={handleRerunDraw}
+                  style={styles.cancelButton}
+                  disabled={isExecuting || loading}
+                >
+                  Re-run Draw
+                </button>
               )}
               
               {showRerunConfirm && (
-                <div style={{marginTop: "20px", padding: "15px", border: "1px solid #f5c6cb", borderRadius: "4px", backgroundColor: "#f8d7da"}}>
-                  <p><strong>Warning:</strong> Re-running the draw will replace all current winners. This action cannot be undone.</p>
+                <div style={styles.warning}>
+                  <p><strong>Warning:</strong> Re-running the draw will invalidate all current winners and select new ones.</p>
                   <p>Type "RERUN" to confirm:</p>
                   <input
                     type="text"
@@ -664,21 +646,19 @@ const DrawManagementPage: React.FC = () => {
                     onChange={(e) => setRerunConfirmText(e.target.value)}
                     style={styles.input}
                   />
-                  <div>
-                    <button
-                      onClick={confirmRerun}
-                      style={styles.confirmButton}
-                      disabled={rerunConfirmText !== "RERUN"}
-                    >
-                      Confirm Re-run
-                    </button>
-                    <button
-                      onClick={cancelRerun}
-                      style={{...styles.cancelButton, marginLeft: "10px"}}
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  <button
+                    onClick={confirmRerun}
+                    style={styles.confirmButton}
+                    disabled={rerunConfirmText !== "RERUN"}
+                  >
+                    Confirm Re-run
+                  </button>
+                  <button
+                    onClick={cancelRerun}
+                    style={styles.button}
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
             </div>

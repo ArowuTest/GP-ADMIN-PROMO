@@ -37,7 +37,8 @@ const RunnerUpInvocationModal: React.FC<RunnerUpInvocationModalProps> = ({
     
     try {
       // Use empty string as fallback if token is null
-      await drawService.invokeRunnerUp(winner.id, reason, token || '');
+      // Updated to match the correct method signature (removed reason parameter)
+      await drawService.invokeRunnerUp(winner.id, token || '');
       toast.success('Runner-up successfully invoked');
       onSuccess();
     } catch (err) {

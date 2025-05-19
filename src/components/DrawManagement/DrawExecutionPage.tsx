@@ -55,7 +55,7 @@ const convertToPrizeStructure = (data: ServicePrizeStructureData): PrizeStructur
     validFrom: data.validFrom,
     validTo: data.validTo || null,
     applicableDays: ensureArray(data.applicableDays),
-    prizeTiers: (ensureArray(data.prizes)).map((prize: ServicePrizeTierData) => ({
+    prizeTiers: (ensureArray(data.prizes)).map((prize) => ({
       id: prize.id || '',
       name: prize.name,
       value: prize.value,
@@ -165,13 +165,19 @@ const DrawExecutionPage: React.FC = () => {
       const result = await drawService.executeDraw(selectedDate, selectedPrizeStructureId, ensureString(token));
       
       // Transform the result into the expected format
-      const winners: DrawWinner[] = ensureArray(result.draw.winners).map(winner => ({
-        id: winner.id,
-        msisdn: maskMSISDN(winner.msisdn),
-        prizeName: winner.prizeTierName || 'Unknown Prize',
-        isRunnerUp: winner.isRunnerUp || false,
-        runnerUpRank: winner.runnerUpRank || 0
-      }));
+      const winners: DrawWinner[] = [];
+      
+      if (result.draw && Array.isArray(result.draw.winners)) {
+        result.draw.winners.forEach((winner: any) => {
+          winners.push({
+            id: winner.id || '',
+            msisdn: maskMSISDN(winner.msisdn || ''),
+            prizeName: winner.prizeTierName || 'Unknown Prize',
+            isRunnerUp: winner.isRunnerUp || false,
+            runnerUpRank: winner.runnerUpRank || 0
+          });
+        });
+      }
       
       setDrawResults(winners);
       toast.success('Draw executed successfully');
@@ -486,29 +492,6 @@ const DrawExecutionPage: React.FC = () => {
           border: none;
           border-radius: 4px;
           cursor: pointer;
-        }
-        
-        .view-details-button {
-          background-color: #1890ff;
-          color: white;
-        }
-        
-        .view-details-button:hover {
-          background-color: #40a9ff;
-        }
-        
-        .invoke-runner-up-button {
-          background-color: #faad14;
-          color: white;
-        }
-        
-        .invoke-runner-up-button:hover {
-          background-color: #ffc53d;
-        }
-        
-        .invoke-runner-up-button:disabled {
-          background-color: #d9d9d9;
-          cursor: not-allowed;
         }
         `}
       </style>

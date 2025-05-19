@@ -1,6 +1,6 @@
-// src/components/PrizeManagement/PrizeStructureForm.tsx
 import React, { useState, useEffect } from 'react';
-import type { PrizeStructureData, PrizeTierData, DayOfWeek } from './PrizeStructureListComponent';
+import type { DayOfWeek } from '../services/prizeStructureService';
+import { PrizeStructureData, PrizeTierData } from '../services/prizeStructureService';
 
 interface PrizeStructureFormProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface PrizeStructureFormProps {
   initialData?: PrizeStructureData | null;
 }
 
-const allDays: DayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const allDays: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [name, setName] = useState('');
@@ -25,7 +25,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       setName(initialData.name);
       setDescription(initialData.description || '');
       setIsActive(initialData.isActive);
-      setPrizeTiers(initialData.prizeTiers.map(p => ({ 
+      setPrizeTiers(initialData.prizes.map(p => ({ 
         name: p.name, 
         value: p.value, 
         quantity: p.quantity, 
@@ -47,10 +47,10 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
     }
   }, [initialData, isOpen]);
 
-  const handleTierChange = (index: number, field: keyof Omit<PrizeTierData, 'id'>, value: string | number) => {
+  const handleTierChange = (index: number, field: keyof Omit<PrizeTierData, 'id'>, value: any) => {
     const updatedTiers = [...prizeTiers];
     let numericValue = 0;
-    if (typeof value === 'string') {
+    if (typeof value === 'string' && (field === 'quantity' || field === 'order' || field === 'numberOfRunnerUps')) {
       numericValue = parseInt(value, 10);
       if (isNaN(numericValue)) numericValue = 0; // Default to 0 if parsing fails
     }
@@ -96,7 +96,7 @@ const PrizeStructureForm: React.FC<PrizeStructureFormProps> = ({ isOpen, onClose
       name,
       description,
       isActive,
-      prizeTiers: prizeTiers.map(pt => ({ 
+      prizes: prizeTiers.map(pt => ({ 
           name: pt.name, 
           value: pt.value, 
           quantity: pt.quantity, 
