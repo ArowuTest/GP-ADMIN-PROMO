@@ -14,7 +14,8 @@ const navItems: NavItem[] = [
   { path: "/admin/draw-management", label: "Draw Management", allowedRoles: ["SUPER_ADMIN", "ADMIN", "SENIOR_USER"] },
   { path: "/admin/prize-structures", label: "Prize Structures", allowedRoles: ["SUPER_ADMIN", "ADMIN"] },
   { path: "/admin/user-management", label: "User Management", allowedRoles: ["SUPER_ADMIN"] },
-  { path: "/admin/participant-upload", label: "Participant Upload", allowedRoles: ["SUPER_ADMIN", "ADMIN"] }, // Added new item here
+  { path: "/admin/participant-upload", label: "Participant Upload", allowedRoles: ["SUPER_ADMIN", "ADMIN"] },
+  { path: "/admin/winners-report", label: "Winners Report", allowedRoles: ["SUPER_ADMIN", "ADMIN", "SENIOR_USER", "WINNER_REPORTS_USER", "ALL_REPORT_USER"] }, // Added Winners Report
   { path: "/admin/audit-logs", label: "Audit Logs", allowedRoles: ["SUPER_ADMIN", "ADMIN", "ALL_REPORT_USER"] },
 ];
 
@@ -90,4 +91,3 @@ const AdminLayout: React.FC = () => {
 };
 
 export default AdminLayout;
-

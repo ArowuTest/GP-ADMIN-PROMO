@@ -61,6 +61,7 @@ const listDraws = async (token: string): Promise<DrawData[]> => {
     const response = await apiClient.get('/admin/draws', {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data || [];
   } catch (error) {
     console.error('Error listing draws:', error);
@@ -74,6 +75,7 @@ const getDrawById = async (id: string, token: string): Promise<DrawData> => {
     const response = await apiClient.get(`/admin/draws/${id}`, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error(`Error getting draw ${id}:`, error);
@@ -87,6 +89,7 @@ const listWinners = async (token: string): Promise<WinnerData[]> => {
     const response = await apiClient.get('/admin/winners', {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data || [];
   } catch (error) {
     console.error('Error listing winners:', error);
@@ -103,6 +106,7 @@ const executeDraw = async (drawDate: string, prizeStructureId: string, token: st
     }, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error('Error executing draw:', error);
@@ -117,6 +121,7 @@ const getEligibilityStats = async (date: string, token: string): Promise<Eligibi
       params: { date },
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error('Error getting eligibility stats:', error);
@@ -135,6 +140,7 @@ const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string
     }, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error(`Error updating payment status for winner ${winnerId}:`, error);
@@ -150,6 +156,7 @@ const invokeRunnerUp = async (winnerId: string, token: string): Promise<RunnerUp
     }, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error(`Error invoking runner-up for winner ${winnerId}:`, error);

@@ -10,7 +10,8 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
 import UserListComponent from "./components/UserManagement/UserListComponent";
-import ParticipantUploadComponent from "./components/ParticipantManagement/ParticipantUploadComponent"; // Import the new component
+import ParticipantUploadComponent from "./components/ParticipantManagement/ParticipantUploadComponent";
+import WinnersReportPage from "./components/Reports/WinnersReportPage"; // Import the Winners Report Page
 
 // ProtectedRoute component using AuthContext
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -43,7 +44,8 @@ function AppRoutes() {
         <Route path="draw-management" element={<DrawManagementPage />} />
         <Route path="prize-structures" element={<PrizeStructureListComponent />} />
         <Route path="user-management" element={<UserListComponent />} />
-        <Route path="participant-upload" element={<ParticipantUploadComponent />} /> {/* Add new route here */}
+        <Route path="participant-upload" element={<ParticipantUploadComponent />} />
+        <Route path="winners-report" element={<WinnersReportPage />} /> {/* Add Winners Report route */}
         <Route path="audit-logs" element={<AuditLogsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} /> 

@@ -70,6 +70,7 @@ const listPrizeStructures = async (token: string): Promise<PrizeStructureRespons
     const response = await apiClient.get('/admin/prize-structures', {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data || [];
   } catch (error) {
     console.error('Error listing prize structures:', error);
@@ -83,6 +84,7 @@ const getPrizeStructure = async (id: string, token: string): Promise<PrizeStruct
     const response = await apiClient.get(`/admin/prize-structures/${id}`, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error(`Error getting prize structure ${id}:`, error);
@@ -96,6 +98,7 @@ const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token:
     const response = await apiClient.post('/admin/prize-structures', payload, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error('Error creating prize structure:', error);
@@ -109,6 +112,7 @@ const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStru
     const response = await apiClient.put(`/admin/prize-structures/${id}`, payload, {
       headers: getAuthHeaders(token)
     });
+    // Handle nested response structure
     return response.data.data;
   } catch (error) {
     console.error(`Error updating prize structure ${id}:`, error);
@@ -122,7 +126,8 @@ const deletePrizeStructure = async (id: string, token: string): Promise<{ messag
     const response = await apiClient.delete(`/admin/prize-structures/${id}`, {
       headers: getAuthHeaders(token)
     });
-    return response.data;
+    // Handle nested response structure
+    return response.data.data || response.data;
   } catch (error) {
     console.error(`Error deleting prize structure ${id}:`, error);
     throw error;

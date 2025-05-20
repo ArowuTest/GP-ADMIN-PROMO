@@ -46,14 +46,23 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     console.log('Attempting login...');
     
     // Fix: Remove the duplicate /api/v1 prefix
-    const response = await loginClient.post<LoginResponse>(`/auth/login`, payload);
+    const response = await loginClient.post(`/auth/login`, payload);
+    
+    // FIXED: Extract token from nested response structure
+    // The backend returns { success: true, data: { token, expiresAt, user } }
+    const responseData = response.data.data || response.data;
+    const token = responseData.token;
+    
+    if (!token) {
+      throw new Error('Login failed: No token received in response');
+    }
     
     // Store token and user info in localStorage for session persistence
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    localStorage.setItem('tokenExpiry', response.data.expiresAt);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(responseData.user));
+    localStorage.setItem('tokenExpiry', responseData.expiresAt);
     
-    return response.data;
+    return responseData;
   } catch (error) {
     console.error('Login error:', error);
     if (axios.isAxiosError(error)) {
@@ -74,8 +83,9 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
 const validateToken = async (token: string): Promise<boolean> => {
   try {
     // Fix: Remove the duplicate /api/v1 prefix
-    const response = await apiClient.post<{valid: boolean}>(`/auth/validate-token`, { token });
-    return response.data.valid;
+    const response = await apiClient.post(`/auth/validate-token`, { token });
+    // Handle nested response structure
+    return response.data.data?.valid || response.data.valid || false;
   } catch (error) {
     // If validation fails, clear stored credentials
     localStorage.removeItem('token');

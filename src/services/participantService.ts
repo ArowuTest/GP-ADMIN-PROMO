@@ -55,7 +55,8 @@ const uploadParticipants = async (file: File, token: string): Promise<UploadResp
       }
     });
     
-    return response.data.data;
+    // Handle nested response structure
+    return response.data.data || response.data;
   } catch (error) {
     console.error('Error uploading participants:', error);
     throw error;
@@ -70,7 +71,14 @@ const listParticipants = async (page: number = 1, limit: number = 50, token: str
       headers: getAuthHeaders(token)
     });
     
-    return response.data;
+    // Handle nested response structure
+    const responseData = response.data.data || response.data;
+    return {
+      data: responseData.data || [],
+      total: responseData.total || 0,
+      page: responseData.page || 1,
+      limit: responseData.limit || 50
+    };
   } catch (error) {
     console.error('Error listing participants:', error);
     throw error;
@@ -84,7 +92,8 @@ const getParticipantStats = async (token: string): Promise<ParticipantStats> => 
       headers: getAuthHeaders(token)
     });
     
-    return response.data.data;
+    // Handle nested response structure
+    return response.data.data || response.data;
   } catch (error) {
     console.error('Error getting participant stats:', error);
     throw error;
@@ -98,6 +107,7 @@ const listUploadAudits = async (token: string): Promise<ParticipantUploadAudit[]
       headers: getAuthHeaders(token)
     });
     
+    // Handle nested response structure
     return response.data.data || [];
   } catch (error) {
     console.error('Error listing upload audits:', error);
@@ -112,7 +122,8 @@ const deleteUpload = async (uploadId: string, token: string): Promise<{ message:
       headers: getAuthHeaders(token)
     });
     
-    return response.data;
+    // Handle nested response structure
+    return response.data.data || response.data;
   } catch (error) {
     console.error(`Error deleting upload ${uploadId}:`, error);
     throw error;
