@@ -101,8 +101,9 @@ const listWinners = async (token: string): Promise<WinnerData[]> => {
 const executeDraw = async (drawDate: string, prizeStructureId: string, token: string): Promise<DrawData> => {
   try {
     const response = await apiClient.post('/admin/draws/execute', {
-      draw_date: drawDate,
-      prize_structure_id: prizeStructureId
+      // Changed from snake_case to camelCase to match backend expectations
+      drawDate: drawDate,
+      prizeStructureID: prizeStructureId
     }, {
       headers: getAuthHeaders(token)
     });
@@ -136,7 +137,8 @@ const getDrawEligibilityStats = getEligibilityStats;
 const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string, token: string): Promise<WinnerData> => {
   try {
     const response = await apiClient.put(`/admin/winners/${winnerId}/payment-status`, {
-      payment_status: paymentStatus
+      // Changed from snake_case to camelCase to match backend expectations
+      paymentStatus: paymentStatus
     }, {
       headers: getAuthHeaders(token)
     });
@@ -152,7 +154,8 @@ const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string
 const invokeRunnerUp = async (winnerId: string, token: string): Promise<RunnerUpInvocationResult> => {
   try {
     const response = await apiClient.post('/admin/draws/invoke-runner-up', {
-      winner_id: winnerId
+      // Changed from snake_case to camelCase to match backend expectations
+      winnerID: winnerId
     }, {
       headers: getAuthHeaders(token)
     });

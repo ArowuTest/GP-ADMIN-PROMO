@@ -8,21 +8,21 @@ export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Frida
 export interface PrizeTierPayload {
   id?: string;
   name: string;
-  prize_type: string;
+  prizeType: string; // Changed from snake_case to camelCase
   value: string;
   quantity: number;
   order: number;
-  number_of_runner_ups: number;
+  numberOfRunnerUps: number; // Changed from snake_case to camelCase
 }
 
 export interface CreatePrizeStructurePayload {
   name: string;
   description: string;
-  is_active: boolean;
-  valid_from: string;
-  valid_to?: string | null;
+  isActive: boolean; // Changed from snake_case to camelCase
+  validFrom: string; // Changed from snake_case to camelCase
+  validTo?: string | null; // Changed from snake_case to camelCase
   prizes: PrizeTierPayload[];
-  applicable_days: DayOfWeek[];
+  applicableDays: DayOfWeek[]; // Changed from snake_case to camelCase
 }
 
 export interface PrizeStructureResponse {

@@ -21,6 +21,7 @@ export interface AuditLogResponse {
   entityId: string;
   userId: string;
   timestamp: string;
+  summary: string; // Changed from details to match backend
   details: string;
 }
 
@@ -52,13 +53,13 @@ export const getAuditLogs = async (
       },
       headers: getAuthHeaders(token)
     });
-    // Handle nested response structure
-    const responseData = response.data.data || response.data;
+    // Handle nested response structure with pagination
+    const responseData = response.data;
     return {
       data: responseData.data || [],
-      total: responseData.total || 0,
-      page: responseData.page || 1,
-      pageSize: responseData.pageSize || 10
+      total: responseData.pagination?.totalItems || 0,
+      page: responseData.pagination?.page || 1,
+      pageSize: responseData.pagination?.pageSize || 10
     };
   } catch (error) {
     console.error("Error fetching audit logs:", error);
