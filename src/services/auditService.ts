@@ -1,37 +1,72 @@
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+import { apiClient, getAuthHeaders } from './apiClient';
 
 export interface DataUploadAudit {
   id: string;
-  uploaded_by_user_id: string;
-  file_name: string;
-  record_count: number;
-  successfully_imported: number;
-  duplicates_skipped: number;
-  errors_encountered: number;
+  uploadedByUserId: string;
+  fileName: string;
+  recordCount: number;
+  successfullyImported: number;
+  duplicatesSkipped: number;
+  errorsEncountered: number;
   status: string;
   notes: string;
-  operation_type: string;
-  upload_timestamp: string; // Assuming ISO 8601 date string
-  // Add other fields as necessary based on the actual backend model
+  operationType: string;
+  uploadTimestamp: string; // ISO 8601 date string
+}
+
+export interface AuditLogResponse {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  userId: string;
+  timestamp: string;
+  details: string;
 }
 
 export const getDataUploadAudits = async (token: string): Promise<DataUploadAudit[]> => {
   try {
-    const response = await axios.get(`${API_URL}/admin/reports/data-uploads/`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
+    const response = await apiClient.get('/admin/reports/data-uploads', {
+      headers: getAuthHeaders(token)
     });
-    return response.data as DataUploadAudit[];
+    // Handle nested response structure
+    return response.data.data || [];
   } catch (error) {
     console.error("Error fetching data upload audits:", error);
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      // Handle unauthorized access, e.g., redirect to login
-      throw new Error("Unauthorized: Please log in again.");
-    }
-    throw new Error("Failed to fetch data upload audits.");
+    throw error;
   }
 };
 
+export const getAuditLogs = async (
+  page: number = 1, 
+  pageSize: number = 10, 
+  filters: Record<string, string> = {},
+  token: string
+): Promise<{ data: AuditLogResponse[], total: number, page: number, pageSize: number }> => {
+  try {
+    const response = await apiClient.get('/admin/audit-logs', {
+      params: {
+        page,
+        pageSize,
+        ...filters
+      },
+      headers: getAuthHeaders(token)
+    });
+    // Handle nested response structure
+    const responseData = response.data.data || response.data;
+    return {
+      data: responseData.data || [],
+      total: responseData.total || 0,
+      page: responseData.page || 1,
+      pageSize: responseData.pageSize || 10
+    };
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    throw error;
+  }
+};
+
+export const auditService = {
+  getDataUploadAudits,
+  getAuditLogs
+};
