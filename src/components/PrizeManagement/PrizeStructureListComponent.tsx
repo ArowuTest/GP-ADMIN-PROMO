@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { prizeStructureService, DayOfWeek } from '../../services/prizeStructureService';
+import { prizeStructureService } from '../../services/prizeStructureService';
+import type { DayOfWeek } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
