@@ -150,15 +150,15 @@ const AuditLogsPage: React.FC = () => {
           <tbody>
             {auditLogs.map((log) => (
               <tr key={log.id}>
-                <td style={styles.td}>{new Date(log.upload_timestamp).toLocaleString()}</td>
-                <td style={styles.td}>{log.file_name}</td>
-                <td style={styles.td}>{log.uploaded_by_user_id}</td>
+                <td style={styles.td}>{new Date(log.uploadTimestamp).toLocaleString()}</td>
+                <td style={styles.td}>{log.fileName}</td>
+                <td style={styles.td}>{log.uploadedByUserId}</td>
                 <td style={styles.td}>{log.status}</td>
-                <td style={styles.td}>{log.operation_type}</td>
-                <td style={styles.td}>{log.record_count}</td>
-                <td style={styles.td}>{log.successfully_imported}</td>
-                <td style={styles.td}>{log.duplicates_skipped}</td>
-                <td style={styles.td}>{log.errors_encountered}</td>
+                <td style={styles.td}>{log.operationType}</td>
+                <td style={styles.td}>{log.recordCount}</td>
+                <td style={styles.td}>{log.successfullyImported}</td>
+                <td style={styles.td}>{log.duplicatesSkipped}</td>
+                <td style={styles.td}>{log.errorsEncountered}</td>
                 <td style={styles.td}>{log.notes}</td>
               </tr>
             ))}
@@ -170,4 +170,3 @@ const AuditLogsPage: React.FC = () => {
 };
 
 export default AuditLogsPage;
-
