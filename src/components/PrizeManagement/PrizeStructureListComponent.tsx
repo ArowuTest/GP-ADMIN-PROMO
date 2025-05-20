@@ -1,50 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { prizeStructureService } from '../../services/prizeStructureService';
+import { prizeStructureService, type CreatePrizeStructurePayload, type PrizeTierPayload } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Define DayOfWeek type directly here to avoid circular import
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
-// Define types for prize structure form
+// Define types for prize structure form - updated to use camelCase
 interface PrizeTier {
   id?: string;
   name: string;
-  prize_type: string;
+  prizeType: string; // Changed from snake_case to camelCase
   value: string;
   quantity: number;
   order: number;
-  number_of_runner_ups: number;
+  numberOfRunnerUps: number; // Changed from snake_case to camelCase
 }
 
 interface PrizeStructureFormData {
   name: string;
   description: string;
-  is_active: boolean;
-  valid_from: string;
-  valid_to?: string;
-  applicable_days: DayOfWeek[];
+  isActive: boolean; // Changed from snake_case to camelCase
+  validFrom: string; // Changed from snake_case to camelCase
+  validTo?: string; // Changed from snake_case to camelCase
+  applicableDays: DayOfWeek[]; // Changed from snake_case to camelCase
   prizes: PrizeTier[];
 }
 
-// Helper function to convert component data to service payload
-const convertComponentToServicePayload = (data: PrizeStructureFormData) => {
+// Helper function to convert component data to service payload - updated to use camelCase
+const convertComponentToServicePayload = (data: PrizeStructureFormData): CreatePrizeStructurePayload => {
   return {
     name: data.name,
     description: data.description,
-    is_active: data.is_active,
-    valid_from: data.valid_from,
-    valid_to: data.valid_to,
-    applicable_days: data.applicable_days,
+    isActive: data.isActive, // Changed from snake_case to camelCase
+    validFrom: data.validFrom, // Changed from snake_case to camelCase
+    validTo: data.validTo, // Changed from snake_case to camelCase
+    applicableDays: data.applicableDays, // Changed from snake_case to camelCase
     prizes: data.prizes.map(prize => ({
       id: prize.id,
       name: prize.name,
-      prize_type: prize.prize_type,
+      prizeType: prize.prizeType, // Changed from snake_case to camelCase
       value: prize.value,
       quantity: prize.quantity,
       order: prize.order,
-      number_of_runner_ups: prize.number_of_runner_ups
+      numberOfRunnerUps: prize.numberOfRunnerUps // Changed from snake_case to camelCase
     }))
   };
 };
@@ -59,10 +59,10 @@ const PrizeStructureListComponent: React.FC = () => {
   const [formData, setFormData] = useState<PrizeStructureFormData>({
     name: '',
     description: '',
-    is_active: true,
-    valid_from: new Date().toISOString().split('T')[0],
-    valid_to: undefined,
-    applicable_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    isActive: true, // Changed from snake_case to camelCase
+    validFrom: new Date().toISOString().split('T')[0], // Changed from snake_case to camelCase
+    validTo: undefined, // Changed from snake_case to camelCase
+    applicableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], // Changed from snake_case to camelCase
     prizes: []
   });
 
@@ -136,18 +136,18 @@ const PrizeStructureListComponent: React.FC = () => {
     setFormData({
       name: structure.name,
       description: structure.description,
-      is_active: structure.isActive,
-      valid_from: structure.validFrom,
-      valid_to: structure.validTo || undefined,
-      applicable_days: structure.applicableDays || [],
+      isActive: structure.isActive, // Already camelCase from backend
+      validFrom: structure.validFrom, // Already camelCase from backend
+      validTo: structure.validTo || undefined, // Already camelCase from backend
+      applicableDays: structure.applicableDays || [], // Already camelCase from backend
       prizes: structure.prizes.map((prize: any) => ({
         id: prize.id,
         name: prize.name,
-        prize_type: prize.prizeType,
+        prizeType: prize.prizeType, // Already camelCase from backend
         value: prize.value,
         quantity: prize.quantity,
         order: prize.order || 1,
-        number_of_runner_ups: prize.numberOfRunnerUps
+        numberOfRunnerUps: prize.numberOfRunnerUps // Already camelCase from backend
       }))
     });
     setEditingStructureId(structure.id);
@@ -157,10 +157,10 @@ const PrizeStructureListComponent: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      is_active: true,
-      valid_from: new Date().toISOString().split('T')[0],
-      valid_to: undefined,
-      applicable_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      isActive: true, // Changed from snake_case to camelCase
+      validFrom: new Date().toISOString().split('T')[0], // Changed from snake_case to camelCase
+      validTo: undefined, // Changed from snake_case to camelCase
+      applicableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], // Changed from snake_case to camelCase
       prizes: []
     });
   };
@@ -172,11 +172,11 @@ const PrizeStructureListComponent: React.FC = () => {
         ...formData.prizes,
         {
           name: '',
-          prize_type: 'Cash',
+          prizeType: 'Cash', // Changed from snake_case to camelCase
           value: '',
           quantity: 1,
           order: formData.prizes.length + 1,
-          number_of_runner_ups: 1
+          numberOfRunnerUps: 1 // Changed from snake_case to camelCase
         }
       ]
     });
@@ -204,13 +204,13 @@ const PrizeStructureListComponent: React.FC = () => {
   };
 
   const handleDayToggle = (day: DayOfWeek) => {
-    const updatedDays = formData.applicable_days.includes(day)
-      ? formData.applicable_days.filter(d => d !== day)
-      : [...formData.applicable_days, day];
+    const updatedDays = formData.applicableDays.includes(day) // Changed from snake_case to camelCase
+      ? formData.applicableDays.filter(d => d !== day) // Changed from snake_case to camelCase
+      : [...formData.applicableDays, day]; // Changed from snake_case to camelCase
     
     setFormData({
       ...formData,
-      applicable_days: updatedDays
+      applicableDays: updatedDays // Changed from snake_case to camelCase
     });
   };
 
@@ -262,8 +262,8 @@ const PrizeStructureListComponent: React.FC = () => {
             <label>Active:</label>
             <input 
               type="checkbox" 
-              checked={formData.is_active} 
-              onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+              checked={formData.isActive} // Changed from snake_case to camelCase
+              onChange={(e) => setFormData({...formData, isActive: e.target.checked})} // Changed from snake_case to camelCase
             />
           </div>
           
@@ -271,8 +271,8 @@ const PrizeStructureListComponent: React.FC = () => {
             <label>Valid From:</label>
             <input 
               type="date" 
-              value={formData.valid_from} 
-              onChange={(e) => setFormData({...formData, valid_from: e.target.value})}
+              value={formData.validFrom} // Changed from snake_case to camelCase
+              onChange={(e) => setFormData({...formData, validFrom: e.target.value})} // Changed from snake_case to camelCase
               className="form-control"
             />
           </div>
@@ -281,8 +281,8 @@ const PrizeStructureListComponent: React.FC = () => {
             <label>Valid To (optional):</label>
             <input 
               type="date" 
-              value={formData.valid_to || ''} 
-              onChange={(e) => setFormData({...formData, valid_to: e.target.value || undefined})}
+              value={formData.validTo || ''} // Changed from snake_case to camelCase
+              onChange={(e) => setFormData({...formData, validTo: e.target.value || undefined})} // Changed from snake_case to camelCase
               className="form-control"
             />
           </div>
@@ -294,7 +294,7 @@ const PrizeStructureListComponent: React.FC = () => {
                 <label key={day} className="day-checkbox">
                   <input 
                     type="checkbox" 
-                    checked={formData.applicable_days.includes(day as DayOfWeek)} 
+                    checked={formData.applicableDays.includes(day as DayOfWeek)} // Changed from snake_case to camelCase
                     onChange={() => handleDayToggle(day as DayOfWeek)} 
                   />
                   {day}
@@ -321,8 +321,8 @@ const PrizeStructureListComponent: React.FC = () => {
               <div className="form-group">
                 <label>Type:</label>
                 <select 
-                  value={prize.prize_type} 
-                  onChange={(e) => handlePrizeTierChange(index, 'prize_type', e.target.value)}
+                  value={prize.prizeType} // Changed from snake_case to camelCase
+                  onChange={(e) => handlePrizeTierChange(index, 'prizeType', e.target.value)} // Changed from snake_case to camelCase
                   className="form-control"
                 >
                   <option value="Cash">Cash</option>
@@ -357,8 +357,8 @@ const PrizeStructureListComponent: React.FC = () => {
                 <label>Number of Runner-ups:</label>
                 <input 
                   type="number" 
-                  value={prize.number_of_runner_ups} 
-                  onChange={(e) => handlePrizeTierChange(index, 'number_of_runner_ups', parseInt(e.target.value))}
+                  value={prize.numberOfRunnerUps} // Changed from snake_case to camelCase
+                  onChange={(e) => handlePrizeTierChange(index, 'numberOfRunnerUps', parseInt(e.target.value))} // Changed from snake_case to camelCase
                   className="form-control"
                   min="0"
                 />
@@ -512,6 +512,12 @@ const PrizeStructureListComponent: React.FC = () => {
           margin-bottom: 15px;
         }
         
+        .form-group label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: 500;
+        }
+        
         .form-control {
           width: 100%;
           padding: 8px;
@@ -522,13 +528,11 @@ const PrizeStructureListComponent: React.FC = () => {
         .days-checkboxes {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
         }
         
         .day-checkbox {
-          display: flex;
-          align-items: center;
-          margin-right: 10px;
+          margin-right: 15px;
+          margin-bottom: 5px;
         }
         
         .prize-tier-form {
@@ -550,24 +554,23 @@ const PrizeStructureListComponent: React.FC = () => {
         .add-tier-button {
           background-color: #52c41a;
           color: white;
+          margin-bottom: 20px;
         }
         
         .remove-tier-button {
           background-color: #ff4d4f;
           color: white;
-          margin-top: 10px;
         }
         
         .form-actions {
           margin-top: 20px;
           display: flex;
-          justify-content: flex-end;
           gap: 10px;
         }
         
         .save-button,
         .cancel-button {
-          padding: 8px 15px;
+          padding: 10px 15px;
           border: none;
           border-radius: 4px;
           cursor: pointer;
@@ -585,13 +588,16 @@ const PrizeStructureListComponent: React.FC = () => {
         
         .cancel-button {
           background-color: #f5f5f5;
-          color: #333;
           border: 1px solid #d9d9d9;
         }
         
         .error-message {
           color: #ff4d4f;
-          margin-bottom: 15px;
+          padding: 10px;
+          border: 1px solid #ff4d4f;
+          border-radius: 4px;
+          background-color: #fff1f0;
+          margin-bottom: 20px;
         }
         `}
       </style>
