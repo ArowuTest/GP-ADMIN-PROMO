@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { prizeStructureService, type CreatePrizeStructurePayload, type PrizeTierPayload } from '../../services/prizeStructureService';
+import { prizeStructureService, type CreatePrizeStructurePayload } from '../../services/prizeStructureService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
