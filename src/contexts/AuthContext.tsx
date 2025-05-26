@@ -3,44 +3,70 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authManager } from '../services/authManager';
 import { authService } from '../services/authService';
 
-interface AuthContextType {
+// Export UserRole enum to maintain backward compatibility
+export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  SENIOR_USER = 'SENIOR_USER',
+  WINNERS_REPORT_USER = 'WINNERS_REPORT_USER',
+  ALL_REPORT_USER = 'ALL_REPORT_USER'
+}
+
+// Export AuthContextType interface to maintain backward compatibility
+export interface AuthContextType {
   isAuthenticated: boolean;
   isLoadingAuth: boolean;
   user: any | null;
-  login: (username: string, password: string) => Promise<any>;
+  token: string | null; // Added for backward compatibility
+  userRole: UserRole | null; // Added for backward compatibility
+  username: string | null; // Added for backward compatibility
+  login: (credentials: { username: string; password: string }) => Promise<any>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export AuthContext to maintain backward compatibility
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [user, setUser] = useState<any | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = authManager.getToken();
+      const storedToken = authManager.getToken();
       const storedUser = authManager.getUser();
       
-      if (token && storedUser) {
+      if (storedToken && storedUser) {
         try {
           // Check if token is valid on app initialization
           const isValid = await authManager.checkAuthState();
           if (isValid) {
             setIsAuthenticated(true);
             setUser(storedUser);
+            setToken(storedToken);
+            setUserRole(storedUser.role as UserRole);
+            setUsername(storedUser.username);
           } else {
             // Token invalid
             authManager.clearAuthData();
             setIsAuthenticated(false);
             setUser(null);
+            setToken(null);
+            setUserRole(null);
+            setUsername(null);
           }
         } catch (error) {
           console.error('Auth initialization error:', error);
           authManager.clearAuthData();
           setIsAuthenticated(false);
           setUser(null);
+          setToken(null);
+          setUserRole(null);
+          setUsername(null);
         } finally {
           setIsLoadingAuth(false);
         }
@@ -54,13 +80,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Add visibility change listener to revalidate when tab becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const token = authManager.getToken();
-        if (token) {
+        const storedToken = authManager.getToken();
+        if (storedToken) {
           authManager.checkAuthState().then(isValid => {
             if (!isValid) {
               authManager.clearAuthData();
               setIsAuthenticated(false);
               setUser(null);
+              setToken(null);
+              setUserRole(null);
+              setUsername(null);
             }
           });
         }
@@ -74,12 +103,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (username: string, password: string) => {
+  // Maintain the original function signature for backward compatibility
+  const login = async (credentials: { username: string; password: string }) => {
     setIsLoadingAuth(true);
     try {
-      const response = await authService.login({ username, password });
+      const response = await authService.login(credentials);
       setIsAuthenticated(true);
       setUser(response.user);
+      setToken(response.token);
+      setUserRole(response.user.role as UserRole);
+      setUsername(response.user.username);
       return response;
     } catch (error) {
       console.error('Login error:', error);
@@ -93,10 +126,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
+    setToken(null);
+    setUserRole(null);
+    setUsername(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoadingAuth, user, login, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      isLoadingAuth, 
+      user, 
+      token, 
+      userRole, 
+      username,
+      login, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );
