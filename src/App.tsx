@@ -1,12 +1,14 @@
 // src/App.tsx
 import type { JSX } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import LoginPage from "./pages/LoginPage"; 
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DrawManagementPage from "./pages/DrawManagementPage"; 
 import AuditLogsPage from "./pages/AuditLogsPage"; 
 import AdminLayout from "./components/layout/AdminLayout"; 
 import { AuthProvider, useAuth } from "./contexts/AuthContext"; 
+import { authManager } from "./services/authManager";
 
 import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
 import UserListComponent from "./components/UserManagement/UserListComponent";
@@ -16,6 +18,22 @@ import WinnersReportPage from "./components/Reports/WinnersReportPage"; // Impor
 // ProtectedRoute component using AuthContext
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const auth = useAuth();
+  const navigate = useNavigate();
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const validateAuth = async () => {
+      if (auth.isAuthenticated) {
+        const isStillValid = await authManager.checkAuthState();
+        if (!isStillValid && !auth.isLoadingAuth) {
+          auth.logout();
+          navigate('/login', { replace: true });
+        }
+      }
+    };
+    
+    validateAuth();
+  }, [auth, navigate]);
 
   if (auth.isLoadingAuth) {
     return <p>Loading authentication...</p>; 
@@ -24,6 +42,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (!auth.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
   return children;
 };
 

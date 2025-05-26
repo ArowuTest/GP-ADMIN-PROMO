@@ -129,6 +129,52 @@ export const getAuthHeaders = (): Record<string, string> => {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
+/**
+ * Validate token with backend
+ * @param token JWT token to validate
+ * @returns Promise resolving to boolean indicating if token is valid
+ */
+export const validateToken = async (token: string): Promise<boolean> => {
+  try {
+    // Import here to avoid circular dependency
+    const { apiClient } = await import('./apiClient');
+    const response = await apiClient.post(`/auth/validate-token`, { token });
+    return response.data.data?.valid || response.data.valid || false;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+};
+
+/**
+ * Check authentication state on page load/navigation
+ * @returns Promise resolving to boolean indicating if user is authenticated
+ */
+export const checkAuthState = async (): Promise<boolean> => {
+  const token = getToken();
+  if (!token) return false;
+  
+  // Check if token is expired based on stored expiry
+  if (isTokenExpired()) {
+    clearAuthData();
+    return false;
+  }
+  
+  // Validate with backend if needed
+  // Only do this if token exists and isn't expired by local check
+  try {
+    const isValid = await validateToken(token);
+    if (!isValid) {
+      clearAuthData();
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Auth state check error:', error);
+    return false;
+  }
+};
+
 // Export as a named object for convenience
 export const authManager = {
   storeToken,
@@ -139,7 +185,9 @@ export const authManager = {
   getTokenExpiry,
   isTokenExpired,
   clearAuthData,
-  getAuthHeaders
+  getAuthHeaders,
+  validateToken,
+  checkAuthState
 };
 
 export default authManager;

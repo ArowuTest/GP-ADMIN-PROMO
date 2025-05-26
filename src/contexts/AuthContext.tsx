@@ -1,88 +1,102 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect } from "react";
-import type { ReactNode } from "react"; 
-import { jwtDecode } from "jwt-decode";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authManager } from '../services/authManager';
+import { authService } from '../services/authService';
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "SENIOR_USER" | "WINNER_REPORTS_USER" | "ALL_REPORT_USER" | null;
-
-// Export AuthContextType interface
-export interface AuthContextType {
+interface AuthContextType {
   isAuthenticated: boolean;
-  userRole: UserRole;
-  username: string | null;
-  token: string | null; 
-  isLoadingAuth: boolean; 
-  login: (token: string) => void;
+  isLoadingAuth: boolean;
+  user: any | null;
+  login: (username: string, password: string) => Promise<any>;
   logout: () => void;
 }
 
-interface DecodedToken {
-  username: string;
-  role: UserRole;
-  exp: number;
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Export AuthContext
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null); 
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true); 
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
+  const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("authToken");
-    if (storedToken) {
-      try {
-        const decodedToken = jwtDecode<DecodedToken>(storedToken);
-        if (decodedToken.exp * 1000 > Date.now()) {
-          setIsAuthenticated(true);
-          setUserRole(decodedToken.role);
-          setUsername(decodedToken.username);
-          setToken(storedToken); 
-        } else {
-          localStorage.removeItem("authToken");
+    const initAuth = async () => {
+      const token = authManager.getToken();
+      const storedUser = authManager.getUser();
+      
+      if (token && storedUser) {
+        try {
+          // Check if token is valid on app initialization
+          const isValid = await authManager.checkAuthState();
+          if (isValid) {
+            setIsAuthenticated(true);
+            setUser(storedUser);
+          } else {
+            // Token invalid
+            authManager.clearAuthData();
+            setIsAuthenticated(false);
+            setUser(null);
+          }
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+          authManager.clearAuthData();
+          setIsAuthenticated(false);
+          setUser(null);
+        } finally {
+          setIsLoadingAuth(false);
         }
-      } catch (error) {
-        console.error("Error decoding token on initial load:", error);
-        localStorage.removeItem("authToken");
+      } else {
+        setIsLoadingAuth(false);
       }
-    }
-    setIsLoadingAuth(false); 
+    };
+    
+    initAuth();
+    
+    // Add visibility change listener to revalidate when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const token = authManager.getToken();
+        if (token) {
+          authManager.checkAuthState().then(isValid => {
+            if (!isValid) {
+              authManager.clearAuthData();
+              setIsAuthenticated(false);
+              setUser(null);
+            }
+          });
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
-  const login = (newToken: string) => {
+  const login = async (username: string, password: string) => {
+    setIsLoadingAuth(true);
     try {
-      const decodedToken = jwtDecode<DecodedToken>(newToken);
-      localStorage.setItem("authToken", newToken);
+      const response = await authService.login({ username, password });
       setIsAuthenticated(true);
-      setUserRole(decodedToken.role);
-      setUsername(decodedToken.username);
-      setToken(newToken); 
-      setIsLoadingAuth(false); 
+      setUser(response.user);
+      return response;
     } catch (error) {
-      console.error("Error decoding token on login:", error);
-      localStorage.removeItem("authToken"); 
-      setIsAuthenticated(false);
-      setUserRole(null);
-      setUsername(null);
-      setToken(null); 
-      setIsLoadingAuth(false); 
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoadingAuth(false);
     }
   };
 
   const logout = () => {
-    localStorage.removeItem("authToken");
+    authService.logout();
     setIsAuthenticated(false);
-    setUserRole(null);
-    setUsername(null);
-    setToken(null); 
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, username, token, isLoadingAuth, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoadingAuth, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -91,8 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
