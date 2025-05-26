@@ -1,6 +1,7 @@
 // src/services/authService.ts
 import axios from 'axios';
 import { apiClient } from './apiClient';
+import { authManager } from './authManager';
 
 interface LoginCredentials {
   username: string;
@@ -49,7 +50,7 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     // Fix: Remove the duplicate /api/v1 prefix
     const response = await loginClient.post(`/auth/login`, payload);
 
-    // FIXED: Extract token from nested response structure
+    // Extract token from nested response structure
     // The backend returns { success: true, data: { token, expiresAt, user } }
     const responseData = response.data.data || response.data;
     const token = responseData.token;
@@ -58,11 +59,10 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
       throw new Error('Login failed: No token received in response');
     }
 
-    // Store token and user info in localStorage for session persistence
-    // FIXED: Use "authToken" key to match what's used in AuthContext.tsx
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('user', JSON.stringify(responseData.user));
-    localStorage.setItem('tokenExpiry', responseData.expiresAt);
+    // Use authManager to store token and user info for session persistence
+    authManager.storeToken(token);
+    authManager.storeUser(responseData.user);
+    authManager.storeTokenExpiry(responseData.expiresAt);
 
     return responseData;
   } catch (error) {
@@ -88,30 +88,19 @@ const validateToken = async (token: string): Promise<boolean> => {
     return response.data.data?.valid || response.data.valid || false;
   } catch (error) {
     // If validation fails, clear stored credentials
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('tokenExpiry');
+    authManager.clearAuthData();
     return false;
   }
 };
 
 // Check if token is expired based on expiresAt value
 const isTokenExpired = (): boolean => {
-  const expiryString = localStorage.getItem('tokenExpiry');
-  if (!expiryString) return true;
-
-  const expiryTime = new Date(expiryString).getTime();
-  const currentTime = new Date().getTime();
-
-  // Return true if token is expired
-  return currentTime >= expiryTime;
+  return authManager.isTokenExpired();
 };
 
 // Logout function to clear credentials
 const logout = (): void => {
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('tokenExpiry');
+  authManager.clearAuthData();
   window.location.href = '/login';
 };
 

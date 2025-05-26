@@ -1,5 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
+import { authManager } from './authManager';
 
 // Create an axios instance with default configuration
 export const apiClient = axios.create({
@@ -12,20 +13,14 @@ export const apiClient = axios.create({
   withCredentials: true // Add this to include cookies in cross-site requests
 });
 
-// Helper function to get auth headers
-export const getAuthHeaders = (token: string) => {
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
 // Add a request interceptor
 apiClient.interceptors.request.use(
   config => {
     // Log request for debugging
     console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
 
-    // Get token from localStorage for every request
-    // FIXED: Use "authToken" key to match what's used in AuthContext.tsx
-    const token = localStorage.getItem('authToken');
+    // Get token from authManager for every request
+    const token = authManager.getToken();
     
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -52,9 +47,7 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized errors (except for login attempts)
     if (error.response && error.response.status === 401 && !error.config.url.includes('/auth/login')) {
       // Clear token and redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('tokenExpiry');
+      authManager.clearAuthData();
 
       // Only redirect if not already on login page
       if (!window.location.pathname.includes('/login')) {
@@ -67,12 +60,9 @@ apiClient.interceptors.response.use(
       console.error('Access forbidden. This could be due to insufficient permissions or an expired token.');
       
       // Check if token might be expired
-      const tokenExpiry = localStorage.getItem('tokenExpiry');
-      if (tokenExpiry && new Date(tokenExpiry) < new Date()) {
+      if (authManager.isTokenExpired()) {
         console.error('Token appears to be expired. Redirecting to login...');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tokenExpiry');
+        authManager.clearAuthData();
         
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
