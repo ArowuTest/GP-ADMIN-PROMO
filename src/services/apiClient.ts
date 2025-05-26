@@ -13,6 +13,13 @@ export const apiClient = axios.create({
   withCredentials: true // Add this to include cookies in cross-site requests
 });
 
+// Re-export getAuthHeaders for backward compatibility with existing services
+export const getAuthHeaders = (token?: string): Record<string, string> => {
+  // If token is provided, use it; otherwise get from authManager
+  const authToken = token || authManager.getToken();
+  return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+};
+
 // Add a request interceptor
 apiClient.interceptors.request.use(
   config => {
