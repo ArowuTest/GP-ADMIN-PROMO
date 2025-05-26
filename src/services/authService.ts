@@ -1,112 +1,104 @@
 // src/services/authService.ts
-import axios from 'axios';
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
+// Define the login response interface
 interface LoginResponse {
-  message: string;
   token: string;
-  expiresAt: string;
   user: {
     id: string;
-    email: string;
     username: string;
+    email: string;
     role: string;
-    firstName: string;
-    lastName: string;
-    createdAt: string;
-    updatedAt: string;
+    isActive: boolean;
   };
 }
 
-const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+// Define the login credentials interface to match backend expectations
+interface LoginCredentials {
+  Email: string;    // Capitalized to match backend expectations
+  Password: string; // Capitalized to match backend expectations
+}
+
+/**
+ * Login user with credentials
+ * @param credentials User credentials (username/email and password)
+ * @returns Promise with login response
+ */
+const login = async (credentials: any): Promise<LoginResponse> => {
   try {
-    // Create a modified axios instance with increased timeout for login
-    const loginClient = axios.create({
-      baseURL: apiClient.defaults.baseURL,
-      timeout: 30000, // Increase timeout to 30 seconds for login requests
-      headers: apiClient.defaults.headers
-    });
-
-    // Check if the username looks like an email
-    const isEmail = credentials.username.includes('@');
-
-    // Always include username field to satisfy backend validation
-    // Additionally include email field if the input looks like an email
-    const payload = {
-      username: credentials.username, // Always include username field
-      password: credentials.password,
-      ...(isEmail && { email: credentials.username }) // Add email field if username looks like an email
-    };
-
-    // Remove sensitive logging - only log non-sensitive information
     console.log('Attempting login...');
-
-    // Fix: Remove the duplicate /api/v1 prefix
-    const response = await loginClient.post(`/auth/login`, payload);
-
-    // Extract token from nested response structure
-    // The backend returns { success: true, data: { token, expiresAt, user } }
-    const responseData = response.data.data || response.data;
-    const token = responseData.token;
-
-    if (!token) {
-      throw new Error('Login failed: No token received in response');
+    
+    // Transform credentials to match backend expectations
+    const loginPayload: LoginCredentials = {
+      Email: credentials.username || credentials.email || '',
+      Password: credentials.password || '',
+    };
+    
+    // Make login request
+    const response = await apiClient.post<LoginResponse>('/auth/login', loginPayload);
+    
+    if (response.data && response.data.token) {
+      // Store authentication data
+      authManager.storeToken(response.data.token);
+      authManager.storeUser(response.data.user);
+      
+      // Calculate and store token expiry (assuming 24 hour expiry)
+      const expiryTime = new Date();
+      expiryTime.setHours(expiryTime.getHours() + 24);
+      authManager.storeTokenExpiry(expiryTime.toISOString());
+      
+      return response.data;
+    } else {
+      throw new Error('Invalid login response: missing token or user data');
     }
-
-    // Use authManager to store token and user info for session persistence
-    authManager.storeToken(token);
-    authManager.storeUser(responseData.user);
-    authManager.storeTokenExpiry(responseData.expiresAt);
-
-    return responseData;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Login request timed out. Please try again later.');
-      }
-      // Improved error handling to extract and surface error messages
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Invalid username or password. Please try again.';
-      throw new Error(errorMessage);
+    
+    // Extract and throw meaningful error message
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message || 'Login failed');
     }
-    throw new Error('Login failed due to an unexpected error. Please try again later.');
+    throw error;
   }
 };
 
-// Validate token with backend (e.g., on app load)
+/**
+ * Logout user
+ */
+const logout = (): void => {
+  authManager.clearAuthData();
+};
+
+/**
+ * Validate token with backend (only if endpoint exists)
+ * @param token JWT token to validate
+ * @returns Promise resolving to boolean indicating if token is valid
+ */
 const validateToken = async (token: string): Promise<boolean> => {
   try {
-    // Fix: Remove the duplicate /api/v1 prefix
-    const response = await apiClient.post(`/auth/validate-token`, { token });
-    // Handle nested response structure
-    return response.data.data?.valid || response.data.valid || false;
+    // Check token locally first
+    if (!token) return false;
+    
+    // Skip backend validation since endpoint doesn't exist
+    // Instead, rely on local expiry check
+    return !authManager.isTokenExpired();
+    
+    // If backend endpoint is added later, uncomment this code:
+    /*
+    const response = await apiClient.post('/auth/validate-token', { token });
+    return response.data.valid || false;
+    */
   } catch (error) {
-    // If validation fails, clear stored credentials
-    authManager.clearAuthData();
+    console.error('Token validation error:', error);
     return false;
   }
 };
 
-// Check if token is expired based on expiresAt value
-const isTokenExpired = (): boolean => {
-  return authManager.isTokenExpired();
-};
-
-// Logout function to clear credentials
-const logout = (): void => {
-  authManager.clearAuthData();
-  window.location.href = '/login';
-};
-
 export const authService = {
   login,
-  validateToken,
-  isTokenExpired,
-  logout
+  logout,
+  validateToken
 };
+
+export default authService;
