@@ -4,11 +4,13 @@ import { authManager } from '../services/authManager';
 import { authService } from '../services/authService';
 
 // Export UserRole enum to maintain backward compatibility
+// Note: Including both correct spelling and the typo version for compatibility
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   SENIOR_USER = 'SENIOR_USER',
   WINNERS_REPORT_USER = 'WINNERS_REPORT_USER',
+  WINNER_REPORTS_USER = 'WINNER_REPORTS_USER', // Include the typo version for compatibility
   ALL_REPORT_USER = 'ALL_REPORT_USER'
 }
 
@@ -20,7 +22,7 @@ export interface AuthContextType {
   token: string | null; // Added for backward compatibility
   userRole: UserRole | null; // Added for backward compatibility
   username: string | null; // Added for backward compatibility
-  login: (credentials: { username: string; password: string }) => Promise<any>;
+  login: (credentials: any) => Promise<any>; // Accept any credentials format for backward compatibility
   logout: () => void;
 }
 
@@ -48,7 +50,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAuthenticated(true);
             setUser(storedUser);
             setToken(storedToken);
-            setUserRole(storedUser.role as UserRole);
+            // Handle both string and enum values for role
+            setUserRole(typeof storedUser.role === 'string' ? storedUser.role as UserRole : storedUser.role);
             setUsername(storedUser.username);
           } else {
             // Token invalid
@@ -103,15 +106,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Maintain the original function signature for backward compatibility
-  const login = async (credentials: { username: string; password: string }) => {
+  // Flexible login function that accepts any credential format for backward compatibility
+  const login = async (credentials: any) => {
     setIsLoadingAuth(true);
     try {
-      const response = await authService.login(credentials);
+      // Handle both object and string username formats
+      const loginCredentials = typeof credentials === 'string' 
+        ? { username: credentials, password: '' } // Password will be provided separately in some components
+        : credentials;
+        
+      const response = await authService.login(loginCredentials);
       setIsAuthenticated(true);
       setUser(response.user);
       setToken(response.token);
-      setUserRole(response.user.role as UserRole);
+      // Handle both string and enum values for role
+      setUserRole(typeof response.user.role === 'string' ? response.user.role as UserRole : response.user.role);
       setUsername(response.user.username);
       return response;
     } catch (error) {
