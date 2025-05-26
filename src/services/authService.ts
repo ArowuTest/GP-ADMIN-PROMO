@@ -1,3 +1,4 @@
+// src/services/authService.ts
 import axios from 'axios';
 import { apiClient } from './apiClient';
 
@@ -30,10 +31,10 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
       timeout: 30000, // Increase timeout to 30 seconds for login requests
       headers: apiClient.defaults.headers
     });
-    
+
     // Check if the username looks like an email
     const isEmail = credentials.username.includes('@');
-    
+
     // Always include username field to satisfy backend validation
     // Additionally include email field if the input looks like an email
     const payload = {
@@ -41,27 +42,28 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
       password: credentials.password,
       ...(isEmail && { email: credentials.username }) // Add email field if username looks like an email
     };
-    
+
     // Remove sensitive logging - only log non-sensitive information
     console.log('Attempting login...');
-    
+
     // Fix: Remove the duplicate /api/v1 prefix
     const response = await loginClient.post(`/auth/login`, payload);
-    
+
     // FIXED: Extract token from nested response structure
     // The backend returns { success: true, data: { token, expiresAt, user } }
     const responseData = response.data.data || response.data;
     const token = responseData.token;
-    
+
     if (!token) {
       throw new Error('Login failed: No token received in response');
     }
-    
+
     // Store token and user info in localStorage for session persistence
-    localStorage.setItem('token', token);
+    // FIXED: Use "authToken" key to match what's used in AuthContext.tsx
+    localStorage.setItem('authToken', token);
     localStorage.setItem('user', JSON.stringify(responseData.user));
     localStorage.setItem('tokenExpiry', responseData.expiresAt);
-    
+
     return responseData;
   } catch (error) {
     console.error('Login error:', error);
@@ -70,9 +72,7 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
         throw new Error('Login request timed out. Please try again later.');
       }
       // Improved error handling to extract and surface error messages
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          'Invalid username or password. Please try again.';
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Invalid username or password. Please try again.';
       throw new Error(errorMessage);
     }
     throw new Error('Login failed due to an unexpected error. Please try again later.');
@@ -88,7 +88,7 @@ const validateToken = async (token: string): Promise<boolean> => {
     return response.data.data?.valid || response.data.valid || false;
   } catch (error) {
     // If validation fails, clear stored credentials
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('tokenExpiry');
     return false;
@@ -99,17 +99,17 @@ const validateToken = async (token: string): Promise<boolean> => {
 const isTokenExpired = (): boolean => {
   const expiryString = localStorage.getItem('tokenExpiry');
   if (!expiryString) return true;
-  
+
   const expiryTime = new Date(expiryString).getTime();
   const currentTime = new Date().getTime();
-  
+
   // Return true if token is expired
   return currentTime >= expiryTime;
 };
 
 // Logout function to clear credentials
 const logout = (): void => {
-  localStorage.removeItem('token');
+  localStorage.removeItem('authToken');
   localStorage.removeItem('user');
   localStorage.removeItem('tokenExpiry');
   window.location.href = '/login';

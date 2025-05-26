@@ -22,9 +22,11 @@ apiClient.interceptors.request.use(
   config => {
     // Log request for debugging
     console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-    
+
     // Get token from localStorage for every request
-    const token = localStorage.getItem('token');
+    // FIXED: Use "authToken" key to match what's used in AuthContext.tsx
+    const token = localStorage.getItem('authToken');
+    
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -46,20 +48,20 @@ apiClient.interceptors.response.use(
   error => {
     // Log error response for debugging
     console.error(`Error response from ${error.config?.url}:`, error.response?.status, error.response?.data);
-    
+
     // Handle 401 Unauthorized errors (except for login attempts)
     if (error.response && error.response.status === 401 && !error.config.url.includes('/auth/login')) {
       // Clear token and redirect to login
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       localStorage.removeItem('tokenExpiry');
-      
+
       // Only redirect if not already on login page
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
     }
-    
+
     // Handle 403 Forbidden errors
     if (error.response && error.response.status === 403) {
       console.error('Access forbidden. This could be due to insufficient permissions or an expired token.');
@@ -68,7 +70,7 @@ apiClient.interceptors.response.use(
       const tokenExpiry = localStorage.getItem('tokenExpiry');
       if (tokenExpiry && new Date(tokenExpiry) < new Date()) {
         console.error('Token appears to be expired. Redirecting to login...');
-        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         localStorage.removeItem('tokenExpiry');
         
@@ -77,7 +79,7 @@ apiClient.interceptors.response.use(
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
