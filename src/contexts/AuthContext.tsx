@@ -3,26 +3,24 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authManager } from '../services/authManager';
 import { authService } from '../services/authService';
 
-// Export UserRole enum to maintain backward compatibility
-// Note: Including both correct spelling and the typo version for compatibility
-export enum UserRole {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
-  SENIOR_USER = 'SENIOR_USER',
-  WINNERS_REPORT_USER = 'WINNERS_REPORT_USER',
-  WINNER_REPORTS_USER = 'WINNER_REPORTS_USER', // Include the typo version for compatibility
-  ALL_REPORT_USER = 'ALL_REPORT_USER'
-}
+// Define UserRole as a string literal type instead of enum for compatibility with existing code
+export type UserRole = 
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'SENIOR_USER'
+  | 'WINNERS_REPORT_USER'
+  | 'WINNER_REPORTS_USER'
+  | 'ALL_REPORT_USER';
 
 // Export AuthContextType interface to maintain backward compatibility
 export interface AuthContextType {
   isAuthenticated: boolean;
   isLoadingAuth: boolean;
   user: any | null;
-  token: string | null; // Added for backward compatibility
-  userRole: UserRole | null; // Added for backward compatibility
-  username: string | null; // Added for backward compatibility
-  login: (credentials: any) => Promise<any>; // Accept any credentials format for backward compatibility
+  token: string | null;
+  userRole: UserRole | null;
+  username: string | null;
+  login: (credentials: any) => Promise<any>;
   logout: () => void;
 }
 
@@ -50,8 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAuthenticated(true);
             setUser(storedUser);
             setToken(storedToken);
-            // Handle both string and enum values for role
-            setUserRole(typeof storedUser.role === 'string' ? storedUser.role as UserRole : storedUser.role);
+            // Handle role as string literal type
+            setUserRole(storedUser.role as UserRole);
             setUsername(storedUser.username);
           } else {
             // Token invalid
@@ -119,8 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
       setUser(response.user);
       setToken(response.token);
-      // Handle both string and enum values for role
-      setUserRole(typeof response.user.role === 'string' ? response.user.role as UserRole : response.user.role);
+      // Handle role as string literal type
+      setUserRole(response.user.role as UserRole);
       setUsername(response.user.username);
       return response;
     } catch (error) {
