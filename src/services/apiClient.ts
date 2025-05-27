@@ -1,6 +1,5 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-// No unused imports - removed AxiosHeaders type-only import
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -31,46 +30,35 @@ apiClient.interceptors.request.use(
       });
     }
     
-    // If token exists, add it to the Authorization header
-    if (token) {
-      // CRITICAL FIX: Use Axios's built-in methods to handle headers
-      // This avoids the "Cannot assign to read only property" error
-      // and is compatible with verbatimModuleSyntax
-      
-      // Create a mutable copy of the config
-      const newConfig = { ...config };
-      
-      // Use the proper Axios method to set headers
-      // This approach works with both runtime constraints and TypeScript
-      if (newConfig.headers) {
-        // Create a new headers object using Axios's methods
-        // Using axios.AxiosHeaders directly instead of importing the type
-        const headers = new axios.AxiosHeaders();
-        
-        // Copy all existing headers
-        Object.entries(newConfig.headers).forEach(([key, value]) => {
-          if (value !== undefined) {
-            headers.set(key, value);
-          }
-        });
-        
-        // Add the Authorization header
-        headers.set('Authorization', `Bearer ${token}`);
-        
-        // Replace the headers object
-        newConfig.headers = headers;
-      } else {
-        // If headers don't exist, create a new AxiosHeaders instance
-        const headers = new axios.AxiosHeaders();
-        headers.set('Content-Type', 'application/json');
-        headers.set('Authorization', `Bearer ${token}`);
-        newConfig.headers = headers;
-      }
-      
-      return newConfig;
+    // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
+    const newConfig = { ...config };
+    
+    // Create a new headers object
+    const headers = {};
+    
+    // Copy all existing headers
+    if (newConfig.headers) {
+      Object.entries(newConfig.headers).forEach(([key, value]) => {
+        if (value !== undefined) {
+          headers[key] = value;
+        }
+      });
     }
     
-    return config;
+    // If token exists, add it to the Authorization header
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Replace the headers object
+    newConfig.headers = headers;
+    
+    // Log the final headers for debugging
+    if (DEBUG) {
+      console.log('Final request headers:', newConfig.headers);
+    }
+    
+    return newConfig;
   },
   (error) => {
     if (DEBUG) {
