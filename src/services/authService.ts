@@ -14,8 +14,27 @@ const login = async (credentials: any): Promise<any> => {
   try {
     if (DEBUG) console.log('Attempting login...');
     
+    // CRITICAL FIX: Prevent login attempts with empty credentials
+    // This prevents the app from trying to re-login with undefined credentials
+    if (!credentials || 
+        ((!credentials.username && !credentials.email) || !credentials.password)) {
+      if (DEBUG) console.log('Login attempt with empty credentials prevented');
+      
+      // Check if we already have a valid token
+      const hasValidToken = await authManager.checkAuthState();
+      if (hasValidToken) {
+        if (DEBUG) console.log('Using existing valid token instead of attempting login');
+        // Return existing user and token
+        return {
+          token: authManager.getToken(),
+          user: authManager.getUser()
+        };
+      }
+      
+      throw new Error('Login credentials are required');
+    }
+    
     // Transform credentials to match backend expectations
-    // No validation - let the backend handle validation
     const loginPayload = {
       Email: credentials.username || credentials.email || '',
       Password: credentials.password || '',
@@ -74,7 +93,7 @@ const login = async (credentials: any): Promise<any> => {
         
         const payload = JSON.parse(jsonPayload);
         user = {
-          ID: payload.sub || payload.id || 'unknown',
+          ID: payload.sub || payload.id || payload.user_id || 'unknown',
           email: payload.email || credentials.email || credentials.username || '',
           username: payload.username || credentials.username || credentials.email || '',
           role: payload.role || 'ADMIN' // Default role
