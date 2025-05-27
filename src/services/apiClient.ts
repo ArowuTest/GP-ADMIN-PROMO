@@ -1,7 +1,7 @@
 // src/services/apiClient.ts
 import axios from 'axios';
 // Use type-only import for TypeScript with verbatimModuleSyntax
-import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
+import type { AxiosHeaders } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -34,23 +34,37 @@ apiClient.interceptors.request.use(
     
     // If token exists, add it to the Authorization header
     if (token) {
-      // CRITICAL FIX: Use Axios's built-in setHeader method which is type-safe
+      // CRITICAL FIX: Use Axios's built-in methods to handle headers
       // This avoids the "Cannot assign to read only property" error
       // and is compatible with verbatimModuleSyntax
       
       // Create a mutable copy of the config
       const newConfig = { ...config };
       
-      // Set the Authorization header using the proper method
-      // This approach works with Axios's type system and verbatimModuleSyntax
+      // Use the proper Axios method to set headers
+      // This approach works with both runtime constraints and TypeScript
       if (newConfig.headers) {
-        // Use a type-safe approach with RawAxiosRequestHeaders
-        const headers = { ...newConfig.headers } as RawAxiosRequestHeaders;
-        headers['Authorization'] = `Bearer ${token}`;
+        // Create a new headers object using Axios's methods
+        const headers = new axios.AxiosHeaders();
+        
+        // Copy all existing headers
+        Object.entries(newConfig.headers).forEach(([key, value]) => {
+          if (value !== undefined) {
+            headers.set(key, value);
+          }
+        });
+        
+        // Add the Authorization header
+        headers.set('Authorization', `Bearer ${token}`);
+        
+        // Replace the headers object
         newConfig.headers = headers;
       } else {
-        // If headers don't exist, create them
-        newConfig.headers = { 'Authorization': `Bearer ${token}` } as RawAxiosRequestHeaders;
+        // If headers don't exist, create a new AxiosHeaders instance
+        const headers = new axios.AxiosHeaders();
+        headers.set('Content-Type', 'application/json');
+        headers.set('Authorization', `Bearer ${token}`);
+        newConfig.headers = headers;
       }
       
       return newConfig;
