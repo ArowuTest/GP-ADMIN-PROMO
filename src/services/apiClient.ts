@@ -48,12 +48,9 @@ apiClient.interceptors.request.use(
     }
     
     // If token exists, add it to the Authorization header
+    // CORS FIX: Only use standard Authorization header, remove custom X-Auth-Token
     if (token) {
-      // CORS FIX: Ensure consistent Bearer format
       headers.set('Authorization', `Bearer ${token}`);
-      
-      // CORS FIX: Also set token as a custom header for backends that might not support Authorization
-      headers.set('X-Auth-Token', token);
     }
     
     // Replace the headers object
@@ -175,10 +172,9 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
     console.log(`[API] getAuthHeaders called, token available: ${!!authToken}`);
   }
   
-  // CORS FIX: Return both standard and custom auth headers
+  // CORS FIX: Only return standard Authorization header, remove custom X-Auth-Token
   return authToken ? { 
-    'Authorization': `Bearer ${authToken}`,
-    'X-Auth-Token': authToken
+    'Authorization': `Bearer ${authToken}`
   } : {};
 };
 

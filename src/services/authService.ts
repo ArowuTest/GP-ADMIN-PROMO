@@ -32,10 +32,10 @@ export const authService = {
         
         try {
           // CORS FIX: Use modified axios config for cross-origin requests
+          // Only use standard Authorization header, remove custom X-Auth-Token
           const validateResponse = await axios.get(`${API_BASE_URL}/admin/users`, {
             headers: {
               'Authorization': `Bearer ${existingToken}`,
-              'X-Auth-Token': existingToken, // Add custom header as fallback
               'Content-Type': 'application/json'
             },
             withCredentials: false // Changed from true to false for cross-origin
