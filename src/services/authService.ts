@@ -1,182 +1,287 @@
 // src/services/authService.ts
-import { apiClient } from './apiClient';
+import axios from 'axios';
 import { authManager } from './authManager';
+
+// Base URL for API requests
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1';
 
 // Debug flag to enable detailed logging
 const DEBUG = true;
 
 /**
- * Login user with credentials
- * @param credentials User credentials (username/email and password)
- * @returns Promise with login response
+ * Comprehensive authentication service with robust error handling
+ * and support for various backend response formats
  */
-const login = async (credentials: any): Promise<any> => {
-  try {
-    if (DEBUG) console.log('Attempting login...');
-    
-    // CRITICAL FIX: Prevent login attempts with empty credentials
-    // This prevents the app from trying to re-login with undefined credentials
-    if (!credentials || 
-        ((!credentials.username && !credentials.email) || !credentials.password)) {
-      if (DEBUG) console.log('Login attempt with empty credentials prevented');
-      
-      // Check if we already have a valid token
-      const hasValidToken = await authManager.checkAuthState();
-      if (hasValidToken) {
-        if (DEBUG) console.log('Using existing valid token instead of attempting login');
-        // Return existing user and token
-        return {
-          token: authManager.getToken(),
-          user: authManager.getUser()
-        };
-      }
-      
-      throw new Error('Login credentials are required');
-    }
-    
-    // Transform credentials to match backend expectations
-    const loginPayload = {
-      Email: credentials.username || credentials.email || '',
-      Password: credentials.password || '',
-    };
-    
-    if (DEBUG) console.log('Making POST request to /auth/login');
-    // Make login request
-    const response = await apiClient.post('/auth/login', loginPayload);
-    
-    if (DEBUG) {
-      console.log('Received successful response from /auth/login');
-      console.log('Response data structure:', JSON.stringify(response.data));
-    }
-    
-    // Handle different possible response structures
-    let token = null;
-    let user = null;
-    
-    // Case 1: Standard nested structure { success: true, data: { token, user } }
-    if (response.data && response.data.data) {
-      if (response.data.data.token) {
-        token = response.data.data.token;
-      }
-      if (response.data.data.user) {
-        user = response.data.data.user;
-      }
-    }
-    
-    // Case 2: Direct structure { token, user }
-    if (!token && response.data && response.data.token) {
-      token = response.data.token;
-    }
-    if (!user && response.data && response.data.user) {
-      user = response.data.user;
-    }
-    
-    // Case 3: Token in headers
-    if (!token && response.headers && response.headers.authorization) {
-      const authHeader = response.headers.authorization;
-      if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      } else {
-        token = authHeader;
-      }
-    }
-    
-    // If we have a token but no user, create a minimal user object
-    if (token && !user) {
-      // Extract user info from JWT if possible
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        
-        const payload = JSON.parse(jsonPayload);
-        user = {
-          ID: payload.sub || payload.id || payload.user_id || 'unknown',
-          email: payload.email || credentials.email || credentials.username || '',
-          username: payload.username || credentials.username || credentials.email || '',
-          role: payload.role || 'ADMIN' // Default role
-        };
-      } catch (e) {
-        // If JWT parsing fails, create minimal user object
-        user = {
-          ID: 'unknown',
-          email: credentials.email || credentials.username || '',
-          username: credentials.username || credentials.email || '',
-          role: 'ADMIN' // Default role
-        };
-      }
-    }
-    
-    // If we have both token and user, store them and return
-    if (token && user) {
-      if (DEBUG) console.log('Successfully extracted token and user from response');
-      
-      // Store authentication data with redundancy
-      authManager.storeToken(token);
-      authManager.storeUser(user);
-      
-      // Set a longer expiry time (7 days) to prevent premature logout
-      const expiryTime = new Date();
-      expiryTime.setDate(expiryTime.getDate() + 7); // 7 days
-      authManager.storeTokenExpiry(expiryTime.toISOString());
-      
-      return {
-        token: token,
-        user: user
-      };
-    }
-    
-    console.error('Failed to extract token and user from response:', response.data);
-    throw new Error('Invalid login response: missing token or user data');
-  } catch (error: any) {
-    console.error('Login error:', error);
-    
-    // Extract and throw meaningful error message
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Login failed');
-    }
-    throw error;
-  }
-};
-
-/**
- * Logout user
- */
-const logout = (): void => {
-  if (DEBUG) console.log('Logging out user');
-  authManager.clearAuthData();
-};
-
-/**
- * Validate token with backend (only if endpoint exists)
- * @param token JWT token to validate
- * @returns Promise resolving to boolean indicating if token is valid
- */
-const validateToken = async (token: string): Promise<boolean> => {
-  try {
-    // Check token locally first
-    if (!token) {
-      if (DEBUG) console.log('No token provided for validation');
-      return false;
-    }
-    
-    // Skip backend validation since endpoint doesn't exist
-    // Instead, rely on local expiry check
-    const isValid = !authManager.isTokenExpired();
-    if (DEBUG) console.log(`Token validation result: ${isValid ? 'valid' : 'invalid'}`);
-    return isValid;
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return false;
-  }
-};
-
 export const authService = {
-  login,
-  logout,
-  validateToken
+  /**
+   * Login user with email and password
+   * Handles multiple response formats and provides detailed error logging
+   */
+  login: async (email: string, password: string) => {
+    try {
+      if (DEBUG) {
+        console.log('[AUTH] Login attempt:', { email, hasPassword: !!password });
+      }
+
+      // Check if we already have a valid token
+      const existingToken = authManager.getToken();
+      if (existingToken) {
+        if (DEBUG) {
+          console.log('[AUTH] Existing token found, validating...');
+        }
+        
+        try {
+          // Validate existing token with a lightweight request
+          const validateResponse = await axios.get(`${API_BASE_URL}/admin/users`, {
+            headers: {
+              'Authorization': `Bearer ${existingToken}`
+            },
+            withCredentials: true
+          });
+          
+          if (validateResponse.status === 200) {
+            if (DEBUG) {
+              console.log('[AUTH] Existing token is valid, using cached user data');
+            }
+            
+            // Use existing token and user data
+            return {
+              success: true,
+              token: existingToken,
+              user: authManager.getUserData() || { email }
+            };
+          }
+        } catch (validateError) {
+          if (DEBUG) {
+            console.warn('[AUTH] Existing token validation failed, proceeding with login', validateError);
+          }
+          // Continue with login if token validation fails
+        }
+      }
+
+      // Proceed with login request
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email,
+        password
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+
+      if (DEBUG) {
+        console.log('[AUTH] Login response:', {
+          status: response.status,
+          hasData: !!response.data,
+          dataKeys: response.data ? Object.keys(response.data) : []
+        });
+      }
+
+      // Handle successful response
+      if (response.status === 200) {
+        // Extract token from various possible response formats
+        let token = null;
+        let userData = null;
+
+        // Check response headers first (some APIs return token in header)
+        const authHeader = response.headers['authorization'] || response.headers['Authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7);
+          if (DEBUG) console.log('[AUTH] Token found in Authorization header');
+        }
+
+        // Check response data for token
+        if (!token && response.data) {
+          // Format 1: { token: "..." }
+          if (response.data.token) {
+            token = response.data.token;
+            if (DEBUG) console.log('[AUTH] Token found in response.data.token');
+          }
+          // Format 2: { data: { token: "..." } }
+          else if (response.data.data && response.data.data.token) {
+            token = response.data.data.token;
+            if (DEBUG) console.log('[AUTH] Token found in response.data.data.token');
+          }
+          // Format 3: { access_token: "..." }
+          else if (response.data.access_token) {
+            token = response.data.access_token;
+            if (DEBUG) console.log('[AUTH] Token found in response.data.access_token');
+          }
+          // Format 4: { data: { access_token: "..." } }
+          else if (response.data.data && response.data.data.access_token) {
+            token = response.data.data.access_token;
+            if (DEBUG) console.log('[AUTH] Token found in response.data.data.access_token');
+          }
+          
+          // Extract user data from various possible formats
+          if (response.data.user) {
+            userData = response.data.user;
+            if (DEBUG) console.log('[AUTH] User data found in response.data.user');
+          }
+          else if (response.data.data && response.data.data.user) {
+            userData = response.data.data.user;
+            if (DEBUG) console.log('[AUTH] User data found in response.data.data.user');
+          }
+          else if (response.data.userData) {
+            userData = response.data.userData;
+            if (DEBUG) console.log('[AUTH] User data found in response.data.userData');
+          }
+          else if (response.data.data && response.data.data.userData) {
+            userData = response.data.data.userData;
+            if (DEBUG) console.log('[AUTH] User data found in response.data.data.userData');
+          }
+          // If we have a token but no user data, create minimal user object
+          else if (token) {
+            userData = { email };
+            if (DEBUG) console.log('[AUTH] Created minimal user data with email');
+          }
+        }
+
+        // If we have a token, store it and return success
+        if (token) {
+          if (DEBUG) {
+            console.log('[AUTH] Login successful, storing token and user data');
+          }
+          
+          // Store token in multiple storage mechanisms for redundancy
+          authManager.setToken(token);
+          
+          // Also store directly in localStorage and sessionStorage as backup
+          try {
+            localStorage.setItem('token', token);
+            sessionStorage.setItem('token', token);
+            
+            // Also set as cookie for additional redundancy
+            document.cookie = `auth_token=${token}; path=/; max-age=604800`; // 7 days
+            
+            if (DEBUG) {
+              console.log('[AUTH] Token stored in multiple locations for redundancy');
+            }
+          } catch (storageError) {
+            console.warn('[AUTH] Error storing token in additional locations', storageError);
+          }
+          
+          // Store user data
+          if (userData) {
+            authManager.setUserData(userData);
+          }
+          
+          return {
+            success: true,
+            token,
+            user: userData
+          };
+        }
+        
+        // If we got a 200 response but couldn't find a token, log the entire response for debugging
+        if (DEBUG) {
+          console.warn('[AUTH] Login response was 200 but no token found:', response.data);
+        }
+        
+        return {
+          success: false,
+          error: 'Invalid login response: missing token or user data'
+        };
+      }
+      
+      // Handle unexpected success status
+      return {
+        success: false,
+        error: `Unexpected response status: ${response.status}`
+      };
+    } catch (error: any) {
+      if (DEBUG) {
+        console.error('[AUTH] Login error:', error);
+      }
+      
+      // Handle specific error cases
+      if (error.response) {
+        // Server responded with error status
+        return {
+          success: false,
+          error: error.response.data?.message || `Server error: ${error.response.status}`,
+          status: error.response.status
+        };
+      } else if (error.request) {
+        // Request was made but no response received
+        return {
+          success: false,
+          error: 'No response from server. Please check your connection.'
+        };
+      } else {
+        // Error in setting up the request
+        return {
+          success: false,
+          error: error.message || 'Unknown error occurred'
+        };
+      }
+    }
+  },
+
+  /**
+   * Logout user and clear all authentication data
+   */
+  logout: () => {
+    if (DEBUG) {
+      console.log('[AUTH] Logging out, clearing all auth data');
+    }
+    
+    // Clear auth data from all storage mechanisms
+    authManager.clearAuthData();
+    
+    // Also clear from localStorage and sessionStorage directly
+    try {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      
+      // Clear auth cookie
+      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      
+      if (DEBUG) {
+        console.log('[AUTH] Auth data cleared from all storage locations');
+      }
+    } catch (storageError) {
+      console.warn('[AUTH] Error clearing token from additional locations', storageError);
+    }
+    
+    // Redirect to login page
+    window.location.href = '/login';
+  },
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated: () => {
+    const token = authManager.getToken();
+    
+    // Also check localStorage and sessionStorage directly as fallbacks
+    const localStorageToken = localStorage.getItem('token');
+    const sessionStorageToken = sessionStorage.getItem('token');
+    
+    // Check for auth cookie
+    const cookieToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('auth_token='))
+      ?.split('=')[1];
+    
+    // Use any available token
+    const availableToken = token || localStorageToken || sessionStorageToken || cookieToken;
+    
+    if (DEBUG && availableToken) {
+      console.log('[AUTH] Authentication check: Token found');
+      
+      // If token was found in alternative storage but not in authManager, restore it
+      if (!token && availableToken) {
+        if (DEBUG) {
+          console.log('[AUTH] Restoring token from alternative storage');
+        }
+        authManager.setToken(availableToken);
+      }
+    }
+    
+    return !!availableToken;
+  }
 };
 
 export default authService;
