@@ -37,6 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // CRITICAL FIX: Add debug logging
   const DEBUG = true;
+  
+  // CRITICAL FIX: Add redirect tracking to prevent loops
+  const [hasRedirected, setHasRedirected] = useState<boolean>(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -46,7 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (DEBUG) {
         console.log('[AUTH_CONTEXT] Initializing auth state', { 
           hasToken: !!storedToken, 
-          hasUser: !!storedUser 
+          hasUser: !!storedUser,
+          currentPath: window.location.pathname
         });
       }
 
@@ -66,11 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserRole(storedUser.role as UserRole);
           setUsername(storedUser.username || storedUser.email);
           
-          // CRITICAL FIX: Force navigation to dashboard if on login page
-          if (window.location.pathname === '/login') {
+          // CRITICAL FIX: Only redirect if on login page and haven't redirected yet
+          if (window.location.pathname === '/login' && !hasRedirected) {
             if (DEBUG) {
               console.log('[AUTH_CONTEXT] Already authenticated, redirecting from login to dashboard');
             }
+            setHasRedirected(true);
             window.location.href = '/dashboard';
           }
         } catch (error) {
@@ -85,6 +90,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsLoadingAuth(false);
         }
       } else {
+        if (DEBUG) {
+          console.log('[AUTH_CONTEXT] No stored credentials found, not authenticated');
+        }
+        
+        // CRITICAL FIX: If not on login page and not authenticated, redirect to login
+        if (window.location.pathname !== '/login' && !hasRedirected) {
+          if (DEBUG) {
+            console.log('[AUTH_CONTEXT] Not authenticated, redirecting to login');
+          }
+          setHasRedirected(true);
+          window.location.href = '/login';
+        }
+        
         setIsLoadingAuth(false);
       }
     };
@@ -106,6 +124,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
           setUserRole(null);
           setUsername(null);
+          
+          // CRITICAL FIX: Redirect to login if token expired and not already on login page
+          if (window.location.pathname !== '/login' && !hasRedirected) {
+            setHasRedirected(true);
+            window.location.href = '/login';
+          }
         }
       }
     };
@@ -114,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [hasRedirected]); // CRITICAL FIX: Add hasRedirected to dependency array
 
   // Login function with proper email and password parameters
   const login = async (email: string, password: string) => {
@@ -139,15 +163,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserRole(response.user.role as UserRole);
         setUsername(response.user.username || response.user.email);
         
-        // CRITICAL FIX: Force navigation to dashboard after successful login
-        if (DEBUG) {
-          console.log('[AUTH_CONTEXT] Redirecting to dashboard after successful login');
+        // CRITICAL FIX: Only redirect if not already redirected
+        if (!hasRedirected) {
+          if (DEBUG) {
+            console.log('[AUTH_CONTEXT] Redirecting to dashboard after successful login');
+          }
+          
+          setHasRedirected(true);
+          
+          // Use timeout to ensure state is updated before navigation
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 100);
         }
-        
-        // Use timeout to ensure state is updated before navigation
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 100);
       }
       
       return response;
@@ -170,6 +198,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setUserRole(null);
     setUsername(null);
+    
+    // CRITICAL FIX: Reset redirect state on logout
+    setHasRedirected(false);
   };
 
   // CRITICAL FIX: Add debug output for context value
@@ -178,7 +209,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated, 
       hasUser: !!user, 
       hasToken: !!token,
-      userRole
+      userRole,
+      currentPath: window.location.pathname,
+      hasRedirected
     });
   }
 
