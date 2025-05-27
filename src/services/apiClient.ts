@@ -1,5 +1,7 @@
 // src/services/apiClient.ts
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
+// Use type-only import for TypeScript with verbatimModuleSyntax
+import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -31,21 +33,25 @@ apiClient.interceptors.request.use(
     }
     
     // If token exists, add it to the Authorization header
-    // CRITICAL FIX: Use the proper Axios type-safe way to set headers
     if (token) {
-      // Create a new config object with the Authorization header
+      // CRITICAL FIX: Use Axios's built-in setHeader method which is type-safe
+      // This avoids the "Cannot assign to read only property" error
+      // and is compatible with verbatimModuleSyntax
+      
+      // Create a mutable copy of the config
       const newConfig = { ...config };
       
-      // Ensure headers exists
-      if (!newConfig.headers) {
-        newConfig.headers = {};
+      // Set the Authorization header using the proper method
+      // This approach works with Axios's type system and verbatimModuleSyntax
+      if (newConfig.headers) {
+        // Use a type-safe approach with RawAxiosRequestHeaders
+        const headers = { ...newConfig.headers } as RawAxiosRequestHeaders;
+        headers['Authorization'] = `Bearer ${token}`;
+        newConfig.headers = headers;
+      } else {
+        // If headers don't exist, create them
+        newConfig.headers = { 'Authorization': `Bearer ${token}` } as RawAxiosRequestHeaders;
       }
-      
-      // Set the Authorization header in a type-safe way
-      newConfig.headers = {
-        ...newConfig.headers,
-        'Authorization': `Bearer ${token}`
-      } as AxiosRequestConfig['headers'];
       
       return newConfig;
     }
