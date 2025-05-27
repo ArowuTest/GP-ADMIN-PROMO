@@ -27,38 +27,12 @@ export const authService = {
       const existingToken = authManager.getToken();
       if (existingToken) {
         if (DEBUG) {
-          console.log('[AUTH] Existing token found, validating...');
+          console.log('[AUTH] Existing token found, but skipping validation to avoid 401 errors');
         }
         
-        try {
-          // CORS FIX: Use modified axios config for cross-origin requests
-          // Only use standard Authorization header, remove custom X-Auth-Token
-          const validateResponse = await axios.get(`${API_BASE_URL}/admin/users`, {
-            headers: {
-              'Authorization': `Bearer ${existingToken}`,
-              'Content-Type': 'application/json'
-            },
-            withCredentials: false // Changed from true to false for cross-origin
-          });
-          
-          if (validateResponse.status === 200) {
-            if (DEBUG) {
-              console.log('[AUTH] Existing token is valid, using cached user data');
-            }
-            
-            // Use existing token and user data
-            return {
-              success: true,
-              token: existingToken,
-              user: authManager.getUser() || { email }
-            };
-          }
-        } catch (validateError) {
-          if (DEBUG) {
-            console.warn('[AUTH] Existing token validation failed, proceeding with login', validateError);
-          }
-          // Continue with login if token validation fails
-        }
+        // CRITICAL FIX: Skip token validation against /admin/users endpoint
+        // This prevents 401 errors during login process
+        // Instead, we'll proceed with login to get a fresh token
       }
 
       // CORS FIX: Use modified axios config for cross-origin login requests
@@ -159,6 +133,8 @@ export const authService = {
           expiryDate.setDate(expiryDate.getDate() + 7);
           authManager.storeTokenExpiry(expiryDate.toISOString());
           
+          // CRITICAL FIX: Return success immediately after login without additional validation
+          // This ensures login completes even if subsequent API calls might return 401
           return {
             success: true,
             token,
