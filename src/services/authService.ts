@@ -31,12 +31,14 @@ export const authService = {
         }
         
         try {
-          // Validate existing token with a lightweight request
+          // CORS FIX: Use modified axios config for cross-origin requests
           const validateResponse = await axios.get(`${API_BASE_URL}/admin/users`, {
             headers: {
-              'Authorization': `Bearer ${existingToken}`
+              'Authorization': `Bearer ${existingToken}`,
+              'X-Auth-Token': existingToken, // Add custom header as fallback
+              'Content-Type': 'application/json'
             },
-            withCredentials: true
+            withCredentials: false // Changed from true to false for cross-origin
           });
           
           if (validateResponse.status === 200) {
@@ -59,7 +61,7 @@ export const authService = {
         }
       }
 
-      // Proceed with login request
+      // CORS FIX: Use modified axios config for cross-origin login requests
       const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         email,
         password
@@ -67,7 +69,7 @@ export const authService = {
         headers: {
           'Content-Type': 'application/json'
         },
-        withCredentials: true
+        withCredentials: false // Changed from true to false for cross-origin
       });
 
       if (DEBUG) {

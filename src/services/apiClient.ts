@@ -11,8 +11,9 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Add withCredentials to ensure cookies are sent with requests
-  withCredentials: true,
+  // CORS FIX: Set withCredentials based on environment
+  // Only use true for same-origin or when backend explicitly supports credentials
+  withCredentials: false, // Changed from true to false for cross-origin requests
 });
 
 // Add request interceptor to include auth token in every request
@@ -47,7 +48,11 @@ apiClient.interceptors.request.use(
     
     // If token exists, add it to the Authorization header
     if (token) {
+      // CORS FIX: Ensure consistent Bearer format
       headers.set('Authorization', `Bearer ${token}`);
+      
+      // CORS FIX: Also set token as a custom header for backends that might not support Authorization
+      headers.set('X-Auth-Token', token);
     }
     
     // Replace the headers object
@@ -89,8 +94,17 @@ apiClient.interceptors.response.use(
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        authHeader: error.config?.headers?.['Authorization'] ? 'present' : 'missing'
+        authHeader: error.config?.headers?.['Authorization'] ? 'present' : 'missing',
+        // CORS FIX: Log CORS-related information
+        corsError: error.message?.includes('CORS') || error.message?.includes('cross-origin')
       });
+    }
+    
+    // CORS FIX: Detect and handle CORS errors specifically
+    if (error.message?.includes('CORS') || error.message?.includes('cross-origin')) {
+      console.error('[API] CORS error detected. This may be due to cross-origin restrictions.');
+      // Don't clear auth data for CORS errors as they're likely configuration issues
+      return Promise.reject(error);
     }
     
     // CRITICAL FIX: Only handle 401/403 errors if they're not from the login endpoint
@@ -115,6 +129,35 @@ apiClient.interceptors.response.use(
   }
 );
 
+// CORS FIX: Add a retry mechanism for failed requests
+export const retryRequest = async (originalRequest, retryCount = 0) => {
+  const maxRetries = 2;
+  
+  try {
+    // Try the request with the current configuration
+    return await axios(originalRequest);
+  } catch (error) {
+    // If we've reached max retries or it's not a CORS/auth error, don't retry
+    if (retryCount >= maxRetries || 
+        !(error.message?.includes('CORS') || 
+          error.response?.status === 401 || 
+          error.response?.status === 403)) {
+      return Promise.reject(error);
+    }
+    
+    console.log(`[API] Retrying failed request (attempt ${retryCount + 1}/${maxRetries})`);
+    
+    // Create a new request with modified settings
+    const newRequest = { ...originalRequest };
+    
+    // Toggle withCredentials for retry
+    newRequest.withCredentials = !originalRequest.withCredentials;
+    
+    // Retry with modified request
+    return retryRequest(newRequest, retryCount + 1);
+  }
+};
+
 // Re-export getAuthHeaders for backward compatibility with existing services
 export const getAuthHeaders = (token?: string): Record<string, string> => {
   // If token is provided, use it; otherwise get from authManager
@@ -124,7 +167,11 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
     console.log(`[API] getAuthHeaders called, token available: ${!!authToken}`);
   }
   
-  return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+  // CORS FIX: Return both standard and custom auth headers
+  return authToken ? { 
+    'Authorization': `Bearer ${authToken}`,
+    'X-Auth-Token': authToken
+  } : {};
 };
 
 export { apiClient };
