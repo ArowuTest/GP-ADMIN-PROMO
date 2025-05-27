@@ -2,27 +2,6 @@
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
-// Define the backend response structure based on actual backend code
-interface BackendLoginResponse {
-  success: boolean;
-  message?: string;
-  data?: {
-    token: string;
-    user: {
-      ID: string;
-      username: string;
-      email: string;
-      role: string;
-      isActive: boolean;
-      fullName?: string;
-      createdAt?: string;
-      updatedAt?: string;
-    };
-    expiry: string;
-  };
-  error?: string;
-}
-
 /**
  * Login user with credentials
  * @param credentials User credentials (username/email and password)
@@ -32,29 +11,15 @@ const login = async (credentials: any): Promise<any> => {
   try {
     console.log('Attempting login...');
     
-    // Ensure email is in valid format
-    const email = credentials.username || credentials.email || '';
-    const password = credentials.password || '';
-    
-    // Validate email format before sending to backend
-    if (!email.includes('@') || !email.includes('.')) {
-      throw new Error('Please enter a valid email address');
-    }
-    
-    // Validate password is not empty
-    if (!password) {
-      throw new Error('Password is required');
-    }
-    
     // Transform credentials to match backend expectations
     const loginPayload = {
-      Email: email,
-      Password: password,
+      Email: credentials.username || credentials.email || '',
+      Password: credentials.password || '',
     };
     
     console.log('Making POST request to /auth/login');
     // Make login request
-    const response = await apiClient.post<BackendLoginResponse>('/auth/login', loginPayload);
+    const response = await apiClient.post('/auth/login', loginPayload);
     
     console.log('Received successful response from /auth/login');
     
@@ -67,7 +32,6 @@ const login = async (credentials: any): Promise<any> => {
         // Store authentication data
         authManager.storeToken(loginData.token);
         authManager.storeUser(loginData.user);
-        console.log('Token stored successfully');
         
         // Calculate and store token expiry
         if (loginData.expiry) {

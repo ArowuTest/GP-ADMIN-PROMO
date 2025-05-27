@@ -16,10 +16,6 @@ apiClient.interceptors.request.use(
     // Get the current token before each request
     const token = authManager.getToken();
     
-    // Log the request for debugging
-    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-    console.log('Token available for request:', !!token);
-    
     // If token exists, add it to the Authorization header
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -28,7 +24,6 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('API request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -36,23 +31,16 @@ apiClient.interceptors.request.use(
 // Add response interceptor to handle auth errors
 apiClient.interceptors.response.use(
   (response) => {
-    // Log successful response for debugging
-    console.log(`Received successful response from ${response.config.url}`);
     return response;
   },
   (error) => {
-    // Log error response for debugging
-    console.error('API response error:', error);
-    
     // Handle authentication errors (401 Unauthorized, 403 Forbidden)
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.log('Authentication error detected, logging out');
       // Clear auth data on authentication errors
       authManager.clearAuthData();
       
       // Redirect to login page if not already there
       if (window.location.pathname !== '/login') {
-        console.log('Redirecting to login page');
         window.location.href = '/login';
       }
     }
