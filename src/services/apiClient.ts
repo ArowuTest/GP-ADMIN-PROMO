@@ -1,5 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
+import type { AxiosRequestHeaders } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -33,21 +34,21 @@ apiClient.interceptors.request.use(
     // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
     const newConfig = { ...config };
     
-    // Create a new headers object
-    const headers = {};
+    // Create a new headers object with proper typing
+    const headers = new axios.AxiosHeaders();
     
     // Copy all existing headers
     if (newConfig.headers) {
-      Object.entries(newConfig.headers).forEach(([key, value]) => {
+      Object.entries(newConfig.headers as Record<string, any>).forEach(([key, value]) => {
         if (value !== undefined) {
-          headers[key] = value;
+          headers.set(key, value);
         }
       });
     }
     
     // If token exists, add it to the Authorization header
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers.set('Authorization', `Bearer ${token}`);
     }
     
     // Replace the headers object
