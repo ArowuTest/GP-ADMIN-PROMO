@@ -1,4 +1,4 @@
-// src/services/authService.ts - TypeScript Interface
+// src/services/authService.ts
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
@@ -32,10 +32,24 @@ const login = async (credentials: any): Promise<any> => {
   try {
     console.log('Attempting login...');
     
+    // Ensure email is in valid format
+    const email = credentials.username || credentials.email || '';
+    const password = credentials.password || '';
+    
+    // Validate email format before sending to backend
+    if (!email.includes('@') || !email.includes('.')) {
+      throw new Error('Please enter a valid email address');
+    }
+    
+    // Validate password is not empty
+    if (!password) {
+      throw new Error('Password is required');
+    }
+    
     // Transform credentials to match backend expectations
     const loginPayload = {
-      Email: credentials.username || credentials.email || '',
-      Password: credentials.password || '',
+      Email: email,
+      Password: password,
     };
     
     console.log('Making POST request to /auth/login');
@@ -53,6 +67,7 @@ const login = async (credentials: any): Promise<any> => {
         // Store authentication data
         authManager.storeToken(loginData.token);
         authManager.storeUser(loginData.user);
+        console.log('Token stored successfully');
         
         // Calculate and store token expiry
         if (loginData.expiry) {
