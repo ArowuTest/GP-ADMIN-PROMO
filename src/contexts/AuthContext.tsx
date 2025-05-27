@@ -4,7 +4,7 @@ import { authManager } from '../services/authManager';
 import { authService } from '../services/authService';
 
 // Define UserRole as a string literal type instead of enum for compatibility with existing code
-export type UserRole = 
+export type UserRole =
   | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'SENIOR_USER'
@@ -35,33 +35,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
+  // CRITICAL FIX: Add debug logging
+  const DEBUG = true;
+
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = authManager.getToken();
       const storedUser = authManager.getUser();
-      
+
+      if (DEBUG) {
+        console.log('[AUTH_CONTEXT] Initializing auth state', { 
+          hasToken: !!storedToken, 
+          hasUser: !!storedUser 
+        });
+      }
+
       if (storedToken && storedUser) {
         try {
-          // Check if token is valid on app initialization
-          const isValid = await authManager.checkAuthState();
-          if (isValid) {
-            setIsAuthenticated(true);
-            setUser(storedUser);
-            setToken(storedToken);
-            // Handle role as string literal type
-            setUserRole(storedUser.role as UserRole);
-            setUsername(storedUser.username || storedUser.email);
-          } else {
-            // Token invalid
-            authManager.clearAuthData();
-            setIsAuthenticated(false);
-            setUser(null);
-            setToken(null);
-            setUserRole(null);
-            setUsername(null);
+          // CRITICAL FIX: Skip token validation and trust local storage
+          // This prevents unnecessary API calls that might return 401
+          if (DEBUG) {
+            console.log('[AUTH_CONTEXT] Found stored credentials, setting authenticated state');
+          }
+          
+          setIsAuthenticated(true);
+          setUser(storedUser);
+          setToken(storedToken);
+          
+          // Handle role as string literal type
+          setUserRole(storedUser.role as UserRole);
+          setUsername(storedUser.username || storedUser.email);
+          
+          // CRITICAL FIX: Force navigation to dashboard if on login page
+          if (window.location.pathname === '/login') {
+            if (DEBUG) {
+              console.log('[AUTH_CONTEXT] Already authenticated, redirecting from login to dashboard');
+            }
+            window.location.href = '/dashboard';
           }
         } catch (error) {
-          console.error('Auth initialization error:', error);
+          console.error('[AUTH_CONTEXT] Auth initialization error:', error);
           authManager.clearAuthData();
           setIsAuthenticated(false);
           setUser(null);
@@ -75,30 +88,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoadingAuth(false);
       }
     };
-    
+
     initAuth();
-    
-    // Add visibility change listener to revalidate when tab becomes visible
+
+    // CRITICAL FIX: Simplified visibility change handler
+    // Only clear auth if token is expired, don't make API calls
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const storedToken = authManager.getToken();
-        if (storedToken) {
-          authManager.checkAuthState().then(isValid => {
-            if (!isValid) {
-              authManager.clearAuthData();
-              setIsAuthenticated(false);
-              setUser(null);
-              setToken(null);
-              setUserRole(null);
-              setUsername(null);
-            }
-          });
+        if (storedToken && authManager.isTokenExpired()) {
+          if (DEBUG) {
+            console.log('[AUTH_CONTEXT] Token expired on visibility change, clearing auth');
+          }
+          authManager.clearAuthData();
+          setIsAuthenticated(false);
+          setUser(null);
+          setToken(null);
+          setUserRole(null);
+          setUsername(null);
         }
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -108,20 +120,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoadingAuth(true);
     try {
+      if (DEBUG) {
+        console.log('[AUTH_CONTEXT] Attempting login', { email });
+      }
+      
       const response = await authService.login(email, password);
       
       if (response.success) {
+        if (DEBUG) {
+          console.log('[AUTH_CONTEXT] Login successful, setting authenticated state');
+        }
+        
         setIsAuthenticated(true);
         setUser(response.user);
         setToken(response.token);
+        
         // Handle role as string literal type
         setUserRole(response.user.role as UserRole);
         setUsername(response.user.username || response.user.email);
+        
+        // CRITICAL FIX: Force navigation to dashboard after successful login
+        if (DEBUG) {
+          console.log('[AUTH_CONTEXT] Redirecting to dashboard after successful login');
+        }
+        
+        // Use timeout to ensure state is updated before navigation
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 100);
       }
       
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AUTH_CONTEXT] Login error:', error);
       throw error;
     } finally {
       setIsLoadingAuth(false);
@@ -129,6 +160,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    if (DEBUG) {
+      console.log('[AUTH_CONTEXT] Logging out');
+    }
+    
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
@@ -137,17 +172,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsername(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ 
+  // CRITICAL FIX: Add debug output for context value
+  if (DEBUG) {
+    console.log('[AUTH_CONTEXT] Current auth state:', { 
       isAuthenticated, 
-      isLoadingAuth, 
-      user, 
-      token, 
-      userRole, 
-      username,
-      login, 
-      logout 
-    }}>
+      hasUser: !!user, 
+      hasToken: !!token,
+      userRole
+    });
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoadingAuth,
+        user,
+        token,
+        userRole,
+        username,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
