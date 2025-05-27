@@ -35,24 +35,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
+  // Initialize authentication state from storage
   useEffect(() => {
+    console.log('AuthContext: Initializing authentication state');
     const initAuth = async () => {
-      const storedToken = authManager.getToken();
-      const storedUser = authManager.getUser();
-      
-      if (storedToken && storedUser) {
-        try {
-          // Check if token is valid on app initialization
+      try {
+        const storedToken = authManager.getToken();
+        const storedUser = authManager.getUser();
+        
+        console.log('AuthContext: Stored token exists:', !!storedToken);
+        console.log('AuthContext: Stored user exists:', !!storedUser);
+        
+        if (storedToken && storedUser) {
+          // Check if token is valid
           const isValid = await authManager.checkAuthState();
+          console.log('AuthContext: Token validation result:', isValid);
+          
           if (isValid) {
             setIsAuthenticated(true);
             setUser(storedUser);
             setToken(storedToken);
             // Handle role as string literal type
             setUserRole(storedUser.role as UserRole);
-            setUsername(storedUser.username);
+            setUsername(storedUser.username || storedUser.email);
+            console.log('AuthContext: Authentication state restored successfully');
           } else {
             // Token invalid
+            console.log('AuthContext: Token invalid, clearing auth data');
             authManager.clearAuthData();
             setIsAuthenticated(false);
             setUser(null);
@@ -60,19 +69,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserRole(null);
             setUsername(null);
           }
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          authManager.clearAuthData();
-          setIsAuthenticated(false);
-          setUser(null);
-          setToken(null);
-          setUserRole(null);
-          setUsername(null);
-        } finally {
-          setIsLoadingAuth(false);
+        } else {
+          console.log('AuthContext: No stored authentication data found');
         }
-      } else {
+      } catch (error) {
+        console.error('AuthContext: Error during authentication initialization:', error);
+        authManager.clearAuthData();
+        setIsAuthenticated(false);
+        setUser(null);
+        setToken(null);
+        setUserRole(null);
+        setUsername(null);
+      } finally {
         setIsLoadingAuth(false);
+        console.log('AuthContext: Authentication loading completed');
       }
     };
     
@@ -81,10 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Add visibility change listener to revalidate when tab becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        console.log('AuthContext: Document became visible, checking auth state');
         const storedToken = authManager.getToken();
         if (storedToken) {
           authManager.checkAuthState().then(isValid => {
+            console.log('AuthContext: Visibility change token validation:', isValid);
             if (!isValid) {
+              console.log('AuthContext: Token invalid after visibility change, clearing auth data');
               authManager.clearAuthData();
               setIsAuthenticated(false);
               setUser(null);
@@ -106,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Flexible login function that accepts any credential format for backward compatibility
   const login = async (credentials: any) => {
+    console.log('AuthContext: Login attempt started');
     setIsLoadingAuth(true);
     try {
       // Handle both object and string username formats
@@ -114,15 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         : credentials;
         
       const response = await authService.login(loginCredentials);
+      console.log('AuthContext: Login successful, setting authentication state');
+      
       setIsAuthenticated(true);
       setUser(response.user);
       setToken(response.token);
       // Handle role as string literal type
       setUserRole(response.user.role as UserRole);
-      setUsername(response.user.username);
+      setUsername(response.user.username || response.user.email);
+      
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('AuthContext: Login error:', error);
       throw error;
     } finally {
       setIsLoadingAuth(false);
@@ -130,12 +147,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('AuthContext: Logout initiated');
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
     setToken(null);
     setUserRole(null);
     setUsername(null);
+    console.log('AuthContext: Logout completed, auth state cleared');
   };
 
   return (
