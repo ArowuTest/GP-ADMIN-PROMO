@@ -31,17 +31,13 @@ apiClient.interceptors.request.use(
     }
     
     // If token exists, add it to the Authorization header
+    // CRITICAL FIX: Create a new headers object instead of modifying the existing one
+    // This prevents the "Cannot assign to read only property 'Authorization'" error
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-      
-      // CRITICAL FIX: Ensure Authorization header is not overridden
-      // This prevents the header from being lost during request processing
-      Object.defineProperty(config.headers, 'Authorization', {
-        value: `Bearer ${token}`,
-        enumerable: true,
-        writable: false,
-        configurable: true
-      });
+      config.headers = { 
+        ...config.headers,
+        'Authorization': `Bearer ${token}`
+      };
     }
     
     return config;
