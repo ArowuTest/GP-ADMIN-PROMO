@@ -1,5 +1,5 @@
 // src/services/apiClient.ts
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -31,13 +31,23 @@ apiClient.interceptors.request.use(
     }
     
     // If token exists, add it to the Authorization header
-    // CRITICAL FIX: Create a new headers object instead of modifying the existing one
-    // This prevents the "Cannot assign to read only property 'Authorization'" error
+    // CRITICAL FIX: Use the proper Axios type-safe way to set headers
     if (token) {
-      config.headers = { 
-        ...config.headers,
+      // Create a new config object with the Authorization header
+      const newConfig = { ...config };
+      
+      // Ensure headers exists
+      if (!newConfig.headers) {
+        newConfig.headers = {};
+      }
+      
+      // Set the Authorization header in a type-safe way
+      newConfig.headers = {
+        ...newConfig.headers,
         'Authorization': `Bearer ${token}`
-      };
+      } as AxiosRequestConfig['headers'];
+      
+      return newConfig;
     }
     
     return config;
