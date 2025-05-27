@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import axios from 'axios';
-import { authManager } from './aligned_authManager';
+import { authManager } from './authManager';
 
 // Base URL for API requests
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1';

@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authManager } from '../services/aligned_authManager';
-import { authService } from '../services/aligned_authService';
+import { authManager } from '../services/authManager';
+import { authService } from '../services/authService';
 
 // Define UserRole as a string literal type instead of enum for compatibility with existing code
 export type UserRole = 
