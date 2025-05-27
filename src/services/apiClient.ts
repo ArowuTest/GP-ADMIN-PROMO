@@ -1,5 +1,5 @@
 // src/services/apiClient.ts
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -130,25 +130,32 @@ apiClient.interceptors.response.use(
 );
 
 // CORS FIX: Add a retry mechanism for failed requests
-export const retryRequest = async (originalRequest, retryCount = 0) => {
+// Fixed TypeScript errors by adding proper type annotations
+export const retryRequest = async (originalRequest: AxiosRequestConfig, retryCount = 0): Promise<AxiosResponse> => {
   const maxRetries = 2;
   
   try {
     // Try the request with the current configuration
     return await axios(originalRequest);
-  } catch (error) {
+  } catch (error: unknown) {
+    // Type guard for error object
+    const isAxiosError = axios.isAxiosError(error);
+    const errorMessage = isAxiosError ? error.message : String(error);
+    const errorStatus = isAxiosError && error.response ? error.response.status : undefined;
+    
     // If we've reached max retries or it's not a CORS/auth error, don't retry
     if (retryCount >= maxRetries || 
-        !(error.message?.includes('CORS') || 
-          error.response?.status === 401 || 
-          error.response?.status === 403)) {
+        !(errorMessage.includes('CORS') || 
+          errorMessage.includes('cross-origin') ||
+          errorStatus === 401 || 
+          errorStatus === 403)) {
       return Promise.reject(error);
     }
     
     console.log(`[API] Retrying failed request (attempt ${retryCount + 1}/${maxRetries})`);
     
     // Create a new request with modified settings
-    const newRequest = { ...originalRequest };
+    const newRequest: AxiosRequestConfig = { ...originalRequest };
     
     // Toggle withCredentials for retry
     newRequest.withCredentials = !originalRequest.withCredentials;
