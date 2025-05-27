@@ -1,5 +1,6 @@
 // src/services/apiClient.ts
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
