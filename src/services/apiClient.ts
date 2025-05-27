@@ -1,6 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-import { authManager } from './authManager';
+import { authManager } from './aligned_authManager';
 
 // Debug flag to enable detailed request/response logging
 const DEBUG = true;
@@ -22,7 +22,7 @@ apiClient.interceptors.request.use(
     const token = authManager.getToken();
     
     if (DEBUG) {
-      console.log(`API Request to ${config.url}`, { 
+      console.log(`[API] Request to ${config.url}`, { 
         hasToken: !!token,
         method: config.method,
         url: config.url,
@@ -55,14 +55,14 @@ apiClient.interceptors.request.use(
     
     // Log the final headers for debugging
     if (DEBUG) {
-      console.log('Final request headers:', newConfig.headers);
+      console.log('[API] Final request headers:', JSON.stringify(newConfig.headers));
     }
     
     return newConfig;
   },
   (error) => {
     if (DEBUG) {
-      console.error('API Request error:', error);
+      console.error('[API] Request error:', error);
     }
     return Promise.reject(error);
   }
@@ -72,7 +72,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
-      console.log(`API Response from ${response.config.url}`, { 
+      console.log(`[API] Response from ${response.config.url}`, { 
         status: response.status,
         statusText: response.statusText,
         hasData: !!response.data,
@@ -84,7 +84,7 @@ apiClient.interceptors.response.use(
   (error) => {
     // Enhanced error logging
     if (DEBUG) {
-      console.error('API Response error:', {
+      console.error('[API] Response error:', {
         url: error.config?.url,
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -99,14 +99,14 @@ apiClient.interceptors.response.use(
         (error.response.status === 401 || error.response.status === 403) && 
         !error.config.url.includes('/auth/login')) {
       
-      console.warn(`Authentication error (${error.response.status}) detected for ${error.config.url}, clearing auth data`);
+      console.warn(`[API] Authentication error (${error.response.status}) detected for ${error.config.url}, clearing auth data`);
       
       // Clear auth data on authentication errors
       authManager.clearAuthData();
       
       // Redirect to login page if not already there
       if (window.location.pathname !== '/login') {
-        console.log('Redirecting to login page due to authentication error');
+        console.log('[API] Redirecting to login page due to authentication error');
         window.location.href = '/login';
       }
     }
@@ -121,7 +121,7 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
   const authToken = token || authManager.getToken();
   
   if (DEBUG) {
-    console.log(`getAuthHeaders called, token available: ${!!authToken}`);
+    console.log(`[API] getAuthHeaders called, token available: ${!!authToken}`);
   }
   
   return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};

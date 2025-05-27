@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import axios from 'axios';
-import { authManager } from './authManager';
+import { authManager } from './aligned_authManager';
 
 // Base URL for API requests
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1';
@@ -48,7 +48,7 @@ export const authService = {
             return {
               success: true,
               token: existingToken,
-              user: authManager.getUserData() || { email }
+              user: authManager.getUser() || { email }
             };
           }
         } catch (validateError) {
@@ -145,27 +145,17 @@ export const authService = {
           }
           
           // Store token in multiple storage mechanisms for redundancy
-          authManager.setToken(token);
-          
-          // Also store directly in localStorage and sessionStorage as backup
-          try {
-            localStorage.setItem('token', token);
-            sessionStorage.setItem('token', token);
-            
-            // Also set as cookie for additional redundancy
-            document.cookie = `auth_token=${token}; path=/; max-age=604800`; // 7 days
-            
-            if (DEBUG) {
-              console.log('[AUTH] Token stored in multiple locations for redundancy');
-            }
-          } catch (storageError) {
-            console.warn('[AUTH] Error storing token in additional locations', storageError);
-          }
+          authManager.storeToken(token);
           
           // Store user data
           if (userData) {
-            authManager.setUserData(userData);
+            authManager.storeUser(userData);
           }
+          
+          // Set token expiry to 7 days from now
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 7);
+          authManager.storeTokenExpiry(expiryDate.toISOString());
           
           return {
             success: true,
@@ -230,21 +220,6 @@ export const authService = {
     // Clear auth data from all storage mechanisms
     authManager.clearAuthData();
     
-    // Also clear from localStorage and sessionStorage directly
-    try {
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      
-      // Clear auth cookie
-      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      
-      if (DEBUG) {
-        console.log('[AUTH] Auth data cleared from all storage locations');
-      }
-    } catch (storageError) {
-      console.warn('[AUTH] Error clearing token from additional locations', storageError);
-    }
-    
     // Redirect to login page
     window.location.href = '/login';
   },
@@ -255,32 +230,11 @@ export const authService = {
   isAuthenticated: () => {
     const token = authManager.getToken();
     
-    // Also check localStorage and sessionStorage directly as fallbacks
-    const localStorageToken = localStorage.getItem('token');
-    const sessionStorageToken = sessionStorage.getItem('token');
-    
-    // Check for auth cookie
-    const cookieToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('auth_token='))
-      ?.split('=')[1];
-    
-    // Use any available token
-    const availableToken = token || localStorageToken || sessionStorageToken || cookieToken;
-    
-    if (DEBUG && availableToken) {
+    if (DEBUG && token) {
       console.log('[AUTH] Authentication check: Token found');
-      
-      // If token was found in alternative storage but not in authManager, restore it
-      if (!token && availableToken) {
-        if (DEBUG) {
-          console.log('[AUTH] Restoring token from alternative storage');
-        }
-        authManager.setToken(availableToken);
-      }
     }
     
-    return !!availableToken;
+    return !!token;
   }
 };
 

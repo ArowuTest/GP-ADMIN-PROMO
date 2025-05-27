@@ -1,11 +1,11 @@
 // src/services/authManager.ts
 /**
  * AuthManager - Centralized authentication token management
- * Enhanced version with redundant storage and detailed logging
+ * Enhanced version with redundant storage, detailed logging, and aligned method names
  */
 
 // Constants
-const TOKEN_KEY = 'authToken';
+const TOKEN_KEY = 'token'; // Changed to match what robust_authService expects
 const USER_KEY = 'user';
 const TOKEN_EXPIRY_KEY = 'tokenExpiry';
 
@@ -22,11 +22,14 @@ export const storeToken = (token: string): void => {
     localStorage.setItem(TOKEN_KEY, token);
     sessionStorage.setItem(TOKEN_KEY, token);
     
+    // Also set as cookie for additional redundancy
+    document.cookie = `auth_token=${token}; path=/; max-age=604800`; // 7 days
+    
     if (DEBUG) {
-      console.log('Token stored successfully in localStorage and sessionStorage');
+      console.log('[AUTH] Token stored successfully in multiple locations');
     }
   } catch (error) {
-    console.error('Failed to store token:', error);
+    console.error('[AUTH] Failed to store token:', error);
   }
 };
 
@@ -43,15 +46,33 @@ export const getToken = (): string | null => {
     if (!token) {
       token = sessionStorage.getItem(TOKEN_KEY);
       if (token && DEBUG) {
-        console.log('Token retrieved from sessionStorage (localStorage fallback)');
+        console.log('[AUTH] Token retrieved from sessionStorage (localStorage fallback)');
       }
     } else if (DEBUG) {
-      console.log('Token retrieved from localStorage');
+      console.log('[AUTH] Token retrieved from localStorage');
+    }
+    
+    // If still not found, try cookie
+    if (!token) {
+      const cookieToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+      
+      if (cookieToken) {
+        token = cookieToken;
+        if (DEBUG) {
+          console.log('[AUTH] Token retrieved from cookie (storage fallback)');
+        }
+        
+        // Restore token to storage for future use
+        storeToken(token);
+      }
     }
     
     return token;
   } catch (error) {
-    console.error('Failed to retrieve token:', error);
+    console.error('[AUTH] Failed to retrieve token:', error);
     return null;
   }
 };
@@ -68,10 +89,10 @@ export const storeUser = (user: any): void => {
     sessionStorage.setItem(USER_KEY, userStr);
     
     if (DEBUG) {
-      console.log('User stored successfully in localStorage and sessionStorage');
+      console.log('[AUTH] User stored successfully in multiple locations');
     }
   } catch (error) {
-    console.error('Failed to store user:', error);
+    console.error('[AUTH] Failed to store user:', error);
   }
 };
 
@@ -88,15 +109,15 @@ export const getUser = (): any | null => {
     if (!userStr) {
       userStr = sessionStorage.getItem(USER_KEY);
       if (userStr && DEBUG) {
-        console.log('User retrieved from sessionStorage (localStorage fallback)');
+        console.log('[AUTH] User retrieved from sessionStorage (localStorage fallback)');
       }
     } else if (DEBUG) {
-      console.log('User retrieved from localStorage');
+      console.log('[AUTH] User retrieved from localStorage');
     }
     
     return userStr ? JSON.parse(userStr) : null;
   } catch (error) {
-    console.error('Failed to retrieve user:', error);
+    console.error('[AUTH] Failed to retrieve user:', error);
     return null;
   }
 };
@@ -112,10 +133,10 @@ export const storeTokenExpiry = (expiryTime: string): void => {
     sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime);
     
     if (DEBUG) {
-      console.log('Token expiry stored successfully');
+      console.log('[AUTH] Token expiry stored successfully');
     }
   } catch (error) {
-    console.error('Failed to store token expiry:', error);
+    console.error('[AUTH] Failed to store token expiry:', error);
   }
 };
 
@@ -132,15 +153,15 @@ export const getTokenExpiry = (): string | null => {
     if (!expiryStr) {
       expiryStr = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
       if (expiryStr && DEBUG) {
-        console.log('Token expiry retrieved from sessionStorage (localStorage fallback)');
+        console.log('[AUTH] Token expiry retrieved from sessionStorage (localStorage fallback)');
       }
     } else if (DEBUG) {
-      console.log('Token expiry retrieved from localStorage');
+      console.log('[AUTH] Token expiry retrieved from localStorage');
     }
     
     return expiryStr;
   } catch (error) {
-    console.error('Failed to retrieve token expiry:', error);
+    console.error('[AUTH] Failed to retrieve token expiry:', error);
     return null;
   }
 };
@@ -153,7 +174,7 @@ export const isTokenExpired = (): boolean => {
   try {
     const expiryStr = getTokenExpiry();
     if (!expiryStr) {
-      if (DEBUG) console.log('No token expiry found, considering token expired');
+      if (DEBUG) console.log('[AUTH] No token expiry found, considering token expired');
       return true;
     }
     
@@ -162,12 +183,12 @@ export const isTokenExpired = (): boolean => {
     const isExpired = currentTime >= expiryTime;
     
     if (DEBUG) {
-      console.log(`Token expiry check: ${isExpired ? 'expired' : 'valid'} (expires ${new Date(expiryTime).toISOString()})`);
+      console.log(`[AUTH] Token expiry check: ${isExpired ? 'expired' : 'valid'} (expires ${new Date(expiryTime).toISOString()})`);
     }
     
     return isExpired;
   } catch (error) {
-    console.error('Error checking token expiry:', error);
+    console.error('[AUTH] Error checking token expiry:', error);
     return true;
   }
 };
@@ -187,11 +208,14 @@ export const clearAuthData = (): void => {
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
     
+    // Clear auth cookie
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
     if (DEBUG) {
-      console.log('Auth data cleared from localStorage and sessionStorage');
+      console.log('[AUTH] Auth data cleared from all storage locations');
     }
   } catch (error) {
-    console.error('Failed to clear auth data:', error);
+    console.error('[AUTH] Failed to clear auth data:', error);
   }
 };
 
@@ -202,7 +226,7 @@ export const clearAuthData = (): void => {
 export const getAuthHeaders = (): Record<string, string> => {
   const token = getToken();
   if (DEBUG) {
-    console.log(`Token available for request: ${!!token}`);
+    console.log(`[AUTH] Token available for request: ${!!token}`);
   }
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
@@ -214,23 +238,29 @@ export const getAuthHeaders = (): Record<string, string> => {
 export const checkAuthState = async (): Promise<boolean> => {
   const token = getToken();
   if (!token) {
-    if (DEBUG) console.log('No token found during auth state check');
+    if (DEBUG) console.log('[AUTH] No token found during auth state check');
     return false;
   }
   
   // Check if token is expired based on stored expiry
   if (isTokenExpired()) {
-    if (DEBUG) console.log('Token is expired during auth state check');
+    if (DEBUG) console.log('[AUTH] Token is expired during auth state check');
     clearAuthData();
     return false;
   }
   
-  if (DEBUG) console.log('Token is valid during auth state check');
+  if (DEBUG) console.log('[AUTH] Token is valid during auth state check');
   return true;
 };
 
+// Method aliases to maintain compatibility with both naming conventions
+export const setToken = storeToken;
+export const getUserData = getUser;
+export const setUserData = storeUser;
+
 // Export as a named object for convenience
 export const authManager = {
+  // Original methods
   storeToken,
   getToken,
   storeUser,
@@ -240,7 +270,12 @@ export const authManager = {
   isTokenExpired,
   clearAuthData,
   getAuthHeaders,
-  checkAuthState
+  checkAuthState,
+  
+  // Alias methods for compatibility
+  setToken,
+  getUserData,
+  setUserData
 };
 
 export default authManager;
