@@ -1,6 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-import { authManager } from './aligned_authManager';
+import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
 const DEBUG = true;
