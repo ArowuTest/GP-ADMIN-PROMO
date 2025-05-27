@@ -2,28 +2,33 @@
 import axios from 'axios';
 import { authManager } from './authManager';
 
-// Create axios instance with base URL
+// Create axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
+  baseURL: process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request interceptor to include auth token in headers
+// Add request interceptor to include auth token in every request
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from authManager
+    // Get the current token before each request
     const token = authManager.getToken();
     
-    // If token exists, add to Authorization header
+    // Log the request for debugging
+    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
+    console.log('Token available for request:', !!token);
+    
+    // If token exists, add it to the Authorization header
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     
     return config;
   },
   (error) => {
+    console.error('API request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -31,16 +36,23 @@ apiClient.interceptors.request.use(
 // Add response interceptor to handle auth errors
 apiClient.interceptors.response.use(
   (response) => {
+    // Log successful response for debugging
+    console.log(`Received successful response from ${response.config.url}`);
     return response;
   },
-  async (error) => {
-    // Handle 401 Unauthorized errors
+  (error) => {
+    // Log error response for debugging
+    console.error('API response error:', error);
+    
+    // Handle authentication errors (401 Unauthorized, 403 Forbidden)
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Clear auth data on unauthorized response
+      console.log('Authentication error detected, logging out');
+      // Clear auth data on authentication errors
       authManager.clearAuthData();
       
       // Redirect to login page if not already there
       if (window.location.pathname !== '/login') {
+        console.log('Redirecting to login page');
         window.location.href = '/login';
       }
     }
@@ -57,3 +69,4 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
 };
 
 export { apiClient };
+export default apiClient;
