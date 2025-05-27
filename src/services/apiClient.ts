@@ -8,13 +8,26 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Add withCredentials to ensure cookies are sent with requests
+  withCredentials: true,
 });
+
+// Debug flag to enable detailed request/response logging
+const DEBUG = true;
 
 // Add request interceptor to include auth token in every request
 apiClient.interceptors.request.use(
   (config) => {
     // Get the current token before each request
     const token = authManager.getToken();
+    
+    if (DEBUG) {
+      console.log(`API Request to ${config.url}`, { 
+        hasToken: !!token,
+        method: config.method,
+        url: config.url
+      });
+    }
     
     // If token exists, add it to the Authorization header
     if (token) {
@@ -24,6 +37,9 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    if (DEBUG) {
+      console.error('API Request error:', error);
+    }
     return Promise.reject(error);
   }
 );
@@ -31,16 +47,36 @@ apiClient.interceptors.request.use(
 // Add response interceptor to handle auth errors
 apiClient.interceptors.response.use(
   (response) => {
+    if (DEBUG) {
+      console.log(`API Response from ${response.config.url}`, { 
+        status: response.status,
+        statusText: response.statusText,
+        hasData: !!response.data
+      });
+    }
     return response;
   },
   (error) => {
+    // Enhanced error logging
+    if (DEBUG) {
+      console.error('API Response error:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+    }
+    
     // Handle authentication errors (401 Unauthorized, 403 Forbidden)
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.warn(`Authentication error (${error.response.status}) detected, clearing auth data`);
+      
       // Clear auth data on authentication errors
       authManager.clearAuthData();
       
       // Redirect to login page if not already there
       if (window.location.pathname !== '/login') {
+        console.log('Redirecting to login page due to authentication error');
         window.location.href = '/login';
       }
     }

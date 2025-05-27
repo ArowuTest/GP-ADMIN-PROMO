@@ -2,6 +2,9 @@
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
+// Debug flag to enable detailed logging
+const DEBUG = true;
+
 /**
  * Login user with credentials
  * @param credentials User credentials (username/email and password)
@@ -9,7 +12,7 @@ import { authManager } from './authManager';
  */
 const login = async (credentials: any): Promise<any> => {
   try {
-    console.log('Attempting login...');
+    if (DEBUG) console.log('Attempting login...');
     
     // Transform credentials to match backend expectations
     // No validation - let the backend handle validation
@@ -18,12 +21,14 @@ const login = async (credentials: any): Promise<any> => {
       Password: credentials.password || '',
     };
     
-    console.log('Making POST request to /auth/login');
+    if (DEBUG) console.log('Making POST request to /auth/login');
     // Make login request
     const response = await apiClient.post('/auth/login', loginPayload);
     
-    console.log('Received successful response from /auth/login');
-    console.log('Response data structure:', JSON.stringify(response.data));
+    if (DEBUG) {
+      console.log('Received successful response from /auth/login');
+      console.log('Response data structure:', JSON.stringify(response.data));
+    }
     
     // Handle different possible response structures
     let token = null;
@@ -87,15 +92,15 @@ const login = async (credentials: any): Promise<any> => {
     
     // If we have both token and user, store them and return
     if (token && user) {
-      console.log('Successfully extracted token and user from response');
+      if (DEBUG) console.log('Successfully extracted token and user from response');
       
-      // Store authentication data
+      // Store authentication data with redundancy
       authManager.storeToken(token);
       authManager.storeUser(user);
       
-      // Default expiry (24 hours)
+      // Set a longer expiry time (7 days) to prevent premature logout
       const expiryTime = new Date();
-      expiryTime.setHours(expiryTime.getHours() + 24);
+      expiryTime.setDate(expiryTime.getDate() + 7); // 7 days
       authManager.storeTokenExpiry(expiryTime.toISOString());
       
       return {
@@ -121,6 +126,7 @@ const login = async (credentials: any): Promise<any> => {
  * Logout user
  */
 const logout = (): void => {
+  if (DEBUG) console.log('Logging out user');
   authManager.clearAuthData();
 };
 
@@ -132,11 +138,16 @@ const logout = (): void => {
 const validateToken = async (token: string): Promise<boolean> => {
   try {
     // Check token locally first
-    if (!token) return false;
+    if (!token) {
+      if (DEBUG) console.log('No token provided for validation');
+      return false;
+    }
     
     // Skip backend validation since endpoint doesn't exist
     // Instead, rely on local expiry check
-    return !authManager.isTokenExpired();
+    const isValid = !authManager.isTokenExpired();
+    if (DEBUG) console.log(`Token validation result: ${isValid ? 'valid' : 'invalid'}`);
+    return isValid;
   } catch (error) {
     console.error('Token validation error:', error);
     return false;
