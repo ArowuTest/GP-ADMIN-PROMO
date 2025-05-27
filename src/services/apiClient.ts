@@ -1,7 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-// Use type-only import for TypeScript with verbatimModuleSyntax
-import type { AxiosHeaders } from 'axios';
+// No unused imports - removed AxiosHeaders type-only import
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -45,6 +44,7 @@ apiClient.interceptors.request.use(
       // This approach works with both runtime constraints and TypeScript
       if (newConfig.headers) {
         // Create a new headers object using Axios's methods
+        // Using axios.AxiosHeaders directly instead of importing the type
         const headers = new axios.AxiosHeaders();
         
         // Copy all existing headers
