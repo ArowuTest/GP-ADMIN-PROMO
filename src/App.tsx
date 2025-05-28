@@ -1,5 +1,5 @@
 // src/App.tsx - Main application with router configuration
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -61,28 +61,26 @@ const PublicRoute = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<LoginPage />} />
-          </Route>
+    <AuthProvider>
+      <Routes>
+        {/* Public routes */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/users" element={<UserManagementPage />} />
-            <Route path="/draws" element={<DrawManagementPage />} />
-            <Route path="/prizes" element={<PrizeStructuresPage />} />
-            <Route path="/audit-logs" element={<AuditLogsPage />} />
-          </Route>
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/users" element={<UserManagementPage />} />
+          <Route path="/draws" element={<DrawManagementPage />} />
+          <Route path="/prizes" element={<PrizeStructuresPage />} />
+          <Route path="/audit-logs" element={<AuditLogsPage />} />
+        </Route>
 
-          {/* Default route - redirect to dashboard or login based on auth state */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+        {/* Default route - redirect to dashboard or login based on auth state */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 };
 
