@@ -1,196 +1,130 @@
-// src/contexts/AuthContext.tsx - Updated context with proper state management
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authManager } from '../services/authManager';
+// src/contexts/AuthContext.tsx
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 
-// Define UserRole as a string literal type
-export type UserRole =
-  | 'SUPER_ADMIN'
-  | 'ADMIN'
-  | 'SENIOR_USER'
-  | 'WINNERS_REPORT_USER'
-  | 'WINNER_REPORTS_USER'
-  | 'ALL_REPORT_USER';
-
-// Export AuthContextType interface
-export interface AuthContextType {
+// Define the shape of our authentication context
+interface AuthContextType {
   isAuthenticated: boolean;
-  isLoadingAuth: boolean;
-  user: any | null;
+  user: any;
   token: string | null;
-  userRole: UserRole | null;
-  username: string | null;
-  login: (email: string, password: string) => Promise<any>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  checkAuthState: () => void;
 }
 
-// Create context with undefined default
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  token: null,
+  login: async () => false,
+  logout: () => {},
+  checkAuthState: () => {},
+});
 
-// Debug flag
-const DEBUG = true;
+// Custom hook to use the auth context
+export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Provider component that wraps your app and makes auth object available to any child component that calls useAuth()
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
-  // Initialize authentication state from stored credentials
+  // Check if the user is authenticated on initial load
   useEffect(() => {
-    const initAuth = async () => {
-      if (DEBUG) {
-        console.log('[AUTH_CONTEXT] Initializing auth state');
-      }
-      try {
-        const storedToken = authManager.getToken();
-        const storedUser = authManager.getUser();
-        
-        if (storedToken && storedUser) {
-          if (DEBUG) {
-            console.log('[AUTH_CONTEXT] Found stored credentials');
-          }
-          // Skip token validation to avoid 401 errors
-          setIsAuthenticated(true);
-          setUser(storedUser);
-          setToken(storedToken);
-          setUserRole(storedUser.role as UserRole);
-          setUsername(storedUser.username || storedUser.email);
-        } else {
-          if (DEBUG) {
-            console.log('[AUTH_CONTEXT] No stored credentials found');
-          }
-          setIsAuthenticated(false);
-          setUser(null);
-          setToken(null);
-          setUserRole(null);
-          setUsername(null);
-        }
-      } catch (error) {
-        console.error('[AUTH_CONTEXT] Auth initialization error:', error);
-        authManager.clearAuthData();
-        setIsAuthenticated(false);
-        setUser(null);
-        setToken(null);
-        setUserRole(null);
-        setUsername(null);
-      } finally {
-        setIsLoadingAuth(false);
-      }
-    };
-
-    initAuth();
+    checkAuthState();
   }, []);
 
-  // Check token expiration when tab becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const storedToken = authManager.getToken();
-        if (storedToken && authManager.isTokenExpired()) {
-          if (DEBUG) {
-            console.log('[AUTH_CONTEXT] Token expired on visibility change, clearing auth');
-          }
-          authManager.clearAuthData();
-          setIsAuthenticated(false);
-          setUser(null);
-          setToken(null);
-          setUserRole(null);
-          setUsername(null);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // Login function
-  const login = useCallback(async (email: string, password: string) => {
-    if (DEBUG) {
-      console.log('[AUTH_CONTEXT] Login attempt', { email });
-    }
-    setIsLoadingAuth(true);
+  // Function to check authentication state
+  const checkAuthState = () => {
     try {
-      const response = await authService.login({ email, password });
+      // Get token from storage
+      const storedToken = authService.getToken();
       
-      if (DEBUG) {
-        console.log('[AUTH_CONTEXT] Login response:', response);
-      }
-      
-      if (response.token && response.user) {
-        if (DEBUG) {
-          console.log('[AUTH_CONTEXT] Login successful');
-        }
+      // Check if token exists and is not expired
+      if (storedToken && !authService.isTokenExpired()) {
+        // Get user data from storage
+        const userData = authService.getUser();
+        
+        // Update state
+        setToken(storedToken);
+        setUser(userData);
         setIsAuthenticated(true);
-        setUser(response.user);
-        if (response.token) {
-          setToken(response.token);
-        }
-        setUserRole(response.user.role as UserRole);
-        setUsername(response.user.username || response.user.email);
+      } else {
+        // Clear auth data if token is expired or doesn't exist
+        handleLogout();
       }
-      return response;
     } catch (error) {
-      console.error('[AUTH_CONTEXT] Login error:', error);
-      throw error;
+      console.error('Error checking authentication state:', error);
+      handleLogout();
     } finally {
-      setIsLoadingAuth(false);
+      setLoading(false);
     }
-  }, []);
+  };
 
-  // Logout function
-  const logout = useCallback(() => {
-    if (DEBUG) {
-      console.log('[AUTH_CONTEXT] Logging out');
+  // Function to handle login
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      // Call login service
+      const response = await authService.login(username, password);
+      
+      // Check if login was successful by verifying token exists
+      if (response && response.token) {
+        // Update state
+        setToken(response.token);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    authService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
+  };
+
+  // Function to handle logout
+  const logout = () => {
+    handleLogout();
+    // Navigate to login page
+    navigate('/login');
+  };
+
+  // Helper function to clear auth state
+  const handleLogout = () => {
+    // Clear auth data from storage
+    authService.clearAuthData();
+    
+    // Reset state
     setToken(null);
-    setUserRole(null);
-    setUsername(null);
-  }, []);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
-  // Log current auth state for debugging
-  if (DEBUG) {
-    console.log('[AUTH_CONTEXT] Current auth state:', {
-      isAuthenticated,
-      isLoadingAuth,
-      hasUser: !!user,
-      hasToken: !!token,
-      userRole
-    });
-  }
+  // Value object that will be passed to consumers of this context
+  const value = {
+    isAuthenticated,
+    user,
+    token,
+    login,
+    logout,
+    checkAuthState,
+  };
 
-  // Provide auth context to children
+  // Return the provider with the value
   return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        isLoadingAuth,
-        user,
-        token,
-        userRole,
-        username,
-        login,
-        logout,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// Hook for using auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export default AuthContext;
