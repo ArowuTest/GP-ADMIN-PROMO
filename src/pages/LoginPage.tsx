@@ -41,8 +41,9 @@ const LoginPage: React.FC = () => {
         console.log('[LOGIN_PAGE] Login response received:', result);
       }
       
-      // Check if login was successful based on token presence
-      if (result && result.token) {
+      // Check if login was successful based on result being truthy
+      // This handles both boolean true and object with token
+      if (result) {
         if (DEBUG) {
           console.log('[LOGIN_PAGE] Login successful, navigating to:', from);
         }
