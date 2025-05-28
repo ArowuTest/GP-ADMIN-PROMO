@@ -1,19 +1,21 @@
-// src/services/drawService.ts
+// src/services/drawService.ts - Updated with proper interfaces and type safety
 import { apiClient, getAuthHeaders } from './apiClient';
-import { participantService } from './participantService';
 
 // Define types for draw-related data
 export interface DrawData {
   id: string;
   drawDate: string;
   status: string;
+  prizeStructureId?: string;
+  prizeStructureName?: string;
+  executedByAdminID?: string;
+  totalEligibleMSISDNs?: number;
+  totalEntries?: number;
+  draw?: any; // Support for draw property access
+  message?: string; // For error messages
   createdAt: string;
   updatedAt: string;
   createdBy: string;
-  executedByAdminID?: string; // Added to match usage in DrawManagementPage
-  prizeStructureId?: string;   // Added to match usage in DrawManagementPage
-  totalEligibleMSISDNs?: number; // Added to match usage in DrawManagementPage
-  totalEntries?: number;       // Added to match usage in DrawManagementPage
   winners?: WinnerData[];
   runnerUps?: WinnerData[];
 }
@@ -21,19 +23,20 @@ export interface DrawData {
 export interface WinnerData {
   id: string;
   drawId: string;
-  drawID?: string;           // Added alias for backward compatibility
+  drawID?: string; // Alias for backward compatibility
   msisdn: string;
   prizeId: string;
-  prizeTierId?: string;      // Added to match usage in DrawManagementPage
-  prizeTierID?: string;      // Added to match usage in DrawManagementPage
-  prizeName?: string;
-  prizeTierName?: string;    // Added alias for backward compatibility
-  prizeTier?: string;        // Added to match usage in DrawManagementPage
-  prizeValue?: number;
+  prizeTierId?: string;
+  prizeTierID?: string; // Alias for backward compatibility
+  prizeTierName?: string;
+  prizeTier?: string; // Alias for backward compatibility
+  prizeValue?: number | string;
   status: string;
-  paymentStatus?: string;    // Added to match usage in DrawManagementPage
-  paymentNotes?: string;     // Added to match usage in DrawManagementPage
+  paymentStatus?: string;
+  paymentNotes?: string;
   isRunnerUp: boolean;
+  originalWinnerId?: string;
+  runnerUpRank?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +44,8 @@ export interface WinnerData {
 export interface EligibilityStats {
   totalEligibleParticipants: number;
   totalEligibleEntries: number;
+  totalEligibleMSISDNs: number; // Added to match component usage
+  totalEntries: number; // Added to match component usage
   participantsByPoints: {
     points: number;
     count: number;
@@ -52,93 +57,75 @@ export interface DrawExecutionRequest {
   prizeStructureId: string;
 }
 
+// Updated to ensure compatibility with DrawData
 export interface DrawExecutionResponse {
   drawId: string;
-  draw?: DrawData;           // Added to match usage in DrawExecutionPage
+  id: string; // Changed from optional to required to match DrawData
+  draw?: DrawData;
   drawDate: string;
   status: string;
   winners: WinnerData[];
   runnerUps: WinnerData[];
   message: string;
-  // Added these properties to make it compatible with DrawData for type casting
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
+  createdAt: string; // Changed from optional to required to match DrawData
+  updatedAt: string; // Changed from optional to required to match DrawData
+  createdBy: string; // Changed from optional to required to match DrawData
 }
 
-// Get eligibility statistics for a specific draw date
-const getEligibilityStats = async (drawDate: string, token: string): Promise<EligibilityStats> => {
+export interface RunnerUpInvocationResult {
+  message: string;
+  originalWinner: WinnerData;
+  newWinner: WinnerData;
+}
+
+// List all draws
+const listDraws = async (token: string): Promise<DrawData[]> => {
   try {
-    const response = await apiClient.get(`/admin/draws/eligibility-stats`, {
-      params: { drawDate },
+    const response = await apiClient.get('/admin/draws', {
       headers: getAuthHeaders(token)
     });
-    
     // Handle nested response structure
-    return response.data.data || response.data;
+    return response.data.data || [];
   } catch (error: any) {
-    console.error('Error getting eligibility stats:', error);
-    
-    // Fallback to calculating stats from local participant data if backend fails
-    try {
-      console.log('Attempting to calculate eligibility stats from local data...');
-      return await calculateEligibilityStatsFromLocalData(drawDate, token);
-    } catch (fallbackError: any) {
-      console.error('Fallback eligibility calculation failed:', fallbackError);
-      throw error; // Throw the original error if fallback fails
-    }
+    console.error('Error listing draws:', error);
+    throw error;
   }
 };
 
-// Alias for backward compatibility
-const getDrawEligibilityStats = getEligibilityStats;
-
-// Calculate eligibility statistics from local participant data (fallback method)
-const calculateEligibilityStatsFromLocalData = async (drawDate: string, token: string): Promise<EligibilityStats> => {
-  // Get all participants from local data
-  const participantsResponse = await participantService.listParticipants(1, 1000, token);
-  const participants = participantsResponse.data;
-  
-  // Filter eligible participants based on date
-  // This is a simplified implementation - actual eligibility rules may be more complex
-  const drawDateObj = new Date(drawDate);
-  const eligibleParticipants = participants.filter(p => {
-    const participantDate = new Date(p.createdAt);
-    return participantDate <= drawDateObj;
-  });
-  
-  // Calculate points distribution
-  const pointsMap = new Map<number, number>();
-  let totalEntries = 0;
-  
-  eligibleParticipants.forEach(p => {
-    const points = p.points || 0;
-    totalEntries += points;
-    
-    const currentCount = pointsMap.get(points) || 0;
-    pointsMap.set(points, currentCount + 1);
-  });
-  
-  // Convert points map to array format
-  const participantsByPoints = Array.from(pointsMap.entries()).map(([points, count]) => ({
-    points,
-    count
-  })).sort((a, b) => b.points - a.points);
-  
-  return {
-    totalEligibleParticipants: eligibleParticipants.length,
-    totalEligibleEntries: totalEntries,
-    participantsByPoints
-  };
+// Get a specific draw by ID
+const getDrawById = async (id: string, token: string): Promise<DrawData> => {
+  try {
+    const response = await apiClient.get(`/admin/draws/${id}`, {
+      headers: getAuthHeaders(token)
+    });
+    // Handle nested response structure
+    return response.data.data;
+  } catch (error: any) {
+    console.error(`Error getting draw ${id}:`, error);
+    throw error;
+  }
 };
 
-// Execute a draw for a specific date and prize structure
+// List all winners
+const listWinners = async (token: string): Promise<WinnerData[]> => {
+  try {
+    const response = await apiClient.get('/admin/winners', {
+      headers: getAuthHeaders(token)
+    });
+    // Handle nested response structure
+    return response.data.data || [];
+  } catch (error: any) {
+    console.error('Error listing winners:', error);
+    throw error;
+  }
+};
+
+// Execute a new draw
 const executeDraw = async (drawDate: string, prizeStructureId: string, token: string): Promise<DrawExecutionResponse> => {
   try {
     const response = await apiClient.post('/admin/draws/execute', {
-      drawDate,
-      prizeStructureId
+      drawDate: drawDate,
+      prizeStructureId: prizeStructureId // Aligned with backend expectations
     }, {
       headers: getAuthHeaders(token)
     });
@@ -146,16 +133,21 @@ const executeDraw = async (drawDate: string, prizeStructureId: string, token: st
     // Handle nested response structure
     const responseData = response.data.data || response.data;
     
-    // Add draw property for backward compatibility
-    if (!responseData.draw) {
-      responseData.draw = {
-        id: responseData.drawId,
-        drawDate: responseData.drawDate,
-        status: responseData.status,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: "system"
-      };
+    // Ensure all required properties exist for DrawData compatibility
+    if (!responseData.id) {
+      responseData.id = responseData.drawId || `draw-${new Date().getTime()}`;
+    }
+    
+    if (!responseData.createdAt) {
+      responseData.createdAt = new Date().toISOString();
+    }
+    
+    if (!responseData.updatedAt) {
+      responseData.updatedAt = new Date().toISOString();
+    }
+    
+    if (!responseData.createdBy) {
+      responseData.createdBy = "system";
     }
     
     return responseData;
@@ -165,45 +157,52 @@ const executeDraw = async (drawDate: string, prizeStructureId: string, token: st
   }
 };
 
-// List all draws
-const listDraws = async (page: number = 1, limit: number = 50, token: string): Promise<{ data: DrawData[]; total: number; page: number; limit: number }> => {
+// Get eligibility statistics for a potential draw
+const getEligibilityStats = async (date: string, token: string): Promise<EligibilityStats> => {
   try {
-    const response = await apiClient.get('/admin/draws', {
-      params: { page, limit },
+    const response = await apiClient.get('/admin/draws/eligibility-stats', {
+      params: { date },
       headers: getAuthHeaders(token)
     });
     
     // Handle nested response structure
-    const responseData = response.data.data || response.data;
+    const data = response.data.data || response.data;
+    
+    // Ensure all required properties exist
     return {
-      data: responseData.data || [],
-      total: responseData.total || 0,
-      page: responseData.page || 1,
-      limit: responseData.limit || 50
+      totalEligibleParticipants: data.totalEligibleParticipants || 0,
+      totalEligibleEntries: data.totalEligibleEntries || 0,
+      totalEligibleMSISDNs: data.totalEligibleMSISDNs || data.totalEligibleParticipants || 0, // Map to existing property if missing
+      totalEntries: data.totalEntries || data.totalEligibleEntries || 0, // Map to existing property if missing
+      participantsByPoints: data.participantsByPoints || []
     };
   } catch (error: any) {
-    console.error('Error listing draws:', error);
+    console.error('Error getting eligibility stats:', error);
     throw error;
   }
 };
 
-// Get a specific draw by ID
-const getDrawById = async (drawId: string, token: string): Promise<DrawData> => {
+// Alias for getEligibilityStats to maintain backward compatibility
+const getDrawEligibilityStats = getEligibilityStats;
+
+// Update winner payment status
+const updateWinnerPaymentStatus = async (winnerId: string, paymentStatus: string, token: string): Promise<WinnerData> => {
   try {
-    const response = await apiClient.get(`/admin/draws/${drawId}`, {
+    const response = await apiClient.put(`/admin/winners/${winnerId}/payment-status`, {
+      paymentStatus: paymentStatus
+    }, {
       headers: getAuthHeaders(token)
     });
-    
     // Handle nested response structure
-    return response.data.data || response.data;
+    return response.data.data;
   } catch (error: any) {
-    console.error(`Error getting draw ${drawId}:`, error);
+    console.error(`Error updating payment status for winner ${winnerId}:`, error);
     throw error;
   }
 };
 
-// Invoke a runner-up for a specific winner
-const invokeRunnerUp = async (winnerId: string, token: string): Promise<{ message: string; winner: WinnerData; previousWinner: WinnerData }> => {
+// Invoke a runner-up for a prize
+const invokeRunnerUp = async (winnerId: string, token: string): Promise<RunnerUpInvocationResult> => {
   try {
     const response = await apiClient.post(`/admin/draws/winners/${winnerId}/invoke-runner-up`, {}, {
       headers: getAuthHeaders(token)
@@ -218,11 +217,12 @@ const invokeRunnerUp = async (winnerId: string, token: string): Promise<{ messag
 };
 
 export const drawService = {
-  getEligibilityStats,
-  getDrawEligibilityStats, // Added alias for backward compatibility
-  calculateEligibilityStatsFromLocalData,
-  executeDraw,
   listDraws,
   getDrawById,
+  listWinners,
+  executeDraw,
+  getEligibilityStats,
+  getDrawEligibilityStats, // Added alias for backward compatibility
+  updateWinnerPaymentStatus,
   invokeRunnerUp
 };
