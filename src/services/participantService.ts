@@ -1,6 +1,6 @@
 // src/services/participantService.ts
 import { apiClient, getAuthHeaders } from './apiClient';
-import Papa from 'papaparse';
+import * as Papa from 'papaparse';
 
 // Define types for participant-related data
 export interface ParticipantData {
@@ -67,7 +67,7 @@ export interface CSVValidationResult {
 // Client-side CSV validation
 const validateCSV = async (file: File): Promise<CSVValidationResult> => {
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+    Papa.parse<CSVParticipantRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
@@ -100,9 +100,9 @@ const validateCSV = async (file: File): Promise<CSVValidationResult> => {
         }
         
         // Validate each row
-        results.data.forEach((row: any, index: number) => {
+        results.data.forEach((row, index) => {
           const rowNumber = index + 2; // +2 because index is 0-based and we skip header row
-          const participantRow = row as CSVParticipantRow;
+          const participantRow = row;
           let isRowValid = true;
           const rowErrors: string[] = [];
           
@@ -158,7 +158,7 @@ const validateCSV = async (file: File): Promise<CSVValidationResult> => {
         
         resolve({
           isValid: errors.length === 0,
-          data: results.data as CSVParticipantRow[],
+          data: results.data,
           errors,
           duplicates,
           validRows,
@@ -169,7 +169,7 @@ const validateCSV = async (file: File): Promise<CSVValidationResult> => {
           duplicateCount: duplicates.length
         });
       },
-      error: (error) => {
+      error: (error: Error) => {
         reject(new Error(`CSV parsing error: ${error.message}`));
       }
     });
@@ -218,7 +218,7 @@ const uploadParticipantsWithValidation = async (file: File, token: string): Prom
         errors: validationResult.errors
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading participants:', error);
     throw error;
   }
@@ -246,7 +246,7 @@ const listParticipants = async (page: number = 1, limit: number = 50, token: str
       page: responseData.page || 1,
       limit: responseData.limit || 50
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error listing participants:', error);
     throw error;
   }
@@ -261,7 +261,7 @@ const getParticipantStats = async (token: string): Promise<ParticipantStats> => 
     
     // Handle nested response structure
     return response.data.data || response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting participant stats:', error);
     throw error;
   }
@@ -276,7 +276,7 @@ const listUploadAudits = async (token: string): Promise<ParticipantUploadAudit[]
     
     // Handle nested response structure
     return response.data.data || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error listing upload audits:', error);
     throw error;
   }
@@ -291,7 +291,7 @@ const deleteUpload = async (uploadId: string, token: string): Promise<{ message:
     
     // Handle nested response structure
     return response.data.data || response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error deleting upload ${uploadId}:`, error);
     throw error;
   }

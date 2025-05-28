@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { participantService, type UploadResponse as BackendUploadResponse, type CSVValidationResult, type CSVParticipantRow } from "../../services/participantService";
 
 // Define a more comprehensive frontend UploadResponse type
@@ -352,7 +352,7 @@ const ParticipantUploadComponent: React.FC = () => {
   };
 
   // Determine row style based on validation status
-  const getRowStyle = (row: CSVParticipantRow, index: number) => {
+  const getRowStyle = (row: CSVParticipantRow) => {
     if (!validationResult) return {};
     
     // Check if this is a duplicate
@@ -438,9 +438,9 @@ const ParticipantUploadComponent: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {previewData.map((row, index) => (
-                  <tr key={index} style={getRowStyle(row, index)}>
-                    <td style={styles.previewCell}>{index + 2}</td>
+                {previewData.map((row, i) => (
+                  <tr key={i} style={getRowStyle(row)}>
+                    <td style={styles.previewCell}>{i + 2}</td>
                     <td style={styles.previewCell}>{row.msisdn}</td>
                     <td style={styles.previewCell}>{row.rechargeAmount}</td>
                     <td style={styles.previewCell}>{row.rechargeDate}</td>
@@ -462,76 +462,7 @@ const ParticipantUploadComponent: React.FC = () => {
             <div style={{...styles.messageContainer, ...styles.warningMessageContainer, marginTop: "15px"}}>
               <p><strong>Validation Issues:</strong></p>
               <ul style={styles.errorList}>
-                {validationResult.errors.slice(0, 10).map((err, index) => (
-                  <li key={`val-err-${index}`}>{err}</li>
-                ))}
-                {validationResult.errors.length > 10 && (
-                  <li>...and {validationResult.errors.length - 10} more issues</li>
-                )}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Upload Response Section */}
-      {uploadResponse && (
-        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" ? {...styles.messageContainer, ...styles.successMessage} : {...styles.messageContainer, ...styles.errorMessageContainer}}>
-          <strong>{uploadResponse.status}:</strong> {uploadResponse.message}
-          <div style={styles.details}>
-            <p>Audit ID: {uploadResponse.auditId}</p>
-            <p>Total Data Rows Processed: {uploadResponse.totalDataRowsProcessed}</p>
-            <p>Successfully Imported Rows: {uploadResponse.successfulRowsImported}</p>
-            <p>Duplicates Skipped: {uploadResponse.duplicatesSkippedCount || 0}</p>
-          </div>
-          
-          {/* Client Validation Results */}
-          {uploadResponse.clientValidation && (
-            <div style={{marginTop: "15px"}}>
-              <p><strong>Client Validation Results:</strong></p>
-              <div style={styles.details}>
-                <p>Total Rows: {uploadResponse.clientValidation.totalRows}</p>
-                <p>Valid Rows: {uploadResponse.clientValidation.validRowCount}</p>
-                <p>Invalid Rows: {uploadResponse.clientValidation.invalidRowCount}</p>
-                <p>Duplicate Rows: {uploadResponse.clientValidation.duplicateCount}</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Server Processing Errors */}
-          {(uploadResponse.errors && uploadResponse.errors.length > 0) && (
-            <>
-              <p style={{marginTop: "10px"}}><strong>Server Processing Errors:</strong></p>
-              <ul style={styles.errorList}>
-                {uploadResponse.errors.map((errMsg, index) => (
-                  <li key={`proc-err-${index}`}>{errMsg}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          
-          {/* Duplicate Event Details */}
-          {(uploadResponse.skippedDuplicateEventDetails && uploadResponse.skippedDuplicateEventDetails.length > 0) && (
-            <>
-              <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Event Details:</strong></p>
-              <ul style={styles.errorList}>
-                {uploadResponse.skippedDuplicateEventDetails.map((detailMsg: string, index: number) => (
-                  <li key={`skip-err-${index}`}>{detailMsg}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          
-          {/* Download Error Report Button */}
-          {hasErrorsToReport && (
-             <button onClick={handleDownloadErrors} style={styles.downloadButton}>
-               Download Error Report
-             </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default ParticipantUploadComponent;
+                {validationResult.errors.slice(0, 10).map((err, i) => (
+                  <li key={`val-err-${i}`}>{err}</li>
+ 
+(Content truncated due to size limit. Use line ranges to read in chunks)
