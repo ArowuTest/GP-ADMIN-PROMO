@@ -464,5 +464,74 @@ const ParticipantUploadComponent: React.FC = () => {
               <ul style={styles.errorList}>
                 {validationResult.errors.slice(0, 10).map((err, i) => (
                   <li key={`val-err-${i}`}>{err}</li>
- 
-(Content truncated due to size limit. Use line ranges to read in chunks)
+                ))}
+                {validationResult.errors.length > 10 && (
+                  <li>...and {validationResult.errors.length - 10} more issues</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload Response Section */}
+      {uploadResponse && (
+        <div style={uploadResponse.status === "Success" || uploadResponse.status === "Partial Success" ? {...styles.messageContainer, ...styles.successMessage} : {...styles.messageContainer, ...styles.errorMessageContainer}}>
+          <strong>{uploadResponse.status}:</strong> {uploadResponse.message}
+          <div style={styles.details}>
+            <p>Audit ID: {uploadResponse.auditId}</p>
+            <p>Total Data Rows Processed: {uploadResponse.totalDataRowsProcessed}</p>
+            <p>Successfully Imported Rows: {uploadResponse.successfulRowsImported}</p>
+            <p>Duplicates Skipped: {uploadResponse.duplicatesSkippedCount || 0}</p>
+          </div>
+          
+          {/* Client Validation Results */}
+          {uploadResponse.clientValidation && (
+            <div style={{marginTop: "15px"}}>
+              <p><strong>Client Validation Results:</strong></p>
+              <div style={styles.details}>
+                <p>Total Rows: {uploadResponse.clientValidation.totalRows}</p>
+                <p>Valid Rows: {uploadResponse.clientValidation.validRowCount}</p>
+                <p>Invalid Rows: {uploadResponse.clientValidation.invalidRowCount}</p>
+                <p>Duplicate Rows: {uploadResponse.clientValidation.duplicateCount}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Server Processing Errors */}
+          {(uploadResponse.errors && uploadResponse.errors.length > 0) && (
+            <div>
+              <p style={{marginTop: "10px"}}><strong>Server Processing Errors:</strong></p>
+              <ul style={styles.errorList}>
+                {uploadResponse.errors.map((errMsg, i) => (
+                  <li key={`proc-err-${i}`}>{errMsg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {/* Duplicate Event Details */}
+          {(uploadResponse.skippedDuplicateEventDetails && uploadResponse.skippedDuplicateEventDetails.length > 0) && (
+            <div>
+              <p style={{marginTop: "10px"}}><strong>Skipped Duplicate Event Details:</strong></p>
+              <ul style={styles.errorList}>
+                {uploadResponse.skippedDuplicateEventDetails.map((detailMsg: string, i: number) => (
+                  <li key={`skip-err-${i}`}>{detailMsg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {/* Download Error Report Button */}
+          {hasErrorsToReport && (
+             <button onClick={handleDownloadErrors} style={styles.downloadButton}>
+               Download Error Report
+             </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ParticipantUploadComponent;
