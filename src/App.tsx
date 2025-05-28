@@ -44,7 +44,7 @@ const PublicRoute = () => {
   const location = useLocation();
 
   // Get the intended destination from location state or default to dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/admin/dashboard';
 
   // Show loading screen while checking authentication
   if (isLoadingAuth) {
@@ -72,16 +72,22 @@ const App = () => {
         {/* Protected routes with AdminLayout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
-            <Route path="/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/users" element={<UserManagementPage />} />
-            <Route path="/draws" element={<DrawManagementPage />} />
-            <Route path="/prizes" element={<PrizeStructuresPage />} />
-            <Route path="/audit-logs" element={<AuditLogsPage />} />
+            {/* Match exact paths from AdminLayout.tsx navItems */}
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/user-management" element={<UserManagementPage />} />
+            <Route path="/admin/draw-management" element={<DrawManagementPage />} />
+            <Route path="/admin/prize-structures" element={<PrizeStructuresPage />} />
+            <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+            
+            {/* Add any other admin routes that match the sidebar navigation */}
+            {/* <Route path="/admin/participant-upload" element={<ParticipantUploadPage />} /> */}
+            {/* <Route path="/admin/winners-report" element={<WinnersReportPage />} /> */}
           </Route>
         </Route>
 
-        {/* Default route - redirect to dashboard or login based on auth state */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Default route - redirect to admin dashboard */}
+        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
     </AuthProvider>
   );

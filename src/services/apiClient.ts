@@ -22,24 +22,24 @@ apiClient.interceptors.request.use(
   (config) => {
     // Get the current token before each request
     const token = authManager.getToken();
-    
+
     if (DEBUG) {
-      console.log(`[API] Request to ${config.url}`, { 
+      console.log(`[API] Request to ${config.url}`, {
         hasToken: !!token,
         method: config.method,
         url: config.url,
         headers: config.headers
       });
     }
-    
+
     // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
     const newConfig = { ...config };
-    
+
     // TYPESCRIPT FIX: Use any type for headers to bypass type checking
     // This is necessary because Axios's type system is complex and strict
     // Using any here is safe because we're only setting standard headers
     const headers: any = {};
-    
+
     // Copy all existing headers
     if (newConfig.headers) {
       Object.entries(newConfig.headers as Record<string, any>).forEach(([key, value]) => {
@@ -48,21 +48,21 @@ apiClient.interceptors.request.use(
         }
       });
     }
-    
+
     // If token exists, add it to the Authorization header
     // CORS FIX: Only use standard Authorization header, remove custom X-Auth-Token
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     // Replace the headers object
     newConfig.headers = headers;
-    
+
     // Log the final headers for debugging
     if (DEBUG) {
       console.log('[API] Final request headers:', JSON.stringify(newConfig.headers));
     }
-    
+
     return newConfig;
   },
   (error) => {
@@ -77,7 +77,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
-      console.log(`[API] Response from ${response.config.url}`, { 
+      console.log(`[API] Response from ${response.config.url}`, {
         status: response.status,
         statusText: response.statusText,
         hasData: !!response.data,
@@ -99,20 +99,17 @@ apiClient.interceptors.response.use(
         corsError: error.message?.includes('CORS') || error.message?.includes('cross-origin')
       });
     }
-    
+
     // CORS FIX: Detect and handle CORS errors specifically
     if (error.message?.includes('CORS') || error.message?.includes('cross-origin')) {
       console.error('[API] CORS error detected. This may be due to cross-origin restrictions.');
       // Don't clear auth data for CORS errors as they're likely configuration issues
       return Promise.reject(error);
     }
-    
+
     // CRITICAL FIX: Only handle 401/403 errors if they're not from the login endpoint
     // This prevents logout during login failures
-    if (error.response && 
-        (error.response.status === 401 || error.response.status === 403) && 
-        !error.config.url.includes('/auth/login')) {
-      
+    if (error.response && (error.response.status === 401 || error.response.status === 403) && !error.config.url.includes('/auth/login')) {
       console.warn(`[API] Authentication error (${error.response.status}) detected for ${error.config.url}, clearing auth data`);
       
       // Clear auth data on authentication errors
@@ -143,12 +140,15 @@ export const retryRequest = async (originalRequest: AxiosRequestConfig, retryCou
     const errorStatus = isAxiosError && error.response ? error.response.status : undefined;
     
     // If we've reached max retries or it's not a CORS/auth error, don't retry
-    if (retryCount >= maxRetries || 
-        !(isAxiosError && (
-          error.message.includes('CORS') || 
-          error.message.includes('cross-origin') ||
-          errorStatus === 401 || 
-          errorStatus === 403))) {
+    if (
+      retryCount >= maxRetries || 
+      !(isAxiosError && (
+        error.message.includes('CORS') || 
+        error.message.includes('cross-origin') || 
+        errorStatus === 401 || 
+        errorStatus === 403
+      ))
+    ) {
       return Promise.reject(error);
     }
     
@@ -176,9 +176,7 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
   }
   
   // CORS FIX: Only return standard Authorization header, remove custom X-Auth-Token
-  return authToken ? { 
-    'Authorization': `Bearer ${authToken}`
-  } : {};
+  return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
 };
 
 // Export both as default and named export to fix import errors in other services
