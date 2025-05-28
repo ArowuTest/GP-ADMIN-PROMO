@@ -35,8 +35,9 @@ apiClient.interceptors.request.use(
     // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
     const newConfig = { ...config };
     
-    // Create a new headers object that matches the expected type
-    const headers = {};
+    // Create a new headers object that's compatible with Axios
+    // Using Record<string, string> to avoid TS7053 errors
+    const headers: Record<string, string> = {};
     
     // Copy all existing headers
     if (newConfig.headers) {
