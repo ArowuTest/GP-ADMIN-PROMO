@@ -1,6 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-import type { AxiosRequestConfig, AxiosResponse, AxiosHeaders } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authManager } from './authManager';
 
 // Debug flag to enable detailed request/response logging
@@ -35,9 +35,8 @@ apiClient.interceptors.request.use(
     // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
     const newConfig = { ...config };
     
-    // Create a new headers object with proper typing for Axios v1.x
-    // This fixes the TypeScript error with AxiosRequestHeaders
-    const headers = {} as Record<string, string>;
+    // Create a new headers object that matches the expected type
+    const headers = {};
     
     // Copy all existing headers
     if (newConfig.headers) {
@@ -139,7 +138,6 @@ export const retryRequest = async (originalRequest: AxiosRequestConfig, retryCou
   } catch (error: unknown) {
     // Type guard for error object
     const isAxiosError = axios.isAxiosError(error);
-    // Remove unused variable to fix TS6133 error
     const errorStatus = isAxiosError && error.response ? error.response.status : undefined;
     
     // If we've reached max retries or it's not a CORS/auth error, don't retry
@@ -166,9 +164,10 @@ export const retryRequest = async (originalRequest: AxiosRequestConfig, retryCou
 };
 
 // Re-export getAuthHeaders for backward compatibility with existing services
-export const getAuthHeaders = (): Record<string, string> => {
-  // Get token from authManager
-  const authToken = authManager.getToken();
+// CRITICAL FIX: Accept token parameter to match how it's called in service files
+export const getAuthHeaders = (token?: string): Record<string, string> => {
+  // If token is provided, use it; otherwise get from authManager
+  const authToken = token || authManager.getToken();
   
   if (DEBUG) {
     console.log(`[API] getAuthHeaders called, token available: ${!!authToken}`);
