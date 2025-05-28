@@ -98,7 +98,13 @@ const clearAuthData = (): void => {
 
 // Get authentication headers for API requests
 const getAuthHeaders = (): Record<string, string> => {
-  return authManager.getAuthHeaders();
+  const token = authManager.getToken();
+  if (token) {
+    return {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  return {};
 };
 
 // Check authentication state
@@ -108,9 +114,17 @@ const checkAuthState = (): boolean => {
 };
 
 // Compatibility aliases for backward compatibility
-const getUserData = getUser;
-const setUserData = storeUser;
-const setToken = storeToken;
+const getUserData = (): any => {
+  return getUser();
+};
+
+const setUserData = (user: any): void => {
+  storeUser(user);
+};
+
+const setToken = (token: string): void => {
+  storeToken(token);
+};
 
 // Export the service
 export const authService = {

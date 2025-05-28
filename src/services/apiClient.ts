@@ -1,5 +1,6 @@
 // src/services/apiClient.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authManager } from './authManager';
 
 // Create a base axios instance with common configuration
@@ -21,10 +22,11 @@ apiClient.interceptors.request.use(
     // If token exists, add it to the Authorization header
     if (token) {
       // Create a new headers object to avoid modifying read-only properties
+      // Using any type to bypass TypeScript's strict checking for Axios headers
       config.headers = {
         ...config.headers,
         'Authorization': `Bearer ${token}`
-      };
+      } as any;
     }
     
     // Enable credentials for CORS

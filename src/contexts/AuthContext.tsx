@@ -1,12 +1,18 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 
+// Define user roles
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'SENIOR_USER' | 'WINNER_REPORTS_USER' | 'ALL_REPORT_USER';
+
 // Define the shape of our authentication context
-interface AuthContextType {
+export interface AuthContextType {
   isAuthenticated: boolean;
+  isLoadingAuth: boolean;
   user: any;
+  userRole: UserRole | null;
+  username: string | null;
   token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -16,7 +22,10 @@ interface AuthContextType {
 // Create the context with a default value
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
+  isLoadingAuth: true,
   user: null,
+  userRole: null,
+  username: null,
   token: null,
   login: async () => false,
   logout: () => {},
@@ -33,9 +42,12 @@ interface AuthProviderProps {
 // Provider component that wraps your app and makes auth object available to any child component that calls useAuth()
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  
   const navigate = useNavigate();
 
   // Check if the user is authenticated on initial load
@@ -54,9 +66,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Get user data from storage
         const userData = authService.getUser();
         
+        // Extract role and username from user data
+        const role = userData?.role || null;
+        const name = userData?.username || null;
+        
         // Update state
         setToken(storedToken);
         setUser(userData);
+        setUserRole(role as UserRole);
+        setUsername(name);
         setIsAuthenticated(true);
       } else {
         // Clear auth data if token is expired or doesn't exist
@@ -66,7 +84,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Error checking authentication state:', error);
       handleLogout();
     } finally {
-      setLoading(false);
+      setIsLoadingAuth(false);
     }
   };
 
@@ -78,9 +96,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Check if login was successful by verifying token exists
       if (response && response.token) {
+        // Extract role and username from user data
+        const role = response.user?.role || null;
+        const name = response.user?.username || null;
+        
         // Update state
         setToken(response.token);
         setUser(response.user);
+        setUserRole(role as UserRole);
+        setUsername(name);
         setIsAuthenticated(true);
         return true;
       }
@@ -106,13 +130,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Reset state
     setToken(null);
     setUser(null);
+    setUserRole(null);
+    setUsername(null);
     setIsAuthenticated(false);
   };
 
   // Value object that will be passed to consumers of this context
   const value = {
     isAuthenticated,
+    isLoadingAuth,
     user,
+    userRole,
+    username,
     token,
     login,
     logout,
@@ -122,7 +151,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Return the provider with the value
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!isLoadingAuth && children}
     </AuthContext.Provider>
   );
 };
