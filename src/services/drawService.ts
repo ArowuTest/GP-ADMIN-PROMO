@@ -10,6 +10,10 @@ export interface DrawData {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  executedByAdminID?: string; // Added to match usage in DrawManagementPage
+  prizeStructureId?: string;   // Added to match usage in DrawManagementPage
+  totalEligibleMSISDNs?: number; // Added to match usage in DrawManagementPage
+  totalEntries?: number;       // Added to match usage in DrawManagementPage
   winners?: WinnerData[];
   runnerUps?: WinnerData[];
 }
@@ -17,11 +21,18 @@ export interface DrawData {
 export interface WinnerData {
   id: string;
   drawId: string;
+  drawID?: string;           // Added alias for backward compatibility
   msisdn: string;
   prizeId: string;
+  prizeTierId?: string;      // Added to match usage in DrawManagementPage
+  prizeTierID?: string;      // Added to match usage in DrawManagementPage
   prizeName?: string;
+  prizeTierName?: string;    // Added alias for backward compatibility
+  prizeTier?: string;        // Added to match usage in DrawManagementPage
   prizeValue?: number;
   status: string;
+  paymentStatus?: string;    // Added to match usage in DrawManagementPage
+  paymentNotes?: string;     // Added to match usage in DrawManagementPage
   isRunnerUp: boolean;
   createdAt: string;
   updatedAt: string;
@@ -43,11 +54,17 @@ export interface DrawExecutionRequest {
 
 export interface DrawExecutionResponse {
   drawId: string;
+  draw?: DrawData;           // Added to match usage in DrawExecutionPage
   drawDate: string;
   status: string;
   winners: WinnerData[];
   runnerUps: WinnerData[];
   message: string;
+  // Added these properties to make it compatible with DrawData for type casting
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
 }
 
 // Get eligibility statistics for a specific draw date
@@ -73,6 +90,9 @@ const getEligibilityStats = async (drawDate: string, token: string): Promise<Eli
     }
   }
 };
+
+// Alias for backward compatibility
+const getDrawEligibilityStats = getEligibilityStats;
 
 // Calculate eligibility statistics from local participant data (fallback method)
 const calculateEligibilityStatsFromLocalData = async (drawDate: string, token: string): Promise<EligibilityStats> => {
@@ -124,7 +144,21 @@ const executeDraw = async (drawDate: string, prizeStructureId: string, token: st
     });
     
     // Handle nested response structure
-    return response.data.data || response.data;
+    const responseData = response.data.data || response.data;
+    
+    // Add draw property for backward compatibility
+    if (!responseData.draw) {
+      responseData.draw = {
+        id: responseData.drawId,
+        drawDate: responseData.drawDate,
+        status: responseData.status,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: "system"
+      };
+    }
+    
+    return responseData;
   } catch (error: any) {
     console.error('Error executing draw:', error);
     throw error;
@@ -185,6 +219,7 @@ const invokeRunnerUp = async (winnerId: string, token: string): Promise<{ messag
 
 export const drawService = {
   getEligibilityStats,
+  getDrawEligibilityStats, // Added alias for backward compatibility
   calculateEligibilityStatsFromLocalData,
   executeDraw,
   listDraws,
