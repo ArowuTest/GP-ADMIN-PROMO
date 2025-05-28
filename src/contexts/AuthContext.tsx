@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx - Updated context with proper state management
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authManager } from '../services/authManager';
-import { authService } from '../services/authService';
+import { authService, type AuthResponse } from '../services/authService';
 
 // Define UserRole as a string literal type
 export type UserRole =
@@ -44,16 +44,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (DEBUG) {
         console.log('[AUTH_CONTEXT] Initializing auth state');
       }
-
       try {
         const storedToken = authManager.getToken();
         const storedUser = authManager.getUser();
-
+        
         if (storedToken && storedUser) {
           if (DEBUG) {
             console.log('[AUTH_CONTEXT] Found stored credentials');
           }
-
           // Skip token validation to avoid 401 errors
           setIsAuthenticated(true);
           setUser(storedUser);
@@ -64,7 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (DEBUG) {
             console.log('[AUTH_CONTEXT] No stored credentials found');
           }
-          
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
@@ -96,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (DEBUG) {
             console.log('[AUTH_CONTEXT] Token expired on visibility change, clearing auth');
           }
-          
           authManager.clearAuthData();
           setIsAuthenticated(false);
           setUser(null);
@@ -118,24 +114,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (DEBUG) {
       console.log('[AUTH_CONTEXT] Login attempt', { email });
     }
-    
     setIsLoadingAuth(true);
-    
     try {
-      const response = await authService.login(email, password);
+      const response = await authService.login({ email, password });
       
-      if (response.success) {
+      if (DEBUG) {
+        console.log('[AUTH_CONTEXT] Login response:', response);
+      }
+      
+      if (response.token && response.user) {
         if (DEBUG) {
           console.log('[AUTH_CONTEXT] Login successful');
         }
-        
         setIsAuthenticated(true);
         setUser(response.user);
-        setToken(response.token);
+        if (response.token) {
+          setToken(response.token);
+        }
         setUserRole(response.user.role as UserRole);
         setUsername(response.user.username || response.user.email);
       }
-      
       return response;
     } catch (error) {
       console.error('[AUTH_CONTEXT] Login error:', error);
@@ -150,7 +148,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (DEBUG) {
       console.log('[AUTH_CONTEXT] Logging out');
     }
-    
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
@@ -161,10 +158,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Log current auth state for debugging
   if (DEBUG) {
-    console.log('[AUTH_CONTEXT] Current auth state:', { 
-      isAuthenticated, 
+    console.log('[AUTH_CONTEXT] Current auth state:', {
+      isAuthenticated,
       isLoadingAuth,
-      hasUser: !!user, 
+      hasUser: !!user,
       hasToken: !!token,
       userRole
     });

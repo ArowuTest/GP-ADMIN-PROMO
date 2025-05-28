@@ -73,7 +73,7 @@ const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
       expiresIn,
       message: responseData.message || 'Login successful'
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
     
     // Extract error message if available
@@ -142,8 +142,8 @@ const validateToken = async (): Promise<boolean> => {
 // Compatibility aliases for backward compatibility
 // These ensure existing code that uses these method names continues to work
 const getUserData = getCurrentUser;
-const setUserData = authManager.storeUser;
-const setToken = authManager.storeToken;
+const setUserData = (user: any): void => authManager.storeUser(user);
+const setToken = (token: string): void => authManager.storeToken(token);
 
 // Export all functions
 export const authService = {
