@@ -1,4 +1,4 @@
-// src/services/participantService.ts - Updated with proper interfaces and PapaParse integration
+// src/services/participantService.ts - Complete production-ready version
 import axios from 'axios';
 import { apiClient, getAuthHeaders } from './apiClient';
 import Papa from 'papaparse';
@@ -114,7 +114,7 @@ const validateCSV = async (file: File): Promise<CSVValidationResult> => {
     Papa.parse<CSVParticipantRow>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results: Papa.ParseResult<CSVParticipantRow>) => {
+      complete: (results) => {
         // Check if required columns exist
         const requiredColumns = ['msisdn', 'rechargeAmount', 'rechargeDate'];
         const headers = results.meta.fields || [];
@@ -178,7 +178,7 @@ const validateCSV = async (file: File): Promise<CSVValidationResult> => {
         
         resolve(result);
       },
-      error: (error: Error) => {
+      error: (error) => {
         result.errors.push(`CSV parsing error: ${error.message}`);
         reject(result);
       }

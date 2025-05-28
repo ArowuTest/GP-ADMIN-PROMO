@@ -1,4 +1,4 @@
-// src/services/drawService.ts - Updated with proper interfaces and type safety
+// src/services/drawService.ts - Complete production-ready version
 import { apiClient, getAuthHeaders } from './apiClient';
 
 // Define types for draw-related data

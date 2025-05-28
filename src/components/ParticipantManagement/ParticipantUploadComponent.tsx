@@ -1,14 +1,8 @@
+// src/components/ParticipantManagement/ParticipantUploadComponent.tsx - Complete production-ready version
 import React, { useState, useCallback } from "react";
 import { participantService, type UploadResponse as BackendUploadResponse } from "../../services/participantService";
 
 // Define a more comprehensive frontend UploadResponse type if needed, or ensure BackendUploadResponse includes all fields
-// For this example, we assume BackendUploadResponse from the service includes:
-// errors?: string[]; (for processing_error_messages)
-// skippedDuplicateEventDetails?: string[];
-// duplicatesSkippedCount?: number;
-// successfulRowsImported: number;
-// totalDataRowsProcessed: number;
-
 interface UploadResponse extends BackendUploadResponse {
     // Add any frontend specific transformations if necessary
     // For now, assume BackendUploadResponse is sufficient and includes all necessary fields
