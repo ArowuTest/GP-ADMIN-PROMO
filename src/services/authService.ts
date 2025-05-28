@@ -9,10 +9,33 @@ export interface AuthResponse {
   expiresAt?: string;
 }
 
+// Define login request interface to match backend expectations
+export interface LoginRequest {
+  Email: string;
+  Password: string;
+}
+
 // Main authentication service
-const login = async (username: string, password: string): Promise<AuthResponse> => {
+const login = async (credentials: { email: string, password: string }): Promise<AuthResponse> => {
   try {
-    const response = await apiClient.post('/auth/login', { username, password });
+    // Transform frontend credentials to match backend API contract
+    const loginPayload: LoginRequest = {
+      Email: credentials.email,
+      Password: credentials.password
+    };
+    
+    console.log('[AUTH_SERVICE] Sending login request with payload:', { 
+      hasEmail: !!loginPayload.Email, 
+      hasPassword: !!loginPayload.Password 
+    });
+    
+    const response = await apiClient.post('/auth/login', loginPayload);
+    
+    console.log('[AUTH_SERVICE] Login response received:', { 
+      status: response.status,
+      hasData: !!response.data,
+      hasToken: !!(response.data && response.data.token)
+    });
     
     // Handle different response formats
     let token: string;
@@ -46,15 +69,15 @@ const login = async (username: string, password: string): Promise<AuthResponse> 
     
     return { token, user, expiresAt };
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('[AUTH_SERVICE] Login error:', error);
     // Enhanced error logging for debugging
     if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
+      console.error('[AUTH_SERVICE] Response status:', error.response.status);
+      console.error('[AUTH_SERVICE] Response data:', error.response.data);
     } else if (error.request) {
-      console.error('No response received:', error.request);
+      console.error('[AUTH_SERVICE] No response received:', error.request);
     } else {
-      console.error('Error message:', error.message);
+      console.error('[AUTH_SERVICE] Error message:', error.message);
     }
     throw error;
   }
@@ -113,6 +136,11 @@ const checkAuthState = (): boolean => {
   return !!token && !isTokenExpired();
 };
 
+// Logout function
+const logout = (): void => {
+  clearAuthData();
+};
+
 // Compatibility aliases for backward compatibility
 const getUserData = (): any => {
   return getUser();
@@ -129,6 +157,7 @@ const setToken = (token: string): void => {
 // Export the service
 export const authService = {
   login,
+  logout,
   storeToken,
   getToken,
   storeUser,
