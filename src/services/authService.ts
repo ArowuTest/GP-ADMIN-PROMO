@@ -1,4 +1,4 @@
-// src/services/authService.ts - Fixed version with JWT alignment
+// src/services/authService.ts - Fixed version with correct API endpoint path
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
@@ -29,7 +29,8 @@ const login = async (credentials: { email: string, password: string }): Promise<
       hasPassword: !!loginPayload.Password 
     });
     
-    const response = await apiClient.post('/api/v1/auth/login', loginPayload);
+    // Fixed endpoint path - removed duplicate "api" in the path
+    const response = await apiClient.post('/auth/login', loginPayload);
     
     console.log('[AUTH_SERVICE] Login response received:', { 
       status: response.status,

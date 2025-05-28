@@ -1,11 +1,12 @@
-// src/services/apiClient.ts - Fixed version with enhanced debugging
+// src/services/apiClient.ts - Fixed version with correct API endpoint URL
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { authManager } from './authManager';
 
 // Create a base axios instance with common configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+  // Fixed baseURL to remove duplication of "api" in the path
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
