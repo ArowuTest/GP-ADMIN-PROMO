@@ -7,6 +7,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import DrawManagementPage from './pages/DrawManagementPage';
 import PrizeStructuresPage from './pages/PrizeStructuresPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import AdminLayout from './components/layout/AdminLayout';
 import './App.css';
 
 // Loading component to show during authentication checks
@@ -68,13 +69,15 @@ const App = () => {
           <Route path="/login" element={<LoginPage />} />
         </Route>
 
-        {/* Protected routes */}
+        {/* Protected routes with AdminLayout */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/users" element={<UserManagementPage />} />
-          <Route path="/draws" element={<DrawManagementPage />} />
-          <Route path="/prizes" element={<PrizeStructuresPage />} />
-          <Route path="/audit-logs" element={<AuditLogsPage />} />
+          <Route element={<AdminLayout />}>
+            <Route path="/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/users" element={<UserManagementPage />} />
+            <Route path="/draws" element={<DrawManagementPage />} />
+            <Route path="/prizes" element={<PrizeStructuresPage />} />
+            <Route path="/audit-logs" element={<AuditLogsPage />} />
+          </Route>
         </Route>
 
         {/* Default route - redirect to dashboard or login based on auth state */}
