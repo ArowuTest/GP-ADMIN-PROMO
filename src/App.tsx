@@ -1,83 +1,90 @@
-// src/App.tsx
-import type { JSX } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import LoginPage from "./pages/LoginPage"; 
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import DrawManagementPage from "./pages/DrawManagementPage"; 
-import AuditLogsPage from "./pages/AuditLogsPage"; 
-import AdminLayout from "./components/layout/AdminLayout"; 
-import { AuthProvider, useAuth } from "./contexts/AuthContext"; 
-import { authManager } from "./services/authManager";
+// src/App.tsx - Main application with router configuration
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginPage from './pages/LoginPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import UserManagementPage from './pages/UserManagementPage';
+import DrawManagementPage from './pages/DrawManagementPage';
+import PrizeStructuresPage from './pages/PrizeStructuresPage';
+import AuditLogsPage from './pages/AuditLogsPage';
+import './App.css';
 
-import PrizeStructureListComponent from "./components/PrizeManagement/PrizeStructureListComponent";
-import UserListComponent from "./components/UserManagement/UserListComponent";
-import ParticipantUploadComponent from "./components/ParticipantManagement/ParticipantUploadComponent";
-import WinnersReportPage from "./components/Reports/WinnersReportPage"; // Import the Winners Report Page
+// Loading component to show during authentication checks
+const LoadingScreen = () => (
+  <div className="loading-screen">
+    <div className="spinner"></div>
+    <p>Loading...</p>
+  </div>
+);
 
-// ProtectedRoute component using AuthContext
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const auth = useAuth();
-  const navigate = useNavigate();
+// Protected route component that handles authentication checks
+const ProtectedRoute = () => {
+  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const location = useLocation();
 
-  // Check authentication on component mount
-  useEffect(() => {
-    const validateAuth = async () => {
-      if (auth.isAuthenticated) {
-        const isStillValid = await authManager.checkAuthState();
-        if (!isStillValid && !auth.isLoadingAuth) {
-          auth.logout();
-          navigate('/login', { replace: true });
-        }
-      }
-    };
-    
-    validateAuth();
-  }, [auth, navigate]);
-
-  if (auth.isLoadingAuth) {
-    return <p>Loading authentication...</p>; 
+  // Show loading screen while checking authentication
+  if (isLoadingAuth) {
+    return <LoadingScreen />;
   }
 
-  if (!auth.isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    // Use React Router's Navigate component instead of window.location
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  
-  return children;
+
+  // Render child routes if authenticated
+  return <Outlet />;
 };
 
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route 
-        path="/admin"
-        element={ 
-          <ProtectedRoute>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="draw-management" element={<DrawManagementPage />} />
-        <Route path="prize-structures" element={<PrizeStructureListComponent />} />
-        <Route path="user-management" element={<UserListComponent />} />
-        <Route path="participant-upload" element={<ParticipantUploadComponent />} />
-        <Route path="winners-report" element={<WinnersReportPage />} /> {/* Add Winners Report route */}
-        <Route path="audit-logs" element={<AuditLogsPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/login" replace />} /> 
-    </Routes>
-  );
-}
+// Public route component that redirects to dashboard if already authenticated
+const PublicRoute = () => {
+  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const location = useLocation();
+  
+  // Get the intended destination from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
-function App() {
+  // Show loading screen while checking authentication
+  if (isLoadingAuth) {
+    return <LoadingScreen />;
+  }
+
+  // Redirect to dashboard or intended destination if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
+
+  // Render child routes if not authenticated
+  return <Outlet />;
+};
+
+const App = () => {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+          </Route>
+
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/users" element={<UserManagementPage />} />
+            <Route path="/draws" element={<DrawManagementPage />} />
+            <Route path="/prizes" element={<PrizeStructuresPage />} />
+            <Route path="/audit-logs" element={<AuditLogsPage />} />
+          </Route>
+
+          {/* Default route - redirect to dashboard or login based on auth state */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
-}
+};
 
 export default App;

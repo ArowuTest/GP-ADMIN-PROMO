@@ -3,180 +3,141 @@ import axios from 'axios';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authManager } from './authManager';
 
-// Debug flag to enable detailed request/response logging
+// Debug flag to enable detailed logging
 const DEBUG = true;
 
-// Create axios instance with base configuration
-const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // CORS FIX: Set withCredentials based on environment
-  // Only use true for same-origin or when backend explicitly supports credentials
-  withCredentials: false, // Changed from true to false for cross-origin requests
-});
+// API base URL - update this to match your backend URL
+const API_BASE_URL = 'https://gp-backend-promo.onrender.com/api/v1';
 
-// Add request interceptor to include auth token in every request
+// Create axios instance with base URL
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  withCredentials: false // Changed from true to false for cross-origin
+} );
+
+// Request interceptor to add authentication token
 apiClient.interceptors.request.use(
   (config) => {
-    // Get the current token before each request
+    // Get token from auth manager
     const token = authManager.getToken();
     
     if (DEBUG) {
-      console.log(`[API] Request to ${config.url}`, { 
-        hasToken: !!token,
+      console.log('[API] Request interceptor:', { 
+        url: config.url, 
         method: config.method,
-        url: config.url,
-        headers: config.headers
+        hasToken: !!token
       });
     }
     
-    // CRITICAL FIX: Create a completely new config object to avoid modifying read-only properties
-    const newConfig = { ...config };
-    
-    // Create a new headers object with proper typing
-    const headers = new axios.AxiosHeaders();
-    
-    // Copy all existing headers
-    if (newConfig.headers) {
-      Object.entries(newConfig.headers as Record<string, any>).forEach(([key, value]) => {
-        if (value !== undefined) {
-          headers.set(key, value);
-        }
-      });
-    }
-    
-    // If token exists, add it to the Authorization header
-    // CORS FIX: Only use standard Authorization header, remove custom X-Auth-Token
+    // If token exists, add it to request headers
     if (token) {
+      // CRITICAL FIX: Create a new headers object instead of modifying the existing one
+      // This prevents "Cannot set headers after they are sent" errors
+      const headers = new Headers();
+      
+      // Copy existing headers
+      if (config.headers) {
+        Object.entries(config.headers).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            headers.set(key, value.toString());
+          }
+        });
+      }
+      
+      // Add Authorization header with token
       headers.set('Authorization', `Bearer ${token}`);
+      
+      // Convert Headers object back to plain object for axios
+      const plainHeaders: Record<string, string> = {};
+      headers.forEach((value, key) => {
+        plainHeaders[key] = value;
+      });
+      
+      // Update config with new headers
+      config.headers = plainHeaders;
     }
     
-    // Replace the headers object
-    newConfig.headers = headers;
-    
-    // Log the final headers for debugging
-    if (DEBUG) {
-      console.log('[API] Final request headers:', JSON.stringify(newConfig.headers));
-    }
-    
-    return newConfig;
+    return config;
   },
   (error) => {
-    if (DEBUG) {
-      console.error('[API] Request error:', error);
-    }
+    console.error('[API] Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor to handle auth errors
+// Response interceptor to handle errors
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
-      console.log(`[API] Response from ${response.config.url}`, { 
+      console.log('[API] Response interceptor:', { 
+        url: response.config.url, 
         status: response.status,
-        statusText: response.statusText,
-        hasData: !!response.data,
-        authHeader: response.config.headers['Authorization'] ? 'present' : 'missing'
+        hasData: !!response.data
       });
     }
     return response;
   },
-  (error) => {
-    // Enhanced error logging
+  async (error) => {
     if (DEBUG) {
-      console.error('[API] Response error:', {
-        url: error.config?.url,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        authHeader: error.config?.headers?.['Authorization'] ? 'present' : 'missing',
-        // CORS FIX: Log CORS-related information
-        corsError: error.message?.includes('CORS') || error.message?.includes('cross-origin')
-      });
+      console.error('[API] Response error:', error);
     }
     
-    // CORS FIX: Detect and handle CORS errors specifically
-    if (error.message?.includes('CORS') || error.message?.includes('cross-origin')) {
-      console.error('[API] CORS error detected. This may be due to cross-origin restrictions.');
-      // Don't clear auth data for CORS errors as they're likely configuration issues
-      return Promise.reject(error);
-    }
-    
-    // CRITICAL FIX: Only handle 401/403 errors if they're not from the login endpoint
-    // This prevents logout during login failures
-    if (error.response && 
-        (error.response.status === 401 || error.response.status === 403) && 
-        !error.config.url.includes('/auth/login')) {
+    // Check if error is due to authentication
+    if (error.response && error.response.status === 401) {
+      if (DEBUG) {
+        console.log('[API] Authentication error, clearing auth data');
+      }
       
-      console.warn(`[API] Authentication error (${error.response.status}) detected for ${error.config.url}, clearing auth data`);
-      
-      // Clear auth data on authentication errors
+      // Clear authentication data
       authManager.clearAuthData();
       
-      // Redirect to login page if not already there
-      if (window.location.pathname !== '/login') {
-        console.log('[API] Redirecting to login page due to authentication error');
-        window.location.href = '/login';
-      }
+      // Redirect to login page
+      window.location.href = '/login';
     }
     
     return Promise.reject(error);
   }
 );
 
-// CORS FIX: Add a retry mechanism for failed requests
-// Fixed TypeScript errors by adding proper type annotations
+// Retry request function for handling network errors
 export const retryRequest = async (originalRequest: AxiosRequestConfig, retryCount = 0): Promise<AxiosResponse> => {
-  const maxRetries = 2;
-  
   try {
-    // Try the request with the current configuration
-    return await axios(originalRequest);
+    if (DEBUG) {
+      console.log(`[API] Retrying request (attempt ${retryCount + 1})`, originalRequest.url);
+    }
+    return await apiClient(originalRequest);
   } catch (error: unknown) {
     // Type guard for error object
     const isAxiosError = axios.isAxiosError(error);
     const errorMessage = isAxiosError ? error.message : String(error);
     const errorStatus = isAxiosError && error.response ? error.response.status : undefined;
     
-    // If we've reached max retries or it's not a CORS/auth error, don't retry
-    if (retryCount >= maxRetries || 
-        !(errorMessage.includes('CORS') || 
-          errorMessage.includes('cross-origin') ||
-          errorStatus === 401 || 
-          errorStatus === 403)) {
-      return Promise.reject(error);
+    // Max 3 retry attempts
+    if (retryCount < 3 && (!errorStatus || errorStatus >= 500)) {
+      if (DEBUG) {
+        console.log(`[API] Request failed, retrying... (${retryCount + 1}/3)`);
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, retryCount) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      return retryRequest(originalRequest, retryCount + 1);
     }
     
-    console.log(`[API] Retrying failed request (attempt ${retryCount + 1}/${maxRetries})`);
-    
-    // Create a new request with modified settings
-    const newRequest: AxiosRequestConfig = { ...originalRequest };
-    
-    // Toggle withCredentials for retry
-    newRequest.withCredentials = !originalRequest.withCredentials;
-    
-    // Retry with modified request
-    return retryRequest(newRequest, retryCount + 1);
+    throw error;
   }
 };
 
-// Re-export getAuthHeaders for backward compatibility with existing services
-export const getAuthHeaders = (token?: string): Record<string, string> => {
-  // If token is provided, use it; otherwise get from authManager
-  const authToken = token || authManager.getToken();
-  
-  if (DEBUG) {
-    console.log(`[API] getAuthHeaders called, token available: ${!!authToken}`);
-  }
-  
-  // CORS FIX: Only return standard Authorization header, remove custom X-Auth-Token
+// Helper function to get auth headers
+export const getAuthHeaders = () => {
+  const authToken = authManager.getToken();
   return authToken ? { 
     'Authorization': `Bearer ${authToken}`
   } : {};
 };
 
-export { apiClient };
 export default apiClient;

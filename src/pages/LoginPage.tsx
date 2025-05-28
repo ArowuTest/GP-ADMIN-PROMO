@@ -1,9 +1,9 @@
-// src/pages/LoginPage.tsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/LoginPage.tsx - Updated login page with React Router navigation
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-// Debug flag to enable detailed logging
+// Debug flag
 const DEBUG = true;
 
 const LoginPage: React.FC = () => {
@@ -11,26 +11,15 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  // CRITICAL FIX: Check authentication state on component mount
-  useEffect(() => {
-    if (DEBUG) {
-      console.log('[LOGIN_PAGE] Component mounted, checking auth state:', { isAuthenticated });
-    }
-    
-    // If already authenticated, redirect to dashboard
-    if (isAuthenticated) {
-      if (DEBUG) {
-        console.log('[LOGIN_PAGE] Already authenticated, redirecting to dashboard');
-      }
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
+  const location = useLocation();
+  
+  // Get the intended destination from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // CRITICAL FIX: Add more explicit preventDefault to ensure form doesn't submit normally
     e.preventDefault();
     
     if (DEBUG) {
@@ -41,12 +30,10 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     
     try {
-      // CRITICAL FIX: Add more detailed logging
       if (DEBUG) {
         console.log('[LOGIN_PAGE] Calling login function');
       }
       
-      // Call login with both email and password parameters
       const response = await login(email, password);
       
       if (DEBUG) {
@@ -57,15 +44,12 @@ const LoginPage: React.FC = () => {
       }
       
       if (response.success) {
-        // CRITICAL FIX: Add explicit navigation with timeout
         if (DEBUG) {
-          console.log('[LOGIN_PAGE] Login successful, navigating to dashboard');
+          console.log('[LOGIN_PAGE] Login successful, navigating to:', from);
         }
         
-        // Use timeout to ensure state updates before navigation
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 100);
+        // Use React Router's navigate instead of window.location
+        navigate(from, { replace: true });
       } else {
         setError(response.error || 'Login failed. Please try again.');
       }
@@ -77,26 +61,12 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  // CRITICAL FIX: Add explicit button click handler as backup
-  const handleLoginClick = () => {
-    if (DEBUG) {
-      console.log('[LOGIN_PAGE] Login button clicked directly');
-    }
-    
-    // Manually trigger form submission
-    const form = document.querySelector('form');
-    if (form) {
-      form.dispatchEvent(new Event('submit', { cancelable: true }));
-    }
-  };
-
   return (
     <div className="login-container">
       <div className="login-form-wrapper">
         <h2>Login</h2>
         {error && <div className="error-message">{error}</div>}
         
-        {/* CRITICAL FIX: Add noValidate to prevent browser validation */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -120,12 +90,7 @@ const LoginPage: React.FC = () => {
             />
           </div>
           
-          {/* CRITICAL FIX: Add explicit onClick handler as backup */}
-          <button 
-            type="submit" 
-            disabled={loading}
-            onClick={handleLoginClick}
-          >
+          <button type="submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>

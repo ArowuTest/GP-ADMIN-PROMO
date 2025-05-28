@@ -2,218 +2,171 @@
 import axios from 'axios';
 import { authManager } from './authManager';
 
-// Base URL for API requests
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gp-backend-promo.onrender.com/api/v1';
-
 // Debug flag to enable detailed logging
 const DEBUG = true;
 
-/**
- * Comprehensive authentication service with robust error handling
- * and support for various backend response formats
- */
+// API base URL - update this to match your backend URL
+const API_BASE_URL = 'https://gp-backend-promo.onrender.com/api/v1';
+
+// Authentication service with improved login flow
 export const authService = {
-  /**
-   * Login user with email and password
-   * Handles multiple response formats and provides detailed error logging
-   */
-  login: async (email: string, password: string) => {
-    try {
+  // Login function with email and password
+  login: async (email: string, password: string ) => {
+    if (DEBUG) {
+      console.log('[AUTH] Login attempt:', { email, hasPassword: !!password });
+    }
+
+    // Check if we already have a valid token
+    const existingToken = authManager.getToken();
+    if (existingToken) {
       if (DEBUG) {
-        console.log('[AUTH] Login attempt:', { email, hasPassword: !!password });
+        console.log('[AUTH] Existing token found, but skipping validation to avoid 401 errors');
       }
+      
+      // CRITICAL FIX: Skip token validation against /admin/users endpoint
+      // This prevents 401 errors during login process
+      // Instead, we'll proceed with login to get a fresh token
+    }
 
-      // Check if we already have a valid token
-      const existingToken = authManager.getToken();
-      if (existingToken) {
-        if (DEBUG) {
-          console.log('[AUTH] Existing token found, but skipping validation to avoid 401 errors');
+    try {
+      // Proceed with login request
+      const loginResponse = await axios.post(
+        `${API_BASE_URL}/auth/login`,
+        { email, password },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          withCredentials: false // Changed from true to false for cross-origin
         }
-        
-        // CRITICAL FIX: Skip token validation against /admin/users endpoint
-        // This prevents 401 errors during login process
-        // Instead, we'll proceed with login to get a fresh token
-      }
-
-      // CORS FIX: Use modified axios config for cross-origin login requests
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        email,
-        password
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: false // Changed from true to false for cross-origin
-      });
+      );
 
       if (DEBUG) {
         console.log('[AUTH] Login response:', {
-          status: response.status,
-          hasData: !!response.data,
-          dataKeys: response.data ? Object.keys(response.data) : []
+          status: loginResponse.status,
+          hasData: !!loginResponse.data,
+          dataKeys: loginResponse.data ? Object.keys(loginResponse.data) : []
         });
       }
 
-      // Handle successful response
-      if (response.status === 200) {
-        // Extract token from various possible response formats
-        let token = null;
-        let userData = null;
+      // Extract token from response
+      let token = null;
+      let user = null;
 
-        // Check response headers first (some APIs return token in header)
-        const authHeader = response.headers['authorization'] || response.headers['Authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          token = authHeader.substring(7);
-          if (DEBUG) console.log('[AUTH] Token found in Authorization header');
-        }
-
-        // Check response data for token
-        if (!token && response.data) {
-          // Format 1: { token: "..." }
-          if (response.data.token) {
-            token = response.data.token;
-            if (DEBUG) console.log('[AUTH] Token found in response.data.token');
-          }
-          // Format 2: { data: { token: "..." } }
-          else if (response.data.data && response.data.data.token) {
-            token = response.data.data.token;
-            if (DEBUG) console.log('[AUTH] Token found in response.data.data.token');
-          }
-          // Format 3: { access_token: "..." }
-          else if (response.data.access_token) {
-            token = response.data.access_token;
-            if (DEBUG) console.log('[AUTH] Token found in response.data.access_token');
-          }
-          // Format 4: { data: { access_token: "..." } }
-          else if (response.data.data && response.data.data.access_token) {
-            token = response.data.data.access_token;
-            if (DEBUG) console.log('[AUTH] Token found in response.data.data.access_token');
-          }
-          
-          // Extract user data from various possible formats
-          if (response.data.user) {
-            userData = response.data.user;
-            if (DEBUG) console.log('[AUTH] User data found in response.data.user');
-          }
-          else if (response.data.data && response.data.data.user) {
-            userData = response.data.data.user;
-            if (DEBUG) console.log('[AUTH] User data found in response.data.data.user');
-          }
-          else if (response.data.userData) {
-            userData = response.data.userData;
-            if (DEBUG) console.log('[AUTH] User data found in response.data.userData');
-          }
-          else if (response.data.data && response.data.data.userData) {
-            userData = response.data.data.userData;
-            if (DEBUG) console.log('[AUTH] User data found in response.data.data.userData');
-          }
-          // If we have a token but no user data, create minimal user object
-          else if (token) {
-            userData = { email };
-            if (DEBUG) console.log('[AUTH] Created minimal user data with email');
-          }
-        }
-
-        // If we have a token, store it and return success
-        if (token) {
+      // Check for token in different response formats
+      if (loginResponse.data) {
+        // Format 1: { token: "..." }
+        if (loginResponse.data.token) {
           if (DEBUG) {
-            console.log('[AUTH] Login successful, storing token and user data');
+            console.log('[AUTH] Token found in response.data.token');
           }
-          
-          // Store token in multiple storage mechanisms for redundancy
-          authManager.storeToken(token);
-          
-          // Store user data
-          if (userData) {
-            authManager.storeUser(userData);
-          }
-          
-          // Set token expiry to 7 days from now
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + 7);
-          authManager.storeTokenExpiry(expiryDate.toISOString());
-          
-          // CRITICAL FIX: Return success immediately after login without additional validation
-          // This ensures login completes even if subsequent API calls might return 401
-          return {
-            success: true,
-            token,
-            user: userData
-          };
+          token = loginResponse.data.token;
         }
-        
-        // If we got a 200 response but couldn't find a token, log the entire response for debugging
+        // Format 2: { data: { token: "..." } }
+        else if (loginResponse.data.data && loginResponse.data.data.token) {
+          if (DEBUG) {
+            console.log('[AUTH] Token found in response.data.data.token');
+          }
+          token = loginResponse.data.data.token;
+        }
+        // Format 3: { data: { data: { token: "..." } } }
+        else if (
+          loginResponse.data.data &&
+          loginResponse.data.data.data &&
+          loginResponse.data.data.data.token
+        ) {
+          if (DEBUG) {
+            console.log('[AUTH] Token found in response.data.data.data.token');
+          }
+          token = loginResponse.data.data.data.token;
+        }
+
+        // Check for user data in different response formats
+        // Format 1: { user: {...} }
+        if (loginResponse.data.user) {
+          if (DEBUG) {
+            console.log('[AUTH] User data found in response.data.user');
+          }
+          user = loginResponse.data.user;
+        }
+        // Format 2: { data: { user: {...} } }
+        else if (loginResponse.data.data && loginResponse.data.data.user) {
+          if (DEBUG) {
+            console.log('[AUTH] User data found in response.data.data.user');
+          }
+          user = loginResponse.data.data.user;
+        }
+        // Format 3: { data: { data: { user: {...} } } }
+        else if (
+          loginResponse.data.data &&
+          loginResponse.data.data.data &&
+          loginResponse.data.data.data.user
+        ) {
+          if (DEBUG) {
+            console.log('[AUTH] User data found in response.data.data.data.user');
+          }
+          user = loginResponse.data.data.data.user;
+        }
+      }
+
+      // Check if we found a token and user
+      if (token && user) {
         if (DEBUG) {
-          console.warn('[AUTH] Login response was 200 but no token found:', response.data);
+          console.log('[AUTH] Login successful, storing token and user data');
         }
-        
+
+        // Store token and user data
+        authManager.storeToken(token);
+        authManager.storeUser(user);
+
+        // Calculate token expiry (default: 7 days from now)
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7);
+        authManager.storeTokenExpiry(expiryDate.toISOString());
+
         return {
-          success: false,
-          error: 'Invalid login response: missing token or user data'
-        };
-      }
-      
-      // Handle unexpected success status
-      return {
-        success: false,
-        error: `Unexpected response status: ${response.status}`
-      };
-    } catch (error: any) {
-      if (DEBUG) {
-        console.error('[AUTH] Login error:', error);
-      }
-      
-      // Handle specific error cases
-      if (error.response) {
-        // Server responded with error status
-        return {
-          success: false,
-          error: error.response.data?.message || `Server error: ${error.response.status}`,
-          status: error.response.status
-        };
-      } else if (error.request) {
-        // Request was made but no response received
-        return {
-          success: false,
-          error: 'No response from server. Please check your connection.'
+          success: true,
+          token,
+          user
         };
       } else {
-        // Error in setting up the request
+        if (DEBUG) {
+          console.error('[AUTH] Login failed: Token or user data not found in response');
+        }
         return {
           success: false,
-          error: error.message || 'Unknown error occurred'
+          error: 'Authentication failed. Please try again.'
         };
       }
+    } catch (error: any) {
+      console.error('[AUTH] Login error:', error);
+      return {
+        success: false,
+        error: error.message || 'Authentication failed. Please try again.'
+      };
     }
   },
 
-  /**
-   * Logout user and clear all authentication data
-   */
+  // Logout function
   logout: () => {
     if (DEBUG) {
-      console.log('[AUTH] Logging out, clearing all auth data');
+      console.log('[AUTH] Logging out');
     }
-    
-    // Clear auth data from all storage mechanisms
     authManager.clearAuthData();
-    
-    // Redirect to login page
-    window.location.href = '/login';
   },
 
-  /**
-   * Check if user is authenticated
-   */
+  // Check if user is authenticated
   isAuthenticated: () => {
     const token = authManager.getToken();
+    const isExpired = authManager.isTokenExpired();
     
-    if (DEBUG && token) {
-      console.log('[AUTH] Authentication check: Token found');
+    if (DEBUG) {
+      console.log('[AUTH] Checking authentication:', { 
+        hasToken: !!token, 
+        isExpired: isExpired 
+      });
     }
     
-    return !!token;
+    return !!token && !isExpired;
   }
 };
-
-export default authService;

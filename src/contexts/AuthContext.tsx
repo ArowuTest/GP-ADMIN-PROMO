@@ -1,9 +1,9 @@
-// src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// src/contexts/AuthContext.tsx - Updated context with proper state management
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authManager } from '../services/authManager';
 import { authService } from '../services/authService';
 
-// Define UserRole as a string literal type instead of enum for compatibility with existing code
+// Define UserRole as a string literal type
 export type UserRole =
   | 'SUPER_ADMIN'
   | 'ADMIN'
@@ -12,7 +12,7 @@ export type UserRole =
   | 'WINNER_REPORTS_USER'
   | 'ALL_REPORT_USER';
 
-// Export AuthContextType interface to maintain backward compatibility
+// Export AuthContextType interface
 export interface AuthContextType {
   isAuthenticated: boolean;
   isLoadingAuth: boolean;
@@ -24,8 +24,11 @@ export interface AuthContextType {
   logout: () => void;
 }
 
-// Export AuthContext to maintain backward compatibility
+// Create context with undefined default
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Debug flag
+const DEBUG = true;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -35,82 +38,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
-  // CRITICAL FIX: Add debug logging
-  const DEBUG = true;
-  
-  // CRITICAL FIX: Add redirect tracking to prevent loops
-  const [hasRedirected, setHasRedirected] = useState<boolean>(false);
-
+  // Initialize authentication state from stored credentials
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = authManager.getToken();
-      const storedUser = authManager.getUser();
-
       if (DEBUG) {
-        console.log('[AUTH_CONTEXT] Initializing auth state', { 
-          hasToken: !!storedToken, 
-          hasUser: !!storedUser,
-          currentPath: window.location.pathname
-        });
+        console.log('[AUTH_CONTEXT] Initializing auth state');
       }
 
-      if (storedToken && storedUser) {
-        try {
-          // CRITICAL FIX: Skip token validation and trust local storage
-          // This prevents unnecessary API calls that might return 401
+      try {
+        const storedToken = authManager.getToken();
+        const storedUser = authManager.getUser();
+
+        if (storedToken && storedUser) {
           if (DEBUG) {
-            console.log('[AUTH_CONTEXT] Found stored credentials, setting authenticated state');
+            console.log('[AUTH_CONTEXT] Found stored credentials');
           }
-          
+
+          // Skip token validation to avoid 401 errors
           setIsAuthenticated(true);
           setUser(storedUser);
           setToken(storedToken);
-          
-          // Handle role as string literal type
           setUserRole(storedUser.role as UserRole);
           setUsername(storedUser.username || storedUser.email);
-          
-          // CRITICAL FIX: Only redirect if on login page and haven't redirected yet
-          if (window.location.pathname === '/login' && !hasRedirected) {
-            if (DEBUG) {
-              console.log('[AUTH_CONTEXT] Already authenticated, redirecting from login to dashboard');
-            }
-            setHasRedirected(true);
-            window.location.href = '/dashboard';
+        } else {
+          if (DEBUG) {
+            console.log('[AUTH_CONTEXT] No stored credentials found');
           }
-        } catch (error) {
-          console.error('[AUTH_CONTEXT] Auth initialization error:', error);
-          authManager.clearAuthData();
+          
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
           setUserRole(null);
           setUsername(null);
-        } finally {
-          setIsLoadingAuth(false);
         }
-      } else {
-        if (DEBUG) {
-          console.log('[AUTH_CONTEXT] No stored credentials found, not authenticated');
-        }
-        
-        // CRITICAL FIX: If not on login page and not authenticated, redirect to login
-        if (window.location.pathname !== '/login' && !hasRedirected) {
-          if (DEBUG) {
-            console.log('[AUTH_CONTEXT] Not authenticated, redirecting to login');
-          }
-          setHasRedirected(true);
-          window.location.href = '/login';
-        }
-        
+      } catch (error) {
+        console.error('[AUTH_CONTEXT] Auth initialization error:', error);
+        authManager.clearAuthData();
+        setIsAuthenticated(false);
+        setUser(null);
+        setToken(null);
+        setUserRole(null);
+        setUsername(null);
+      } finally {
         setIsLoadingAuth(false);
       }
     };
 
     initAuth();
+  }, []);
 
-    // CRITICAL FIX: Simplified visibility change handler
-    // Only clear auth if token is expired, don't make API calls
+  // Check token expiration when tab becomes visible
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const storedToken = authManager.getToken();
@@ -118,18 +96,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (DEBUG) {
             console.log('[AUTH_CONTEXT] Token expired on visibility change, clearing auth');
           }
+          
           authManager.clearAuthData();
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
           setUserRole(null);
           setUsername(null);
-          
-          // CRITICAL FIX: Redirect to login if token expired and not already on login page
-          if (window.location.pathname !== '/login' && !hasRedirected) {
-            setHasRedirected(true);
-            window.location.href = '/login';
-          }
         }
       }
     };
@@ -138,44 +111,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [hasRedirected]); // CRITICAL FIX: Add hasRedirected to dependency array
+  }, []);
 
-  // Login function with proper email and password parameters
-  const login = async (email: string, password: string) => {
+  // Login function
+  const login = useCallback(async (email: string, password: string) => {
+    if (DEBUG) {
+      console.log('[AUTH_CONTEXT] Login attempt', { email });
+    }
+    
     setIsLoadingAuth(true);
+    
     try {
-      if (DEBUG) {
-        console.log('[AUTH_CONTEXT] Attempting login', { email });
-      }
-      
       const response = await authService.login(email, password);
       
       if (response.success) {
         if (DEBUG) {
-          console.log('[AUTH_CONTEXT] Login successful, setting authenticated state');
+          console.log('[AUTH_CONTEXT] Login successful');
         }
         
         setIsAuthenticated(true);
         setUser(response.user);
         setToken(response.token);
-        
-        // Handle role as string literal type
         setUserRole(response.user.role as UserRole);
         setUsername(response.user.username || response.user.email);
-        
-        // CRITICAL FIX: Only redirect if not already redirected
-        if (!hasRedirected) {
-          if (DEBUG) {
-            console.log('[AUTH_CONTEXT] Redirecting to dashboard after successful login');
-          }
-          
-          setHasRedirected(true);
-          
-          // Use timeout to ensure state is updated before navigation
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 100);
-        }
       }
       
       return response;
@@ -185,9 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoadingAuth(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
+  // Logout function
+  const logout = useCallback(() => {
     if (DEBUG) {
       console.log('[AUTH_CONTEXT] Logging out');
     }
@@ -198,23 +157,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setUserRole(null);
     setUsername(null);
-    
-    // CRITICAL FIX: Reset redirect state on logout
-    setHasRedirected(false);
-  };
+  }, []);
 
-  // CRITICAL FIX: Add debug output for context value
+  // Log current auth state for debugging
   if (DEBUG) {
     console.log('[AUTH_CONTEXT] Current auth state:', { 
       isAuthenticated, 
+      isLoadingAuth,
       hasUser: !!user, 
       hasToken: !!token,
-      userRole,
-      currentPath: window.location.pathname,
-      hasRedirected
+      userRole
     });
   }
 
+  // Provide auth context to children
   return (
     <AuthContext.Provider
       value={{
@@ -233,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Hook for using auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
