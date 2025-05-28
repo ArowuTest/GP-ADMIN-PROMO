@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx - Updated context with proper state management
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authManager } from '../services/authManager';
-import { authService, type AuthResponse } from '../services/authService';
+import { authService } from '../services/authService';
 
 // Define UserRole as a string literal type
 export type UserRole =
