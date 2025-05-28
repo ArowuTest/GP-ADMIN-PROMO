@@ -1,5 +1,4 @@
 // src/App.tsx - Main application with router configuration
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -42,7 +41,7 @@ const ProtectedRoute = () => {
 const PublicRoute = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   const location = useLocation();
-  
+
   // Get the intended destination from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
 
