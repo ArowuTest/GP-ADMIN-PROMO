@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useContext } from 'react';
-// AuthContext is used to check isAuthenticated and isLoadingAuth, but token is retrieved from localStorage
-import { AuthContext, type AuthContextType } from '../contexts/AuthContext'; // Corrected import for AuthContextType
+import React, { useEffect, useState } from 'react';
+// Use the default import for AuthContext and the useAuth hook instead
+import { useAuth } from '../contexts/AuthContext';
 import { getDataUploadAudits } from '../services/auditService';
 import type { DataUploadAudit } from '../services/auditService'; // Type-only import
 import { BeatLoader } from 'react-spinners'; // Ensure 'react-spinners' is installed
 
 const AuditLogsPage: React.FC = () => {
-  const authContext = useContext<AuthContextType | undefined>(AuthContext);
+  const authContext = useAuth(); // Use the hook directly
   const [auditLogs, setAuditLogs] = useState<DataUploadAudit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +47,8 @@ const AuditLogsPage: React.FC = () => {
 
     // Trigger fetchAuditLogs when authContext changes, especially isLoadingAuth and isAuthenticated
     if (authContext && !authContext.isLoadingAuth) {
-        fetchAuditLogs();
+      fetchAuditLogs();
     }
-
   }, [authContext]); // Rerun effect if authContext (and its properties) changes
 
   const styles = {
@@ -92,16 +91,16 @@ const AuditLogsPage: React.FC = () => {
       backgroundColor: '#ffebee',
     },
     loadingContainer: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '200px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '200px',
     },
     noLogs: {
-        textAlign: 'center' as 'center',
-        padding: '20px',
-        fontSize: '1.1em',
-        color: '#555',
+      textAlign: 'center' as 'center',
+      padding: '20px',
+      fontSize: '1.1em',
+      color: '#555',
     }
   };
 
@@ -111,7 +110,7 @@ const AuditLogsPage: React.FC = () => {
       <div style={styles.pageContainer}>
         <h1 style={styles.header}>Audit Logs</h1>
         <div style={styles.loadingContainer}>
-            <BeatLoader color="#007bff" loading={true} size={15} />
+          <BeatLoader color="#007bff" loading={true} size={15} />
         </div>
       </div>
     );

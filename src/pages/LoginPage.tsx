@@ -17,8 +17,8 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   
   // Get the intended destination from location state or default to dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
-
+  const from = location.state?.from?.pathname || '/admin/dashboard';
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -34,24 +34,23 @@ const LoginPage: React.FC = () => {
         console.log('[LOGIN_PAGE] Calling login function');
       }
       
-      const response = await login(email, password);
+      // Call login function and handle the response
+      const result = await login(email, password);
       
       if (DEBUG) {
-        console.log('[LOGIN_PAGE] Login response received:', { 
-          success: response.success,
-          hasError: !!response.error
-        });
+        console.log('[LOGIN_PAGE] Login response received:', result);
       }
       
-      if (response.success) {
+      // Check if login was successful based on token presence
+      if (result && result.token) {
         if (DEBUG) {
           console.log('[LOGIN_PAGE] Login successful, navigating to:', from);
         }
-        
         // Use React Router's navigate instead of window.location
         navigate(from, { replace: true });
       } else {
-        setError(response.error || 'Login failed. Please try again.');
+        // Handle login failure
+        setError('Login failed. Please check your credentials and try again.');
       }
     } catch (err: any) {
       console.error('[LOGIN_PAGE] Login error:', err);
@@ -60,13 +59,12 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="login-container">
       <div className="login-form-wrapper">
         <h2>Login</h2>
         {error && <div className="error-message">{error}</div>}
-        
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -78,7 +76,6 @@ const LoginPage: React.FC = () => {
               required
             />
           </div>
-          
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -89,7 +86,6 @@ const LoginPage: React.FC = () => {
               required
             />
           </div>
-          
           <button type="submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>

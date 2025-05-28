@@ -1,6 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { authManager } from './authManager';
 
 // Create a base axios instance with common configuration
