@@ -1,4 +1,4 @@
-// src/services/authService.ts
+// src/services/authService.ts - Fixed version with JWT alignment
 import { apiClient } from './apiClient';
 import { authManager } from './authManager';
 
@@ -11,26 +11,17 @@ export interface AuthResponse {
 
 // Define login request interface to match backend expectations
 export interface LoginRequest {
-  Username?: string;
   Email: string;
   Password: string;
 }
 
-/**
- * Main authentication service
- * Accepts either email or username with password
- * Transforms credentials to match backend API contract
- */
+// Main authentication service
 const login = async (credentials: { email: string, password: string }): Promise<AuthResponse> => {
   try {
     // Transform frontend credentials to match backend API contract
-    // Backend expects Email and Password fields (case-sensitive)
-    // Username is optional but can be included for backward compatibility
     const loginPayload: LoginRequest = {
       Email: credentials.email,
-      Password: credentials.password,
-      // Include username field if needed for backward compatibility
-      // Username: credentials.email
+      Password: credentials.password
     };
     
     console.log('[AUTH_SERVICE] Sending login request with payload:', { 
@@ -38,12 +29,12 @@ const login = async (credentials: { email: string, password: string }): Promise<
       hasPassword: !!loginPayload.Password 
     });
     
-    const response = await apiClient.post('/auth/login', loginPayload);
+    const response = await apiClient.post('/api/v1/auth/login', loginPayload);
     
     console.log('[AUTH_SERVICE] Login response received:', { 
       status: response.status,
       hasData: !!response.data,
-      hasToken: !!(response.data && (response.data.token || (response.data.data && response.data.data.token)))
+      hasToken: !!(response.data && response.data.data && response.data.data.token)
     });
     
     // Handle different response formats
@@ -74,6 +65,13 @@ const login = async (credentials: { email: string, password: string }): Promise<
       if (expiresAt) {
         storeTokenExpiry(expiresAt);
       }
+      
+      // Log token for debugging
+      console.log('[AUTH_SERVICE] Token stored successfully:', { 
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 10) + '...',
+        expiresAt
+      });
     }
     
     return { token, user, expiresAt };
@@ -129,11 +127,11 @@ const clearAuthData = (): void => {
 };
 
 // Get authentication headers for API requests
-const getAuthHeaders = (token?: string): Record<string, string> => {
-  const authToken = token || authManager.getToken();
-  if (authToken) {
+const getAuthHeaders = (): Record<string, string> => {
+  const token = authManager.getToken();
+  if (token) {
     return {
-      'Authorization': `Bearer ${authToken}`
+      'Authorization': `Bearer ${token}`
     };
   }
   return {};

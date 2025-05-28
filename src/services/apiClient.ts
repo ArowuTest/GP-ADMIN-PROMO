@@ -1,11 +1,11 @@
-// src/services/apiClient.ts
+// src/services/apiClient.ts - Fixed version with enhanced debugging
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { authManager } from './authManager';
 
 // Create a base axios instance with common configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
@@ -22,11 +22,15 @@ apiClient.interceptors.request.use(
     // If token exists, add it to the Authorization header
     if (token) {
       // Create a new headers object to avoid modifying read-only properties
-      // Using any type to bypass TypeScript's strict checking for Axios headers
       config.headers = {
         ...config.headers,
         'Authorization': `Bearer ${token}`
       } as any;
+      
+      // Debug logging
+      console.log(`[API_CLIENT] Adding token to request: ${config.method?.toUpperCase()} ${config.url}`);
+    } else {
+      console.warn(`[API_CLIENT] No token available for request: ${config.method?.toUpperCase()} ${config.url}`);
     }
     
     // Enable credentials for CORS
@@ -35,6 +39,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('[API_CLIENT] Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -42,6 +47,7 @@ apiClient.interceptors.request.use(
 // Response interceptor for handling common errors
 apiClient.interceptors.response.use(
   (response) => {
+    console.log(`[API_CLIENT] Response success: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
     return response;
   },
   (error) => {
@@ -49,20 +55,21 @@ apiClient.interceptors.response.use(
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
-      console.error('Response error:', error.response.status, error.response.data);
+      console.error(`[API_CLIENT] Response error: ${error.response.status} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
+      console.error('[API_CLIENT] Error data:', error.response.data);
       
       // Handle 401 Unauthorized errors
       if (error.response.status === 401) {
-        console.warn('Authentication error - clearing auth data');
+        console.warn('[API_CLIENT] Authentication error - token may be invalid or expired');
         // Don't automatically clear auth data here to prevent logout loops
         // Let the component handle this based on context
       }
     } else if (error.request) {
       // The request was made but no response was received
-      console.error('Request error - no response:', error.request);
+      console.error(`[API_CLIENT] Request error - no response: ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
     } else {
       // Something happened in setting up the request that triggered an Error
-      console.error('Request setup error:', error.message);
+      console.error('[API_CLIENT] Request setup error:', error.message);
     }
     
     return Promise.reject(error);
