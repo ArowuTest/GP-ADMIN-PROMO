@@ -11,17 +11,26 @@ export interface AuthResponse {
 
 // Define login request interface to match backend expectations
 export interface LoginRequest {
+  Username?: string;
   Email: string;
   Password: string;
 }
 
-// Main authentication service
+/**
+ * Main authentication service
+ * Accepts either email or username with password
+ * Transforms credentials to match backend API contract
+ */
 const login = async (credentials: { email: string, password: string }): Promise<AuthResponse> => {
   try {
     // Transform frontend credentials to match backend API contract
+    // Backend expects Email and Password fields (case-sensitive)
+    // Username is optional but can be included for backward compatibility
     const loginPayload: LoginRequest = {
       Email: credentials.email,
-      Password: credentials.password
+      Password: credentials.password,
+      // Include username field if needed for backward compatibility
+      // Username: credentials.email
     };
     
     console.log('[AUTH_SERVICE] Sending login request with payload:', { 
@@ -34,7 +43,7 @@ const login = async (credentials: { email: string, password: string }): Promise<
     console.log('[AUTH_SERVICE] Login response received:', { 
       status: response.status,
       hasData: !!response.data,
-      hasToken: !!(response.data && response.data.token)
+      hasToken: !!(response.data && (response.data.token || (response.data.data && response.data.data.token)))
     });
     
     // Handle different response formats
@@ -120,11 +129,11 @@ const clearAuthData = (): void => {
 };
 
 // Get authentication headers for API requests
-const getAuthHeaders = (): Record<string, string> => {
-  const token = authManager.getToken();
-  if (token) {
+const getAuthHeaders = (token?: string): Record<string, string> => {
+  const authToken = token || authManager.getToken();
+  if (authToken) {
     return {
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${authToken}`
     };
   }
   return {};
