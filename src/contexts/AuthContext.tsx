@@ -14,7 +14,7 @@ export interface AuthContextType {
   userRole: UserRole | null;
   username: string | null;
   token: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   checkAuthState: () => void;
 }
@@ -88,11 +88,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Function to handle login
-  const login = async (username: string, password: string): Promise<boolean> => {
+  // Function to handle login - updated to match authService.login signature
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Call login service
-      const response = await authService.login(username, password);
+      // Call login service with object parameter to match authService.login signature
+      const response = await authService.login({ email, password });
       
       // Check if login was successful by verifying token exists
       if (response && response.token) {
