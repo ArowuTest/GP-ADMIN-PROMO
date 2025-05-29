@@ -1,11 +1,13 @@
 {
+  "env": {
+    "NODE_OPTIONS": "--openssl-legacy-provider"
+  },
   "builds": [
     {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "export NODE_OPTIONS=--openssl-legacy-provider && npm run build",
-        "outputDirectory": "build"
+        "distDir": "build"
       }
     }
   ],
