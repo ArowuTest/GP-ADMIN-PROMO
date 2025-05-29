@@ -1,0 +1,70 @@
+/* src/components/DrawManagement/PrizeStructureSelector.css */
+.prize-structure-selector-container {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.prize-structure-selector-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.prize-structure-selector-header h3 {
+  margin: 0;
+  margin-right: 8px;
+}
+
+.prize-structure-selector-date {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.prize-structure-selector {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.prize-structure-validation {
+  margin-top: 16px;
+}
+
+.prize-structure-validation-alert {
+  margin-bottom: 0;
+}
+
+.prize-structure-selector-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c8c8c;
+  padding: 8px 0;
+}
+
+.prize-structure-selector-empty {
+  padding: 24px 0;
+}
+
+/* Ant Design Select overrides */
+.prize-structure-selector .ant-select-selector {
+  border-radius: 4px;
+}
+
+.prize-structure-selector .ant-select-selection-item {
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .prize-structure-selector-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .prize-structure-selector-date {
+    margin-top: 4px;
+  }
+}

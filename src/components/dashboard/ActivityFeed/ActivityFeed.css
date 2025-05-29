@@ -1,0 +1,146 @@
+// src/components/dashboard/ActivityFeed.css
+.activity-feed {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid #ecf0f1;
+  transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+  background-color: #f9fafb;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.activity-icon .material-icons {
+  font-size: 18px;
+  color: white;
+}
+
+.activity-icon.draw {
+  background-color: #3498db;
+}
+
+.activity-icon.upload {
+  background-color: #2ecc71;
+}
+
+.activity-icon.user {
+  background-color: #9b59b6;
+}
+
+.activity-icon.prize {
+  background-color: #f39c12;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.activity-action {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.activity-time {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+}
+
+.activity-user {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.activity-details {
+  color: #34495e;
+  font-size: 0.9rem;
+}
+
+.no-activity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #7f8c8d;
+}
+
+.no-activity .material-icons {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.view-all-container {
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid #ecf0f1;
+}
+
+.view-all-button {
+  background-color: transparent;
+  color: #3498db;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.view-all-button:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+@media (max-width: 768px) {
+  .activity-item {
+    padding: 12px;
+  }
+  
+  .activity-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .activity-action {
+    font-size: 0.9rem;
+  }
+}

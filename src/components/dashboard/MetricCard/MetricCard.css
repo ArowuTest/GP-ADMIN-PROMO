@@ -1,0 +1,87 @@
+// src/components/dashboard/MetricCard.css
+.metric-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.metric-icon {
+  background-color: rgba(52, 152, 219, 0.1);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.metric-icon .material-icons {
+  color: #3498db;
+  font-size: 24px;
+}
+
+.metric-content {
+  flex: 1;
+}
+
+.metric-title {
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.metric-trend {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.metric-trend.up {
+  color: #2ecc71;
+}
+
+.metric-trend.down {
+  color: #e74c3c;
+}
+
+.metric-trend.same {
+  color: #7f8c8d;
+}
+
+.metric-trend .material-icons {
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+@media (max-width: 768px) {
+  .metric-card {
+    padding: 16px;
+  }
+  
+  .metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "short_name": "MTN Admin",
+  "name": "MTN Mega Billion Promo Admin Portal",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

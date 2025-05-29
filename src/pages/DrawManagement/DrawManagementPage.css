@@ -1,0 +1,31 @@
+/* Common page styles for all feature pages */
+/* CSS comments are properly formatted now */
+
+/* Specific styles for Draw Management page */
+.draw-management-container {
+  width: 100%;
+}
+
+.draw-management-content {
+  display: grid;
+  gap: 20px;
+}
+
+/* These styles will be expanded when implementing the full draw management functionality */
+.draw-config-section {
+  margin-top: 24px;
+}
+
+.draw-execution-section {
+  margin-top: 24px;
+}
+
+.draw-results-section {
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .draw-management-content {
+    grid-template-columns: 1fr;
+  }
+}

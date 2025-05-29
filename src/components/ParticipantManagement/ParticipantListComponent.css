@@ -1,0 +1,55 @@
+/* src/components/ParticipantManagement/ParticipantListComponent.css */
+.participant-list-container {
+  padding: 24px;
+}
+
+.participant-list-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.participant-list-actions {
+  display: flex;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.participant-search {
+  flex: 1;
+}
+
+.participant-refresh-btn {
+  flex-shrink: 0;
+}
+
+.participant-msisdn {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.participant-points {
+  font-weight: 500;
+}
+
+.participant-table {
+  margin-top: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .participant-list-container {
+    padding: 16px;
+  }
+  
+  .participant-list-actions {
+    flex-direction: column;
+  }
+  
+  .participant-search {
+    width: 100%;
+  }
+  
+  .participant-refresh-btn {
+    width: 100%;
+  }
+}

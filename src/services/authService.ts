@@ -1,184 +1,136 @@
-// src/services/authService.ts - Fixed version with correct API endpoint path
-import { apiClient } from './apiClient';
+// src/services/authService.ts
+import { enhancedApiClient } from './apiClient';
 import { authManager } from './authManager';
+import { LoginRequest, LoginResponse, UserResponse } from '../types/api';
+import { Permission, UserRole } from '../types/common';
 
-// Define response types for better type safety
-export interface AuthResponse {
-  token: string;
-  user: any;
-  expiresAt?: string;
-}
-
-// Define login request interface to match backend expectations
-export interface LoginRequest {
-  Email: string;
-  Password: string;
+// Define login credentials interface
+export interface LoginCredentials {
+  username: string;
+  password: string;
 }
 
 // Main authentication service
-const login = async (credentials: { email: string, password: string }): Promise<AuthResponse> => {
+const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
+    console.log('[AUTH_SERVICE] Sending login request');
+    
     // Transform frontend credentials to match backend API contract
     const loginPayload: LoginRequest = {
-      Email: credentials.email,
+      Email: credentials.username,
       Password: credentials.password
     };
     
-    console.log('[AUTH_SERVICE] Sending login request with payload:', { 
-      hasEmail: !!loginPayload.Email, 
-      hasPassword: !!loginPayload.Password 
-    });
+    // Use the enhanced API client for better error handling
+    const response = await enhancedApiClient.post<LoginResponse>('/auth/login', loginPayload);
     
-    // Fixed endpoint path - removed duplicate "api" in the path
-    const response = await apiClient.post('/auth/login', loginPayload);
-    
-    console.log('[AUTH_SERVICE] Login response received:', { 
-      status: response.status,
-      hasData: !!response.data,
-      hasToken: !!(response.data && response.data.data && response.data.data.token)
-    });
-    
-    // Handle different response formats
-    let token: string;
-    let user: any;
-    let expiresAt: string | undefined;
-    
-    // Extract data based on response structure
-    if (response.data && response.data.data) {
-      // Nested data structure
-      const data = response.data.data;
-      token = data.token || '';
-      user = data.user || {};
-      expiresAt = data.expiresAt;
-    } else if (response.data) {
-      // Direct data structure
-      token = response.data.token || '';
-      user = response.data.user || {};
-      expiresAt = response.data.expiresAt;
-    } else {
-      throw new Error('Invalid response format');
-    }
+    console.log('[AUTH_SERVICE] Login successful');
     
     // Store authentication data
-    if (token) {
-      storeToken(token);
-      storeUser(user);
-      if (expiresAt) {
-        storeTokenExpiry(expiresAt);
+    if (response.token) {
+      authManager.storeToken(response.token);
+      authManager.storeUser(response.user);
+      if (response.expiry) {
+        authManager.storeTokenExpiry(response.expiry);
       }
-      
-      // Log token for debugging
-      console.log('[AUTH_SERVICE] Token stored successfully:', { 
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 10) + '...',
-        expiresAt
-      });
     }
     
-    return { token, user, expiresAt };
-  } catch (error: any) {
-    console.error('[AUTH_SERVICE] Login error:', error);
-    // Enhanced error logging for debugging
-    if (error.response) {
-      console.error('[AUTH_SERVICE] Response status:', error.response.status);
-      console.error('[AUTH_SERVICE] Response data:', error.response.data);
-    } else if (error.request) {
-      console.error('[AUTH_SERVICE] No response received:', error.request);
+    return response;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('[AUTH_SERVICE] Login error:', err.message);
     } else {
-      console.error('[AUTH_SERVICE] Error message:', error.message);
+      console.error('[AUTH_SERVICE] Login error:', err);
     }
-    throw error;
+    throw err;
   }
 };
 
-// Token storage and retrieval
-const storeToken = (token: string): void => {
-  authManager.storeToken(token);
-};
-
-const getToken = (): string | null => {
-  return authManager.getToken();
-};
-
-// User data storage and retrieval
-const storeUser = (user: any): void => {
-  authManager.storeUser(user);
-};
-
-const getUser = (): any => {
-  return authManager.getUser();
-};
-
-// Token expiry management
-const storeTokenExpiry = (expiryTime: string): void => {
-  authManager.storeTokenExpiry(expiryTime);
-};
-
-const getTokenExpiry = (): string | null => {
-  return authManager.getTokenExpiry();
-};
-
-const isTokenExpired = (): boolean => {
-  return authManager.isTokenExpired();
-};
-
-// Clear all authentication data
-const clearAuthData = (): void => {
-  authManager.clearAuthData();
-};
-
-// Get authentication headers for API requests
-const getAuthHeaders = (): Record<string, string> => {
-  const token = authManager.getToken();
-  if (token) {
-    return {
-      'Authorization': `Bearer ${token}`
-    };
+// Check if token needs refresh (within 5 minutes of expiry)
+const needsTokenRefresh = (): boolean => {
+  const expiryTime = authManager.getTokenExpiry();
+  if (!expiryTime) return false;
+  
+  try {
+    const expiryDate = new Date(expiryTime);
+    const now = new Date();
+    
+    // Check if token expires within 5 minutes
+    const fiveMinutes = 5 * 60 * 1000;
+    return expiryDate.getTime() - now.getTime() < fiveMinutes;
+  } catch (error) {
+    console.error('[AUTH_SERVICE] Error checking token refresh:', error);
+    return false;
   }
-  return {};
+};
+
+// Refresh token if needed
+const refreshTokenIfNeeded = async (): Promise<boolean> => {
+  if (needsTokenRefresh()) {
+    try {
+      const refreshToken = authManager.getRefreshToken();
+      if (!refreshToken) return false;
+      
+      const response = await enhancedApiClient.post<LoginResponse>('/auth/refresh', { refreshToken });
+      
+      if (response.token) {
+        authManager.storeToken(response.token);
+        if (response.expiry) {
+          authManager.storeTokenExpiry(response.expiry);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('[AUTH_SERVICE] Token refresh error:', error);
+      authManager.clearAuthData(); // Clear invalid auth data
+      return false;
+    }
+  }
+  
+  return true;
 };
 
 // Check authentication state
 const checkAuthState = (): boolean => {
-  const token = getToken();
-  return !!token && !isTokenExpired();
+  const token = authManager.getToken();
+  return !!token && !authManager.isTokenExpired();
+};
+
+// Get current user
+const getCurrentUser = (): UserResponse | null => {
+  return authManager.getUser();
 };
 
 // Logout function
 const logout = (): void => {
-  clearAuthData();
+  authManager.clearAuthData();
+  
+  // Emit logout event for components to react
+  const logoutEvent = new CustomEvent('auth-logout');
+  window.dispatchEvent(logoutEvent);
 };
 
-// Compatibility aliases for backward compatibility
-const getUserData = (): any => {
-  return getUser();
+// Check if user has specific role
+const hasRole = (role: UserRole | UserRole[]): boolean => {
+  return authManager.hasRole(role);
 };
 
-const setUserData = (user: any): void => {
-  storeUser(user);
-};
-
-const setToken = (token: string): void => {
-  storeToken(token);
+// Check if user has specific permission
+const hasPermission = (permission: Permission): boolean => {
+  return authManager.hasPermission(permission);
 };
 
 // Export the service
 export const authService = {
   login,
   logout,
-  storeToken,
-  getToken,
-  storeUser,
-  getUser,
-  getUserData, // Alias for backward compatibility
-  setUserData, // Alias for backward compatibility
-  setToken,    // Alias for backward compatibility
-  storeTokenExpiry,
-  getTokenExpiry,
-  isTokenExpired,
-  clearAuthData,
-  getAuthHeaders,
-  checkAuthState
+  checkAuthState,
+  getCurrentUser,
+  needsTokenRefresh,
+  refreshTokenIfNeeded,
+  hasRole,
+  hasPermission
 };
 
 // Default export for backward compatibility

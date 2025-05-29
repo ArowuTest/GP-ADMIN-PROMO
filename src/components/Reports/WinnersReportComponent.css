@@ -1,0 +1,149 @@
+/* src/components/Reports/WinnersReportComponent.css */
+.winners-report-container {
+  padding: 24px;
+}
+
+.winners-report-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.winners-report-filters {
+  margin-bottom: 24px;
+}
+
+.winners-report-filters-space {
+  width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.date-range-picker {
+  min-width: 280px;
+}
+
+.search-input {
+  min-width: 200px;
+  flex: 1;
+}
+
+.status-filter,
+.payment-filter,
+.runner-up-filter {
+  min-width: 180px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.winners-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.winner-msisdn {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.winner-status,
+.payment-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.winner-status-confirmed {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+}
+
+.winner-status-notified {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+}
+
+.winner-status-pending_notification {
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #fa8c16;
+}
+
+.winner-status-forfeited {
+  background-color: #fff1f0;
+  border: 1px solid #ffa39e;
+  color: #f5222d;
+}
+
+.payment-status-paid {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+}
+
+.payment-status-pending {
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #fa8c16;
+}
+
+.payment-status-failed {
+  background-color: #fff1f0;
+  border: 1px solid #ffa39e;
+  color: #f5222d;
+}
+
+.runner-up-tag {
+  margin-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .winners-report-container {
+    padding: 16px;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .date-range-picker,
+  .search-input,
+  .status-filter,
+  .payment-filter,
+  .runner-up-filter {
+    width: 100%;
+  }
+  
+  .filter-actions {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
+  
+  .filter-actions button {
+    flex: 1;
+  }
+  
+  .winners-report-actions {
+    flex-direction: column;
+  }
+  
+  .winners-report-actions button {
+    width: 100%;
+  }
+}

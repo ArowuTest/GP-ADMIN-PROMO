@@ -1,0 +1,95 @@
+/* src/components/ParticipantManagement/ParticipantUploadComponent.css */
+.participant-upload-container {
+  padding: 24px;
+}
+
+.upload-card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-history-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-dragger {
+  margin-bottom: 24px;
+}
+
+.upload-progress {
+  margin: 16px 0;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.upload-validation-alert,
+.upload-error-alert,
+.upload-success-alert {
+  margin-bottom: 24px;
+}
+
+.validation-error-list {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.upload-history-filename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.upload-status-completed {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+}
+
+.upload-status-processing {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+}
+
+.upload-status-pending {
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #fa8c16;
+}
+
+.upload-status-failed {
+  background-color: #fff1f0;
+  border: 1px solid #ffa39e;
+  color: #f5222d;
+}
+
+.upload-history-table {
+  margin-top: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .participant-upload-container {
+    padding: 16px;
+  }
+  
+  .upload-actions {
+    flex-direction: column;
+  }
+  
+  .upload-actions button {
+    width: 100%;
+  }
+}

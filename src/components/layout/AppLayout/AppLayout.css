@@ -1,0 +1,26 @@
+// src/components/layout/AppLayout.css
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  color: #333;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex: 1;
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+}

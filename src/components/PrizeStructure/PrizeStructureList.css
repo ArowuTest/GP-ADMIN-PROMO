@@ -1,0 +1,59 @@
+/* src/components/PrizeStructure/PrizeStructureList.css */
+.prize-structure-list-container {
+  padding: 24px;
+}
+
+.prize-structure-list-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.prize-structure-name {
+  font-weight: 500;
+}
+
+.prize-structure-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.prize-structure-error {
+  color: #ff4d4f;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 4px;
+}
+
+.prize-structure-details {
+  padding: 16px;
+}
+
+.prize-structure-description {
+  margin-bottom: 16px;
+  color: #595959;
+}
+
+.prize-structure-prizes h4 {
+  margin-bottom: 8px;
+}
+
+.prize-structure-prizes ul {
+  padding-left: 20px;
+}
+
+.prize-structure-prizes li {
+  margin-bottom: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .prize-structure-list-container {
+    padding: 16px;
+  }
+  
+  .prize-structure-actions {
+    flex-direction: column;
+  }
+}

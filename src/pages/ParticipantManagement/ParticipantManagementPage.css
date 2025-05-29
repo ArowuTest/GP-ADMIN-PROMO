@@ -1,0 +1,31 @@
+/* Common page styles for all feature pages */
+/* CSS comments are properly formatted now */
+
+/* Specific styles for Participant Management page */
+.participant-management-container {
+  width: 100%;
+}
+
+.participant-management-content {
+  display: grid;
+  gap: 20px;
+}
+
+/* These styles will be expanded when implementing the full participant management functionality */
+.upload-section {
+  margin-top: 24px;
+}
+
+.participant-list-section {
+  margin-top: 24px;
+}
+
+.audit-trail-section {
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .participant-management-content {
+    grid-template-columns: 1fr;
+  }
+}

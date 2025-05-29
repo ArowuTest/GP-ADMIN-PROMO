@@ -1,0 +1,41 @@
+// src/components/dashboard/MetricCard.tsx
+import React from 'react';
+import './MetricCard.css';
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  icon: string;
+  trend?: 'up' | 'down' | 'same';
+  trendValue?: string;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({ 
+  title, 
+  value, 
+  icon, 
+  trend = 'same',
+  trendValue = '0%'
+}) => {
+  return (
+    <div className="metric-card">
+      <div className="metric-icon">
+        <span className="material-icons">{icon}</span>
+      </div>
+      <div className="metric-content">
+        <h3 className="metric-title">{title}</h3>
+        <div className="metric-value">{value}</div>
+        {trend && (
+          <div className={`metric-trend ${trend}`}>
+            <span className="material-icons">
+              {trend === 'up' ? 'trending_up' : trend === 'down' ? 'trending_down' : 'trending_flat'}
+            </span>
+            <span className="trend-value">{trendValue}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MetricCard;

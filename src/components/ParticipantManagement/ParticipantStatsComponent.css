@@ -1,0 +1,57 @@
+/* src/components/ParticipantManagement/ParticipantStatsComponent.css */
+.participant-stats-container {
+  padding: 24px;
+}
+
+.participant-stats-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.participant-statistic {
+  padding: 16px;
+}
+
+.participant-stats-info {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  color: #595959;
+  font-size: 14px;
+  text-align: center;
+}
+
+.participant-stats-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.participant-stats-error,
+.participant-stats-empty {
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.participant-stats-error-content,
+.participant-stats-empty-content {
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.participant-stats-error-content {
+  color: #ff4d4f;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .participant-stats-container {
+    padding: 16px;
+  }
+}

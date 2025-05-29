@@ -1,0 +1,52 @@
+/* src/components/DrawManagement/EligibilityStats.css */
+.eligibility-stats-card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.eligibility-stats-date {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.eligibility-stats-statistic {
+  padding: 16px 0;
+}
+
+.eligibility-stats-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  color: #595959;
+  font-size: 14px;
+}
+
+.eligibility-stats-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.eligibility-stats-empty {
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.eligibility-stats-empty-content {
+  text-align: center;
+  color: #8c8c8c;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .eligibility-stats-statistic {
+    padding: 8px 0;
+  }
+}

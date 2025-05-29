@@ -1,0 +1,48 @@
+import React from 'react';
+import './StatusIndicator.css';
+
+interface StatusIndicatorProps {
+  status: 'operational' | 'maintenance' | 'issue';
+}
+
+const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
+  const getStatusDetails = () => {
+    switch (status) {
+      case 'operational':
+        return {
+          label: 'All Systems Operational',
+          icon: 'check_circle',
+          className: 'status-operational'
+        };
+      case 'maintenance':
+        return {
+          label: 'Scheduled Maintenance',
+          icon: 'engineering',
+          className: 'status-maintenance'
+        };
+      case 'issue':
+        return {
+          label: 'System Issues Detected',
+          icon: 'error',
+          className: 'status-issue'
+        };
+      default:
+        return {
+          label: 'Status Unknown',
+          icon: 'help',
+          className: 'status-unknown'
+        };
+    }
+  };
+
+  const statusDetails = getStatusDetails();
+
+  return (
+    <div className={`status-indicator ${statusDetails.className}`}>
+      <span className="material-icons status-icon">{statusDetails.icon}</span>
+      <span className="status-label">{statusDetails.label}</span>
+    </div>
+  );
+};
+
+export default StatusIndicator;

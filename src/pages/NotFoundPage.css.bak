@@ -1,0 +1,42 @@
+/* src/pages/NotFoundPage.css */
+.not-found-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 24px;
+}
+
+/* Ant Design Result overrides */
+.not-found-page .ant-result {
+  padding: 48px 32px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.not-found-page .ant-result-title {
+  font-size: 72px;
+  line-height: 1.2;
+  color: #1890ff;
+}
+
+.not-found-page .ant-result-subtitle {
+  font-size: 20px;
+  margin-bottom: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .not-found-page .ant-result {
+    padding: 32px 16px;
+  }
+  
+  .not-found-page .ant-result-title {
+    font-size: 48px;
+  }
+  
+  .not-found-page .ant-result-subtitle {
+    font-size: 16px;
+  }
+}

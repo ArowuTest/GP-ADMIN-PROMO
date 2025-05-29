@@ -1,0 +1,25 @@
+// src/components/layout/Header.tsx
+import React from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import './Header.css';
+
+const Header: React.FC = () => {
+  const { user, logout } = useAuth();
+  
+  return (
+    <header className="app-header">
+      <div className="logo">
+        <h1>MTN Mega Billion</h1>
+      </div>
+      <div className="user-menu">
+        <span className="user-name">{user?.fullName || user?.username}</span>
+        <button className="logout-button" onClick={logout}>
+          <span className="material-icons">logout</span>
+          Logout
+        </button>
+      </div>
+    </header>
+  );
+};
+
+export default Header;

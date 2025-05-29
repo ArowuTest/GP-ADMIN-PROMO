@@ -1,0 +1,31 @@
+/* Common page styles for all feature pages */
+/* CSS comments are properly formatted now */
+
+/* Specific styles for Reports page */
+.reports-container {
+  width: 100%;
+}
+
+.reports-content {
+  display: grid;
+  gap: 20px;
+}
+
+/* These styles will be expanded when implementing the full reports functionality */
+.winners-report-section {
+  margin-top: 24px;
+}
+
+.participants-report-section {
+  margin-top: 24px;
+}
+
+.draw-history-section {
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .reports-content {
+    grid-template-columns: 1fr;
+  }
+}

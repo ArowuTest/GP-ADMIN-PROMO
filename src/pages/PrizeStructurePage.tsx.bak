@@ -1,0 +1,101 @@
+// src/pages/PrizeStructurePage.tsx
+import React, { useState } from 'react';
+import { Tabs } from 'antd';
+import { UnorderedListOutlined, FormOutlined } from '@ant-design/icons';
+import PrizeStructureList from '../components/PrizeStructure/PrizeStructureList';
+import PrizeStructureForm from '../components/PrizeStructure/PrizeStructureForm';
+import { usePrizeStructure } from '../hooks/usePrizeStructure';
+import { PrizeStructureResponse, PrizeStructureCreateRequest, PrizeStructureUpdateRequest } from '../types/api';
+import { usePermission } from '../hooks/usePermission';
+import './PrizeStructurePage.css';
+
+const { TabPane } = Tabs;
+
+/**
+ * Prize Structure Management Page Component
+ */
+const PrizeStructurePage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('list');
+  const [selectedPrizeStructure, setSelectedPrizeStructure] = useState<PrizeStructureResponse | undefined>(undefined);
+  const { canManagePrizeStructures } = usePermission();
+  
+  const {
+    isLoading,
+    createPrizeStructure,
+    updatePrizeStructure
+  } = usePrizeStructure();
+  
+  // Handle add button click
+  const handleAdd = () => {
+    setSelectedPrizeStructure(undefined);
+    setActiveTab('form');
+  };
+  
+  // Handle edit button click
+  const handleEdit = (prizeStructure: PrizeStructureResponse) => {
+    setSelectedPrizeStructure(prizeStructure);
+    setActiveTab('form');
+  };
+  
+  // Handle form submission
+  const handleSubmit = async (values: PrizeStructureCreateRequest | PrizeStructureUpdateRequest) => {
+    try {
+      if (selectedPrizeStructure) {
+        await updatePrizeStructure(selectedPrizeStructure.id, values as PrizeStructureUpdateRequest);
+      } else {
+        await createPrizeStructure(values as PrizeStructureCreateRequest);
+      }
+      setActiveTab('list');
+    } catch (error) {
+      console.error('Form submission error:', error);
+    }
+  };
+  
+  // Handle tab change
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    if (key === 'list') {
+      setSelectedPrizeStructure(undefined);
+    }
+  };
+  
+  return (
+    <div className="prize-structure-page">
+      <Tabs activeKey={activeTab} onChange={handleTabChange} className="prize-structure-tabs">
+        <TabPane 
+          tab={
+            <span>
+              <UnorderedListOutlined />
+              Prize Structures
+            </span>
+          } 
+          key="list"
+        >
+          <PrizeStructureList 
+            onEdit={handleEdit} 
+            onAdd={handleAdd} 
+          />
+        </TabPane>
+        {canManagePrizeStructures() && (
+          <TabPane 
+            tab={
+              <span>
+                <FormOutlined />
+                {selectedPrizeStructure ? 'Edit' : 'Create'} Prize Structure
+              </span>
+            } 
+            key="form"
+          >
+            <PrizeStructureForm 
+              initialValues={selectedPrizeStructure} 
+              onSubmit={handleSubmit}
+              loading={isLoading}
+            />
+          </TabPane>
+        )}
+      </Tabs>
+    </div>
+  );
+};
+
+export default PrizeStructurePage;

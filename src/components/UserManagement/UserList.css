@@ -1,0 +1,42 @@
+/* src/components/UserManagement/UserList.css */
+.user-list-container {
+  padding: 24px;
+}
+
+.user-list-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-username {
+  font-weight: 500;
+}
+
+.user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.reset-password-form {
+  margin-top: 16px;
+}
+
+.reset-password-error {
+  color: #ff4d4f;
+  margin-top: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-list-container {
+    padding: 16px;
+  }
+  
+  .user-actions {
+    flex-direction: column;
+  }
+  
+  .user-actions button {
+    margin-bottom: 4px;
+  }
+}

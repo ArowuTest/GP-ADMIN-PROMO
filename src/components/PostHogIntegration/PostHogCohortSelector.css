@@ -1,0 +1,48 @@
+/* src/components/PostHogIntegration/PostHogCohortSelector.css */
+.posthog-cohort-selector-container {
+  padding: 24px;
+}
+
+.posthog-cohort-selector-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.posthog-cohort-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  color: #8c8c8c;
+}
+
+.posthog-cohort-description {
+  margin-bottom: 16px;
+}
+
+.posthog-cohort-select {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.posthog-cohort-info {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.posthog-cohort-info p {
+  margin-bottom: 8px;
+}
+
+.posthog-cohort-info p:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .posthog-cohort-selector-container {
+    padding: 16px;
+  }
+}
