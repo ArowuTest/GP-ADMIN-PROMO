@@ -10,6 +10,7 @@ interface AuthContextType {
   user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  token: null,
   login: async () => {},
   logout: () => {},
   hasPermission: () => false,
@@ -37,6 +39,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserResponse | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -49,7 +52,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (isAuthenticated) {
           // Get current user from auth manager
           const currentUser = authService.getCurrentUser();
+          const currentToken = authService.getToken();
           setUser(currentUser);
+          setToken(currentToken);
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -68,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.login({ username: email, password });
       setUser(response.user);
+      setToken(response.token);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -80,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     authService.logout();
     setUser(null);
+    setToken(null);
     navigate('/login');
   };
 
@@ -101,6 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated,
     isLoading,
+    token,
     login,
     logout,
     hasPermission,

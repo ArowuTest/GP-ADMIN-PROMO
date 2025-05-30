@@ -1,110 +1,144 @@
 // src/services/prizeService.ts
-import { enhancedApiClient } from './apiClient';
-import { 
-  PrizeStructureResponse, 
-  PrizeStructureCreateRequest, 
-  PrizeStructureUpdateRequest,
-  PaginatedResponse
-} from '../types/api';
-import { UUID } from '../types/common';
+import { apiClient } from './apiClient';
 
-/**
- * Service for prize structure management
- */
-export const prizeService = {
-  /**
-   * Get all prize structures
-   * 
-   * @param day - Optional filter by day of week
-   * @returns List of prize structures
-   */
-  getAllPrizeStructures: async (day?: string): Promise<PrizeStructureResponse[]> => {
-    return enhancedApiClient.get<PrizeStructureResponse[]>('/admin/prize-structures', { day });
-  },
+// Define DayOfWeek type here to avoid circular imports
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
 
-  /**
-   * Get prize structure by ID
-   * 
-   * @param id - Prize structure ID
-   * @returns Prize structure details
-   */
-  getPrizeStructureById: async (id: UUID): Promise<PrizeStructureResponse> => {
-    return enhancedApiClient.get<PrizeStructureResponse>(`/admin/prize-structures/${id}`);
-  },
+// Define types for prize structure-related data
+export interface PrizeTierPayload {
+  id?: string;
+  name: string;
+  prize_type: string;
+  value: string;
+  quantity: number;
+  order: number;
+  number_of_runner_ups: number;
+}
 
-  /**
-   * Create a new prize structure
-   * 
-   * @param data - Prize structure data
-   * @returns Created prize structure
-   */
-  createPrizeStructure: async (data: PrizeStructureCreateRequest): Promise<PrizeStructureResponse> => {
-    return enhancedApiClient.post<PrizeStructureResponse>('/admin/prize-structures', data);
-  },
+export interface CreatePrizeStructurePayload {
+  name: string;
+  description: string;
+  is_active: boolean;
+  valid_from: string;
+  valid_to?: string | null;
+  prizes: PrizeTierPayload[];
+  applicable_days: DayOfWeek[];
+}
 
-  /**
-   * Update an existing prize structure
-   * 
-   * @param id - Prize structure ID
-   * @param data - Updated prize structure data
-   * @returns Updated prize structure
-   */
-  updatePrizeStructure: async (id: UUID, data: PrizeStructureUpdateRequest): Promise<PrizeStructureResponse> => {
-    return enhancedApiClient.put<PrizeStructureResponse>(`/admin/prize-structures/${id}`, data);
-  },
+export interface PrizeStructureResponse {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  validFrom: string;
+  validTo: string | null;
+  prizes: {
+    id: string;
+    name: string;
+    prizeType: string;
+    value: string;
+    valueNGN: string;
+    quantity: number;
+    order: number;
+    numberOfRunnerUps: number;
+  }[];
+  applicableDays: DayOfWeek[];
+  createdAt: string;
+  updatedAt: string;
+}
 
-  /**
-   * Delete a prize structure
-   * 
-   * @param id - Prize structure ID
-   * @returns Success message
-   */
-  deletePrizeStructure: async (id: UUID): Promise<{ message: string }> => {
-    return enhancedApiClient.delete<{ message: string }>(`/admin/prize-structures/${id}`);
-  },
+// Export these types for use in other components
+export interface ServicePrizeStructureData extends PrizeStructureResponse {}
+export interface ServicePrizeTierData {
+  id: string;
+  name: string;
+  prizeType: string;
+  value: string;
+  valueNGN: string;
+  quantity: number;
+  order: number;
+  numberOfRunnerUps: number;
+}
 
-  /**
-   * Get active prize structures
-   * 
-   * @returns List of active prize structures
-   */
-  getActivePrizeStructures: async (): Promise<PrizeStructureResponse[]> => {
-    return enhancedApiClient.get<PrizeStructureResponse[]>('/admin/prize-structures/active');
-  },
-
-  /**
-   * Get prize structures with pagination
-   * 
-   * @param page - Page number
-   * @param pageSize - Items per page
-   * @returns Paginated list of prize structures
-   */
-  getPrizeStructuresWithPagination: async (
-    page = 1, 
-    pageSize = 10
-  ): Promise<PaginatedResponse<PrizeStructureResponse>> => {
-    return enhancedApiClient.getPaginated<PrizeStructureResponse>('/admin/prize-structures', { 
-      page, 
-      pageSize 
+// List all prize structures
+const listPrizeStructures = async (token: string): Promise<PrizeStructureResponse[]> => {
+  try {
+    const response = await apiClient.get('/admin/prize-structures', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
-  },
-
-  /**
-   * Check if a prize structure is valid for a specific date
-   * 
-   * @param prizeStructureId - Prize structure ID to validate
-   * @param date - Date to check validity for
-   * @returns Boolean indicating if the prize structure is valid for the date
-   */
-  isPrizeStructureValidForDate: async (prizeStructureId: UUID, date: string): Promise<boolean> => {
-    try {
-      const response = await enhancedApiClient.get<{ valid: boolean }>(`/admin/prize-structures/${prizeStructureId}/validate`, { date });
-      return response.valid;
-    } catch (err: unknown) {
-      console.error('Error validating prize structure:', err);
-      return false;
-    }
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing prize structures:', error);
+    throw error;
   }
 };
 
-export default prizeService;
+// Get a specific prize structure by ID
+const getPrizeStructure = async (id: string, token: string): Promise<PrizeStructureResponse> => {
+  try {
+    const response = await apiClient.get(`/admin/prize-structures/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error getting prize structure ${id}:`, error);
+    throw error;
+  }
+};
+
+// Create a new prize structure
+const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string): Promise<PrizeStructureResponse> => {
+  try {
+    const response = await apiClient.post('/admin/prize-structures', payload, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating prize structure:', error);
+    throw error;
+  }
+};
+
+// Update an existing prize structure
+const updatePrizeStructure = async (id: string, payload: Partial<CreatePrizeStructurePayload>, token: string): Promise<PrizeStructureResponse> => {
+  try {
+    const response = await apiClient.put(`/admin/prize-structures/${id}`, payload, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating prize structure ${id}:`, error);
+    throw error;
+  }
+};
+
+// Delete a prize structure
+const deletePrizeStructure = async (id: string, token: string): Promise<{ message: string }> => {
+  try {
+    const response = await apiClient.delete(`/admin/prize-structures/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting prize structure ${id}:`, error);
+    throw error;
+  }
+};
+
+export const prizeService = {
+  listPrizeStructures,
+  getPrizeStructure,
+  createPrizeStructure,
+  updatePrizeStructure,
+  deletePrizeStructure
+};

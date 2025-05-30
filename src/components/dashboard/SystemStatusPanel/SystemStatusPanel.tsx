@@ -1,30 +1,51 @@
 // src/components/dashboard/SystemStatusPanel/SystemStatusPanel.tsx
 import React from 'react';
-import StatusIndicator, { SystemStatus } from "../StatusIndicator/StatusIndicator";
+import StatusIndicator from '../StatusIndicator/StatusIndicator';
 import './SystemStatusPanel.css';
 
-const SystemStatusPanel: React.FC = () => {
-  // In a real implementation, these would be fetched from an API
-  const statuses: {name: string, status: SystemStatus, lastUpdated: string}[] = [
-    { name: 'Draw Engine', status: 'operational', lastUpdated: '2 minutes ago' },
-    { name: 'Participant Database', status: 'operational', lastUpdated: '5 minutes ago' },
-    { name: 'Prize Management', status: 'operational', lastUpdated: '10 minutes ago' },
-    { name: 'User Authentication', status: 'operational', lastUpdated: '15 minutes ago' }
-  ];
-  
+interface SystemStatusPanelProps {
+  status: string;
+  loading?: boolean;
+}
+
+const SystemStatusPanel: React.FC<SystemStatusPanelProps> = ({ status, loading = false }) => {
   return (
     <div className="system-status-panel">
-      <h3 className="panel-title">System Status</h3>
-      <div className="status-list">
-        {statuses.map((item, index) => (
-          <StatusIndicator 
-            key={index}
-            name={item.name}
-            status={item.status}
-            lastUpdated={item.lastUpdated}
-          />
-        ))}
-      </div>
+      <h2 className="panel-title">System Status</h2>
+      
+      {loading ? (
+        <div className="status-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading system status...</p>
+        </div>
+      ) : (
+        <div className="status-content">
+          <div className="status-item">
+            <span className="status-label">MTN Mega Billion Promo:</span>
+            <StatusIndicator status={status} />
+          </div>
+          
+          <div className="status-item">
+            <span className="status-label">Backend API:</span>
+            <StatusIndicator status={status} />
+          </div>
+          
+          <div className="status-item">
+            <span className="status-label">Draw Engine:</span>
+            <StatusIndicator status={status} />
+          </div>
+          
+          <div className="status-item">
+            <span className="status-label">Participant Database:</span>
+            <StatusIndicator status={status} />
+          </div>
+          
+          <div className="status-item">
+            <span className="status-label">SMS Notification:</span>
+            <StatusIndicator status="pending" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,135 +1,122 @@
-// src/pages/Dashboard.tsx
-import React, { useEffect, useState } from 'react';
+// src/pages/Dashboard/Dashboard.tsx
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import MetricCard from "../../components/dashboard/MetricCard/MetricCard";
-import ActivityFeed from "../../components/dashboard/ActivityFeed/ActivityFeed";
-import StatusIndicator from '../../components/dashboard/StatusIndicator/StatusIndicator';
+import MetricCard from '../../components/dashboard/MetricCard/MetricCard';
+import ActivityFeed from '../../components/dashboard/ActivityFeed/ActivityFeed';
+import RecentActivityPanel from '../../components/dashboard/RecentActivityPanel/RecentActivityPanel';
+import SystemStatusPanel from '../../components/dashboard/SystemStatusPanel/SystemStatusPanel';
+import { drawService } from '../../services/drawService';
+import { participantService } from '../../services/participantService';
 import './Dashboard.css';
 
+// Define types for dashboard metrics
 interface DashboardMetrics {
   totalDraws: number;
   activeDraws: number;
   totalParticipants: number;
   totalWinners: number;
-  systemStatus: 'operational' | 'maintenance' | 'issue';
+  systemStatus: string;
 }
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalDraws: 0,
-    activeDraws: 0,
-    totalParticipants: 0,
-    totalWinners: 0,
-    systemStatus: 'operational'
-  });
-  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real implementation, this would fetch data from the API
-    // For now, we'll simulate loading with mock data
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setError(null);
         
-        // Mock data
+        if (!token) {
+          throw new Error('Authentication token not available');
+        }
+        
+        // Fetch real data from API endpoints
+        const [draws, participantStats] = await Promise.all([
+          drawService.listDraws(token),
+          participantService.getParticipantStats(token)
+        ]);
+        
+        // Calculate metrics from real data
+        const activeDraws = draws.filter(draw => draw.status === 'PENDING').length;
+        const totalWinners = draws.reduce((total, draw) => total + (draw.winners?.length || 0), 0);
+        
         setMetrics({
-          totalDraws: 24,
-          activeDraws: 2,
-          totalParticipants: 15782,
-          totalWinners: 342,
+          totalDraws: draws.length,
+          activeDraws,
+          totalParticipants: participantStats.totalParticipants,
+          totalWinners,
           systemStatus: 'operational'
         });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err);
+        setError(`Failed to load dashboard data: ${err.message}`);
+        
+        // Set fallback metrics if API calls fail
+        setMetrics({
+          totalDraws: 0,
+          activeDraws: 0,
+          totalParticipants: 0,
+          totalWinners: 0,
+          systemStatus: 'error'
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [token]);
 
   return (
     <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h2>Welcome, {user?.fullName || user?.username || 'Admin'}</h2>
-        <p className="dashboard-subtitle">MTN Mega Billion Promo Admin Portal Dashboard</p>
-      </div>
-
-      {loading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading dashboard data...</p>
+      <h1 className="dashboard-title">MTN Mega Billion Promo Dashboard</h1>
+      
+      {error && (
+        <div className="error-message">
+          {error}
         </div>
-      ) : (
-        <>
-          <div className="metrics-container">
-            <MetricCard 
-              title="Total Draws" 
-              value={metrics.totalDraws} 
-              icon="casino" 
-              trend="up" 
-              trendValue="8%" 
-            />
-            <MetricCard 
-              title="Active Draws" 
-              value={metrics.activeDraws} 
-              icon="event_available" 
-              trend="same" 
-              trendValue="0%" 
-            />
-            <MetricCard 
-              title="Total Participants" 
-              value={metrics.totalParticipants.toLocaleString()} 
-              icon="people" 
-              trend="up" 
-              trendValue="12%" 
-            />
-            <MetricCard 
-              title="Total Winners" 
-              value={metrics.totalWinners.toLocaleString()} 
-              icon="emoji_events" 
-              trend="up" 
-              trendValue="5%" 
-            />
-          </div>
-
-          <div className="dashboard-content">
-            <div className="dashboard-section">
-              <h3>System Status</h3>
-              <StatusIndicator status={metrics.systemStatus} />
-            </div>
-
-            <div className="dashboard-section">
-              <h3>Recent Activity</h3>
-              <ActivityFeed />
-            </div>
-          </div>
-
-          <div className="dashboard-footer">
-            <div className="quick-actions">
-              <h3>Quick Actions</h3>
-              <div className="action-buttons">
-                <button className="action-button">
-                  <span className="material-icons">add</span>
-                  New Draw
-                </button>
-                <button className="action-button">
-                  <span className="material-icons">upload_file</span>
-                  Upload Participants
-                </button>
-                <button className="action-button">
-                  <span className="material-icons">leaderboard</span>
-                  View Reports
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
       )}
+      
+      <div className="metrics-container">
+        <MetricCard 
+          title="Total Draws" 
+          value={metrics?.totalDraws || 0} 
+          icon="event" 
+          loading={loading} 
+        />
+        <MetricCard 
+          title="Active Draws" 
+          value={metrics?.activeDraws || 0} 
+          icon="event_available" 
+          loading={loading} 
+        />
+        <MetricCard 
+          title="Total Participants" 
+          value={metrics?.totalParticipants || 0} 
+          icon="people" 
+          loading={loading} 
+        />
+        <MetricCard 
+          title="Total Winners" 
+          value={metrics?.totalWinners || 0} 
+          icon="emoji_events" 
+          loading={loading} 
+        />
+      </div>
+      
+      <div className="dashboard-panels">
+        <div className="panel-left">
+          <SystemStatusPanel status={metrics?.systemStatus || 'loading'} loading={loading} />
+          <RecentActivityPanel loading={loading} />
+        </div>
+        <div className="panel-right">
+          <ActivityFeed loading={loading} />
+        </div>
+      </div>
     </div>
   );
 };

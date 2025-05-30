@@ -2,12 +2,14 @@
 import { useState, useCallback } from 'react';
 import { drawService } from '../services/drawService';
 import { DrawExecutionResponse, WinnerResponse } from '../types/api';
-import { UUID, PaymentStatus } from '../types/common';
+import { UUID, PaymentStatus, DrawStatus, WinnerStatus } from '../types/common';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Custom hook for draw execution functionality
  */
 export const useDrawExecution = () => {
+  const { token } = useAuth();
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [drawResult, setDrawResult] = useState<DrawExecutionResponse | null>(null);
   const [winners, setWinners] = useState<WinnerResponse[]>([]);
@@ -19,27 +21,74 @@ export const useDrawExecution = () => {
    */
   const executeDraw = useCallback(async (
     drawDate: string, 
-    prizeStructureId: UUID
+    prizeStructureId: UUID,
+    token: string
   ): Promise<DrawExecutionResponse | null> => {
     setIsExecuting(true);
     setError(null);
     setProgress(0);
     
     try {
-      // Use the progress callback to update UI during execution
+      // Execute draw without progress callback
       const result = await drawService.executeDraw(
         drawDate, 
         prizeStructureId,
-        (progressValue) => setProgress(progressValue)
+        token
       );
       
-      setDrawResult(result);
+      // Convert DrawData to DrawExecutionResponse format
+      const executionResponse: DrawExecutionResponse = {
+        id: result.id,
+        drawId: result.id, // Using the same ID for both fields
+        drawDate: result.drawDate,
+        status: result.status as DrawStatus, // Cast string to DrawStatus enum
+        prizeStructure: result.prizeStructureId,
+        prizeStructureName: result.prizeStructureName,
+        winnersCount: result.winners ? result.winners.filter(w => !w.isRunnerUp).length : 0,
+        runnerUpsCount: result.winners ? result.winners.filter(w => w.isRunnerUp).length : 0,
+        executedAt: result.createdAt,
+        winners: result.winners ? result.winners.filter(w => !w.isRunnerUp).map(w => ({
+          id: w.id,
+          msisdn: w.msisdn,
+          maskedMsisdn: w.msisdn.substring(0, 3) + '****' + w.msisdn.substring(w.msisdn.length - 3),
+          prizeTierId: w.prizeTierId,
+          prizeName: w.prizeTierName,
+          prizeValue: parseFloat(w.prizeValue),
+          status: w.status as WinnerStatus, // Cast string to WinnerStatus enum
+          isRunnerUp: false,
+          paymentStatus: w.paymentStatus as PaymentStatus, // Cast string to PaymentStatus enum
+          paymentRef: '',
+          paymentNotes: w.paymentNotes || '',
+          createdAt: w.createdAt,
+          updatedAt: w.updatedAt
+        })) : [],
+        runnerUps: result.winners ? result.winners.filter(w => w.isRunnerUp).map(w => ({
+          id: w.id,
+          msisdn: w.msisdn,
+          maskedMsisdn: w.msisdn.substring(0, 3) + '****' + w.msisdn.substring(w.msisdn.length - 3),
+          prizeTierId: w.prizeTierId,
+          prizeName: w.prizeTierName,
+          prizeValue: parseFloat(w.prizeValue),
+          status: w.status as WinnerStatus, // Cast string to WinnerStatus enum
+          isRunnerUp: true,
+          runnerUpRank: w.runnerUpRank,
+          paymentStatus: w.paymentStatus as PaymentStatus, // Cast string to PaymentStatus enum
+          paymentRef: '',
+          paymentNotes: w.paymentNotes || '',
+          createdAt: w.createdAt,
+          updatedAt: w.updatedAt
+        })) : []
+      };
+      
+      setDrawResult(executionResponse);
+      setProgress(100); // Set progress to complete after execution
       
       // Fetch winners and runner-ups for the draw
-      const drawWinners = await drawService.getDrawWinners(result.id);
+      // Fixed: Added token parameter to match service function signature
+      const drawWinners = await drawService.getDrawWinners(result.id, token);
       setWinners(drawWinners);
       
-      return result;
+      return executionResponse;
     } catch (err: unknown) {
       console.error('Error executing draw:', err);
       
@@ -62,8 +111,14 @@ export const useDrawExecution = () => {
   const getDrawWinners = useCallback(async (drawId: UUID): Promise<WinnerResponse[]> => {
     setError(null);
     
+    if (!token) {
+      setError('Authentication token not available');
+      return [];
+    }
+    
     try {
-      const winners = await drawService.getDrawWinners(drawId);
+      // Fixed: Added token parameter to match service function signature
+      const winners = await drawService.getDrawWinners(drawId, token);
       setWinners(winners);
       return winners;
     } catch (err: unknown) {
@@ -77,7 +132,7 @@ export const useDrawExecution = () => {
       
       return [];
     }
-  }, []);
+  }, [token]);
 
   /**
    * Invoke a runner-up for a winner
@@ -85,12 +140,19 @@ export const useDrawExecution = () => {
   const invokeRunnerUp = useCallback(async (winnerId: UUID): Promise<boolean> => {
     setError(null);
     
+    if (!token) {
+      setError('Authentication token not available');
+      return false;
+    }
+    
     try {
-      await drawService.invokeRunnerUp(winnerId);
+      // Fixed: Added token parameter to match service function signature
+      await drawService.invokeRunnerUp(winnerId, token);
       
       // Refresh winners list if we have a draw result
       if (drawResult) {
-        const updatedWinners = await drawService.getDrawWinners(drawResult.id);
+        // Fixed: Added token parameter to match service function signature
+        const updatedWinners = await drawService.getDrawWinners(drawResult.drawId, token);
         setWinners(updatedWinners);
       }
       
@@ -106,7 +168,7 @@ export const useDrawExecution = () => {
       
       return false;
     }
-  }, [drawResult]);
+  }, [drawResult, token]);
 
   /**
    * Update winner payment status
@@ -119,12 +181,19 @@ export const useDrawExecution = () => {
   ): Promise<boolean> => {
     setError(null);
     
+    if (!token) {
+      setError('Authentication token not available');
+      return false;
+    }
+    
     try {
-      await drawService.updateWinnerPaymentStatus(winnerId, status, ref, notes);
+      // Fixed: Pass all parameters correctly to match updated service function signature
+      await drawService.updateWinnerPaymentStatus(winnerId, status.toString(), token, ref, notes);
       
       // Refresh winners list if we have a draw result
       if (drawResult) {
-        const updatedWinners = await drawService.getDrawWinners(drawResult.id);
+        // Fixed: Added token parameter to match service function signature
+        const updatedWinners = await drawService.getDrawWinners(drawResult.drawId, token);
         setWinners(updatedWinners);
       }
       
@@ -140,7 +209,7 @@ export const useDrawExecution = () => {
       
       return false;
     }
-  }, [drawResult]);
+  }, [drawResult, token]);
 
   /**
    * Reset draw state

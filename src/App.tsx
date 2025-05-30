@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AppLayout from './components/layout/AppLayout/AppLayout';
 
-// Import all page components
 import Dashboard from './pages/Dashboard/Dashboard';
 import DrawManagement from './pages/DrawManagement/DrawManagementPage';
 import Login from './pages/Login/LoginPage';
@@ -50,4 +49,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;  // Critical line that must be included
+export default App;

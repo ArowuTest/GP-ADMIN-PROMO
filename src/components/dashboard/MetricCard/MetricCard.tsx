@@ -1,37 +1,31 @@
-// src/components/dashboard/MetricCard.tsx
+// src/components/dashboard/MetricCard/MetricCard.tsx
 import React from 'react';
 import './MetricCard.css';
 
 interface MetricCardProps {
   title: string;
-  value: string | number;
+  value: number | string;
   icon: string;
-  trend?: 'up' | 'down' | 'same';
-  trendValue?: string;
+  loading?: boolean;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ 
-  title, 
-  value, 
-  icon, 
-  trend = 'same',
-  trendValue = '0%'
-}) => {
+const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, loading = false }) => {
+  // Format large numbers with commas
+  const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
+  
   return (
     <div className="metric-card">
-      <div className="metric-icon">
+      <div className="metric-card-icon">
         <span className="material-icons">{icon}</span>
       </div>
-      <div className="metric-content">
-        <h3 className="metric-title">{title}</h3>
-        <div className="metric-value">{value}</div>
-        {trend && (
-          <div className={`metric-trend ${trend}`}>
-            <span className="material-icons">
-              {trend === 'up' ? 'trending_up' : trend === 'down' ? 'trending_down' : 'trending_flat'}
-            </span>
-            <span className="trend-value">{trendValue}</span>
+      <div className="metric-card-content">
+        <h3 className="metric-card-title">{title}</h3>
+        {loading ? (
+          <div className="metric-card-loading">
+            <div className="loading-pulse"></div>
           </div>
+        ) : (
+          <p className="metric-card-value">{formattedValue}</p>
         )}
       </div>
     </div>

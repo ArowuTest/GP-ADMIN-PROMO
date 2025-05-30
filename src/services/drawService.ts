@@ -1,217 +1,213 @@
 // src/services/drawService.ts
-import { enhancedApiClient } from './apiClient';
-import { 
-  DrawResponse, 
-  DrawCreateRequest, 
-  DrawUpdateRequest,
-  DrawExecutionRequest,
-  DrawExecutionResponse,
-  EligibilityStatsResponse,
-  WinnerResponse,
-  PaginatedResponse,
-  RunnerUpInvokeRequest
-} from '../types/api';
-import { UUID, DrawStatus, PaymentStatus } from '../types/common';
+import { apiClient } from './apiClient';
+import { WinnerResponse } from '../types/api';
+// Removed unused PaymentStatus import
 
-/**
- * Service for draw-related API operations
- */
-export const drawService = {
-  /**
-   * Get all draws
-   */
-  async getAllDraws(): Promise<DrawResponse[]> {
-    return enhancedApiClient.get<DrawResponse[]>('/admin/draws');
-  },
+// Define types for draw-related data
+export interface DrawData {
+  id: string;
+  drawDate: string;
+  status: string;
+  prizeStructureId: string;
+  prizeStructureName: string;
+  executedByAdminID: string;
+  totalEligibleMSISDNs: number;
+  totalEntries: number;
+  draw: any; // Added to support draw property access
+  message?: string; // Added for error messages
+  createdAt: string;
+  updatedAt: string;
+  winners: WinnerData[];
+}
 
-  /**
-   * Get draw by ID
-   */
-  async getDrawById(id: UUID): Promise<DrawResponse> {
-    return enhancedApiClient.get<DrawResponse>(`/admin/draws/${id}`);
-  },
+export interface WinnerData {
+  id: string;
+  drawId: string;
+  drawID: string; // Added for backward compatibility
+  msisdn: string;
+  prizeTierId: string;
+  prizeTierID: string; // Added for backward compatibility
+  prizeTierName: string;
+  prizeTier: string; // Added for backward compatibility
+  prizeValue: string;
+  status: string;
+  paymentStatus: string;
+  paymentNotes: string; // Added missing property
+  isRunnerUp: boolean;
+  originalWinnerId?: string;
+  runnerUpRank?: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
-  /**
-   * Get draws by date
-   */
-  async getDrawsByDate(date: string): Promise<DrawResponse[]> {
-    return enhancedApiClient.get<DrawResponse[]>(`/admin/draws/date/${date}`);
-  },
+export interface EligibilityStats {
+  totalEligibleParticipants: number;
+  totalEligibleEntries: number;
+  totalEligibleMSISDNs: number;
+  totalEntries: number;
+  participantsByPoints: {
+    points: number;
+    count: number;
+  }[];
+}
 
-  /**
-   * Create a new draw
-   */
-  async createDraw(data: DrawCreateRequest): Promise<DrawResponse> {
-    return enhancedApiClient.post<DrawResponse>('/admin/draws', data);
-  },
+export interface RunnerUpInvocationResult {
+  message: string;
+  originalWinner: WinnerData;
+  newWinner: WinnerData;
+}
 
-  /**
-   * Update an existing draw
-   */
-  async updateDraw(id: UUID, data: DrawUpdateRequest): Promise<DrawResponse> {
-    return enhancedApiClient.put<DrawResponse>(`/admin/draws/${id}`, data);
-  },
-
-  /**
-   * Delete a draw
-   */
-  async deleteDraw(id: UUID): Promise<boolean> {
-    try {
-      await enhancedApiClient.delete<{ message: string }>(`/admin/draws/${id}`);
-      return true;
-    } catch (err: unknown) {
-      console.error('Error deleting draw:', err);
-      
-      if (err instanceof Error) {
-        throw new Error(`Failed to delete draw: ${err.message}`);
-      } else {
-        throw new Error('Failed to delete draw due to an unknown error');
+// List all draws
+const listDraws = async (token: string): Promise<DrawData[]> => {
+  try {
+    const response = await apiClient.get('/admin/draws', {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    }
-  },
-
-  /**
-   * Get eligibility statistics for a specific date
-   */
-  async getEligibilityStats(date: string): Promise<EligibilityStatsResponse> {
-    return enhancedApiClient.get<EligibilityStatsResponse>(`/admin/draws/eligibility-stats`, { drawDate: date });
-  },
-
-  /**
-   * Validate if a prize structure is valid for a specific date
-   * 
-   * @param prizeStructureId - Prize structure ID to validate
-   * @param date - Date to check validity for
-   * @returns Boolean indicating if the prize structure is valid for the date
-   */
-  async validatePrizeStructureForDate(prizeStructureId: UUID, date: string): Promise<boolean> {
-    try {
-      const response = await enhancedApiClient.get<{ valid: boolean }>(`/admin/prize-structures/${prizeStructureId}/validate`, { date });
-      return response.valid;
-    } catch (err: unknown) {
-      console.error('Error validating prize structure:', err);
-      return false;
-    }
-  },
-
-  /**
-   * Execute a draw
-   * 
-   * @param drawDate - Date for the draw
-   * @param prizeStructureId - Prize structure ID
-   * @param onProgress - Optional callback for progress updates
-   * @returns Draw execution response
-   */
-  async executeDraw(
-    drawDate: string, 
-    prizeStructureId: UUID,
-    onProgress?: (progress: number) => void
-  ): Promise<DrawExecutionResponse> {
-    // If onProgress is provided, simulate progress for frontend animation
-    if (onProgress) {
-      // This is just for UI feedback, the actual draw happens on the backend
-      const interval = setInterval(() => {
-        const progress = Math.min(95, Math.random() * 100); // Never reach 100% until actual response
-        onProgress(progress);
-      }, 500);
-      
-      try {
-        const request: DrawExecutionRequest = {
-          drawDate: drawDate, // Updated to match backend contract
-          prizeStructureId
-        };
-        
-        const response = await enhancedApiClient.post<DrawExecutionResponse>('/admin/draws/execute', request);
-        
-        clearInterval(interval);
-        onProgress(100); // Complete the progress
-        return response;
-      } catch (error: unknown) {
-        clearInterval(interval);
-        throw error;
-      }
-    } else {
-      // Standard execution without progress tracking
-      const request: DrawExecutionRequest = {
-        drawDate: drawDate, // Updated to match backend contract
-        prizeStructureId
-      };
-      
-      return enhancedApiClient.post<DrawExecutionResponse>('/admin/draws/execute', request);
-    }
-  },
-
-  /**
-   * Get winners and runner-ups for a specific draw
-   */
-  async getDrawWinners(drawId: UUID): Promise<WinnerResponse[]> {
-    return enhancedApiClient.get<WinnerResponse[]>(`/admin/draws/${drawId}/winners`);
-  },
-
-  /**
-   * Invoke a runner-up for a winner
-   */
-  async invokeRunnerUp(winnerId: UUID): Promise<WinnerResponse> {
-    const request: RunnerUpInvokeRequest = {
-      winnerId
-    };
-    return enhancedApiClient.post<WinnerResponse>(`/admin/draws/invoke-runner-up`, request);
-  },
-
-  /**
-   * Update winner payment status
-   */
-  async updateWinnerPaymentStatus(
-    winnerId: UUID, 
-    status: PaymentStatus, 
-    ref?: string, 
-    notes?: string
-  ): Promise<WinnerResponse> {
-    return enhancedApiClient.put<WinnerResponse>(`/admin/winners/${winnerId}/payment-status`, {
-      paymentStatus: status,
-      paymentRef: ref,
-      paymentNotes: notes
     });
-  },
-
-  /**
-   * Get recent winners and runner-ups
-   */
-  async getRecentWinners(): Promise<WinnerResponse[]> {
-    return enhancedApiClient.get<WinnerResponse[]>('/admin/winners/recent');
-  },
-
-  /**
-   * Check the status of a draw
-   * 
-   * @param drawId - Draw ID
-   * @returns Draw status
-   */
-  async checkDrawStatus(drawId: UUID): Promise<DrawStatus> {
-    const draw = await enhancedApiClient.get<DrawResponse>(`/admin/draws/${drawId}`);
-    return draw.status;
-  },
-
-  /**
-   * Get draw history with pagination
-   * 
-   * @param page - Page number
-   * @param pageSize - Items per page
-   * @returns Paginated list of draws
-   */
-  async getDrawHistory(page = 1, pageSize = 10): Promise<PaginatedResponse<DrawResponse>> {
-    return enhancedApiClient.getPaginated<DrawResponse>('/admin/draws', { page, pageSize });
-  },
-
-  /**
-   * Cancel a draw
-   * 
-   * @param drawId - Draw ID
-   * @returns Success message
-   */
-  async cancelDraw(drawId: UUID): Promise<{ message: string }> {
-    return enhancedApiClient.post<{ message: string }>(`/admin/draws/${drawId}/cancel`, {});
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing draws:', error);
+    throw error;
   }
 };
 
-export default drawService;
+// Get a specific draw by ID
+const getDrawById = async (id: string, token: string): Promise<DrawData> => {
+  try {
+    const response = await apiClient.get(`/admin/draws/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error getting draw ${id}:`, error);
+    throw error;
+  }
+};
+
+// List all winners
+const listWinners = async (token: string): Promise<WinnerData[]> => {
+  try {
+    const response = await apiClient.get('/admin/winners', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error listing winners:', error);
+    throw error;
+  }
+};
+
+// Get winners for a specific draw
+const getDrawWinners = async (drawId: string, token: string): Promise<WinnerResponse[]> => {
+  try {
+    const response = await apiClient.get(`/admin/draws/${drawId}/winners`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error(`Error getting winners for draw ${drawId}:`, error);
+    throw error;
+  }
+};
+
+// Execute a new draw
+const executeDraw = async (drawDate: string, prizeStructureId: string, token: string): Promise<DrawData> => {
+  try {
+    const response = await apiClient.post('/admin/draws/execute', {
+      draw_date: drawDate,
+      prize_structure_id: prizeStructureId
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error executing draw:', error);
+    throw error;
+  }
+};
+
+// Get eligibility statistics for a potential draw
+const getDrawEligibilityStats = async (date: string, token: string): Promise<EligibilityStats> => {
+  try {
+    const response = await apiClient.get('/admin/draws/eligibility-stats', {
+      params: { date },
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error getting eligibility stats:', error);
+    throw error;
+  }
+};
+
+// Update winner payment status
+const updateWinnerPaymentStatus = async (
+  winnerId: string, 
+  paymentStatus: string, 
+  token: string, 
+  paymentRef?: string, 
+  paymentNotes?: string
+): Promise<WinnerData> => {
+  try {
+    const payload: any = {
+      payment_status: paymentStatus
+    };
+    
+    if (paymentRef) {
+      payload.payment_ref = paymentRef;
+    }
+    
+    if (paymentNotes) {
+      payload.payment_notes = paymentNotes;
+    }
+    
+    const response = await apiClient.put(`/admin/winners/${winnerId}/payment-status`, payload, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating payment status for winner ${winnerId}:`, error);
+    throw error;
+  }
+};
+
+// Invoke a runner-up for a prize
+const invokeRunnerUp = async (winnerId: string, token: string): Promise<RunnerUpInvocationResult> => {
+  try {
+    const response = await apiClient.post('/admin/draws/invoke-runner-up', {
+      winner_id: winnerId
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error invoking runner-up for winner ${winnerId}:`, error);
+    throw error;
+  }
+};
+
+export const drawService = {
+  listDraws,
+  getDrawById,
+  listWinners,
+  getDrawWinners,
+  executeDraw,
+  getDrawEligibilityStats,
+  updateWinnerPaymentStatus,
+  invokeRunnerUp
+};

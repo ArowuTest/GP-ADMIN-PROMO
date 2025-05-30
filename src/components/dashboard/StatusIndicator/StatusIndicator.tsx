@@ -2,56 +2,55 @@
 import React from 'react';
 import './StatusIndicator.css';
 
-export type SystemStatus = 'operational' | 'maintenance' | 'issue';
-
 interface StatusIndicatorProps {
-  status: SystemStatus;
-  name?: string;
-  lastUpdated?: string;
+  status: string;
 }
 
-const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, name, lastUpdated }) => {
-  const getStatusInfo = () => {
-    switch (status) {
+const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
+  const getStatusClass = () => {
+    switch (status.toLowerCase()) {
       case 'operational':
-        return {
-          label: name ? `${name}: Operational` : 'All Systems Operational',
-          icon: 'check_circle',
-          description: 'All services are running normally.'
-        };
-      case 'maintenance':
-        return {
-          label: name ? `${name}: Maintenance` : 'Scheduled Maintenance',
-          icon: 'engineering',
-          description: 'Some services may be temporarily unavailable due to scheduled maintenance.'
-        };
-      case 'issue':
-        return {
-          label: name ? `${name}: Issue Detected` : 'System Issues Detected',
-          icon: 'error',
-          description: 'We are currently experiencing some technical difficulties. Our team is working to resolve them.'
-        };
+      case 'active':
+      case 'success':
+      case 'completed':
+        return 'status-operational';
+      case 'warning':
+      case 'pending':
+      case 'in_progress':
+        return 'status-warning';
+      case 'error':
+      case 'failed':
+      case 'down':
+        return 'status-error';
       default:
-        return {
-          label: 'Status Unknown',
-          icon: 'help',
-          description: 'Unable to determine system status.'
-        };
+        return 'status-unknown';
     }
   };
 
-  const statusInfo = getStatusInfo();
+  const getStatusText = () => {
+    switch (status.toLowerCase()) {
+      case 'operational':
+      case 'active':
+      case 'success':
+      case 'completed':
+        return 'Operational';
+      case 'warning':
+      case 'pending':
+      case 'in_progress':
+        return 'Pending';
+      case 'error':
+      case 'failed':
+      case 'down':
+        return 'Error';
+      default:
+        return 'Unknown';
+    }
+  };
 
   return (
-    <div className={`status-indicator ${status}`}>
-      <div className="status-icon">
-        <span className="material-icons">{statusInfo.icon}</span>
-      </div>
-      <div className="status-content">
-        <h4 className="status-label">{statusInfo.label}</h4>
-        <p className="status-description">{statusInfo.description}</p>
-        {lastUpdated && <p className="status-timestamp">Last updated: {lastUpdated}</p>}
-      </div>
+    <div className={`status-indicator ${getStatusClass()}`}>
+      <div className="status-dot"></div>
+      <span className="status-text">{getStatusText()}</span>
     </div>
   );
 };

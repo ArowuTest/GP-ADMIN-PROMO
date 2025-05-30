@@ -102,6 +102,11 @@ const getCurrentUser = (): UserResponse | null => {
   return authManager.getUser();
 };
 
+// Get current token
+const getToken = (): string | null => {
+  return authManager.getToken();
+};
+
 // Logout function
 const logout = (): void => {
   authManager.clearAuthData();
@@ -127,6 +132,7 @@ export const authService = {
   logout,
   checkAuthState,
   getCurrentUser,
+  getToken,
   needsTokenRefresh,
   refreshTokenIfNeeded,
   hasRole,

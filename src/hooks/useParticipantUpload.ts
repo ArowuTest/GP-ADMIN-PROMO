@@ -1,17 +1,40 @@
 // src/hooks/useParticipantUpload.ts
 import { useState, useCallback } from 'react';
-import { participantService } from '../services/participantService';
+import { participantService, UploadResponse } from '../services/participantService';
 import { DataUploadAuditResponse } from '../types/api';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Custom hook for participant upload functionality
  */
 export const useParticipantUpload = () => {
+  const { token } = useAuth();
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadResult, setUploadResult] = useState<DataUploadAuditResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  /**
+   * Map UploadResponse to DataUploadAuditResponse
+   */
+  const mapUploadResponseToAuditResponse = (response: UploadResponse): DataUploadAuditResponse => {
+    return {
+      id: response.auditId,
+      fileName: 'participants.csv', // Default filename since it's not in the response
+      uploadedBy: 'Current User', // Default user since it's not in the response
+      uploadedAt: new Date().toISOString(), // Current time since it's not in the response
+      status: response.status,
+      totalUploaded: response.totalDataRowsProcessed,
+      successfullyImported: response.successfulRowsImported,
+      duplicatesSkipped: response.duplicatesSkippedCount,
+      errorsEncountered: response.errors.length,
+      details: response.message,
+      operationType: 'UPLOAD',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  };
 
   /**
    * Validate CSV file before upload
@@ -49,6 +72,11 @@ export const useParticipantUpload = () => {
       return null;
     }
 
+    if (!token) {
+      setError('Authentication token not available');
+      return null;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
     setError(null);
@@ -63,15 +91,18 @@ export const useParticipantUpload = () => {
         });
       }, 200);
 
-      // Upload file
-      const result = await participantService.uploadParticipants(file);
+      // Upload file - Fixed: Added token parameter
+      const result = await participantService.uploadParticipants(file, token);
       
       // Clear progress interval
       clearInterval(progressInterval);
       setUploadProgress(100);
-      setUploadResult(result);
       
-      return result;
+      // Transform the response to match expected type
+      const transformedResult = mapUploadResponseToAuditResponse(result);
+      setUploadResult(transformedResult);
+      
+      return transformedResult;
     } catch (err: any) {
       console.error('Error uploading participants:', err);
       setError(err.message || 'Failed to upload participants');
@@ -79,7 +110,7 @@ export const useParticipantUpload = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [validateCsvFile]);
+  }, [validateCsvFile, token]);
 
   /**
    * Delete upload
@@ -87,15 +118,21 @@ export const useParticipantUpload = () => {
   const deleteUpload = useCallback(async (uploadId: string): Promise<boolean> => {
     setError(null);
 
+    if (!token) {
+      setError('Authentication token not available');
+      return false;
+    }
+
     try {
-      await participantService.deleteUpload(uploadId);
+      // Fixed: Added token parameter
+      await participantService.deleteUpload(uploadId, token);
       return true;
     } catch (err: any) {
       console.error('Error deleting upload:', err);
       setError(err.message || 'Failed to delete upload');
       return false;
     }
-  }, []);
+  }, [token]);
 
   /**
    * Reset upload state

@@ -1,125 +1,124 @@
 // src/components/dashboard/ActivityFeed/ActivityFeed.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { drawService } from '../../../services/drawService';
 import './ActivityFeed.css';
 
-export interface ActivityItem {
-  id: string | number;
-  type: 'draw' | 'upload' | 'user' | 'prize';
-  action?: string;
-  description?: string;
-  user: string;
+interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
   timestamp: string;
-  details?: string;
+  status?: string;
 }
 
 interface ActivityFeedProps {
-  activities?: ActivityItem[];
+  loading?: boolean;
 }
 
-const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities: propActivities }) => {
-  // Mock activity data - in a real implementation, this would come from an API
-  const defaultActivities: ActivityItem[] = [
-    {
-      id: '1',
-      type: 'draw',
-      action: 'Draw Executed',
-      user: 'John Admin',
-      timestamp: '2025-05-28T10:30:00',
-      details: 'Daily Draw #24 with 1,250 participants'
-    },
-    {
-      id: '2',
-      type: 'upload',
-      action: 'Participants Uploaded',
-      user: 'Sarah Manager',
-      timestamp: '2025-05-28T09:15:00',
-      details: '2,500 new participants added'
-    },
-    {
-      id: '3',
-      type: 'prize',
-      action: 'Prize Structure Updated',
-      user: 'John Admin',
-      timestamp: '2025-05-27T16:45:00',
-      details: 'Added 2 new prize tiers'
-    },
-    {
-      id: '4',
-      type: 'user',
-      action: 'User Created',
-      user: 'Super Admin',
-      timestamp: '2025-05-27T14:20:00',
-      details: 'New admin user "Sarah Manager" added'
-    },
-    {
-      id: '5',
-      type: 'draw',
-      action: 'Draw Scheduled',
-      user: 'John Admin',
-      timestamp: '2025-05-27T11:10:00',
-      details: 'Weekly Draw #4 scheduled for 2025-05-30'
-    }
-  ];
+const ActivityFeed: React.FC<ActivityFeedProps> = ({ loading = false }) => {
+  const { token } = useAuth();
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [localLoading, setLocalLoading] = useState<boolean>(loading);
+  const [error, setError] = useState<string | null>(null);
 
-  // Use provided activities or fall back to default
-  const activities = propActivities || defaultActivities;
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!token) return;
+      
+      try {
+        setLocalLoading(true);
+        setError(null);
+        
+        // Fetch real data from API
+        const draws = await drawService.listDraws(token);
+        
+        // Transform draw data into activity items
+        const drawActivities: ActivityItem[] = draws.slice(0, 10).map(draw => ({
+          id: draw.id,
+          type: 'draw',
+          title: `Draw ${draw.id.substring(0, 8)}`,
+          description: `Draw executed with ${draw.winners?.length || 0} winners`,
+          timestamp: new Date(draw.createdAt).toLocaleString(),
+          status: draw.status
+        }));
+        
+        setActivities(drawActivities);
+      } catch (err: any) {
+        console.error('Error fetching activities:', err);
+        setError(`Failed to load activities: ${err.message}`);
+        setActivities([]);
+      } finally {
+        setLocalLoading(false);
+      }
+    };
 
-  // Function to get icon based on activity type
-  const getActivityIcon = (type: string): string => {
-    switch (type) {
-      case 'draw':
-        return 'casino';
-      case 'upload':
-        return 'upload_file';
-      case 'user':
-        return 'person';
-      case 'prize':
-        return 'emoji_events';
+    fetchActivities();
+  }, [token]);
+
+  const getStatusClass = (status?: string) => {
+    if (!status) return '';
+    
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+      case 'SUCCESS':
+        return 'status-success';
+      case 'PENDING':
+      case 'IN_PROGRESS':
+        return 'status-pending';
+      case 'FAILED':
+      case 'ERROR':
+        return 'status-error';
       default:
-        return 'info';
+        return '';
     }
-  };
-
-  // Function to format timestamp
-  const formatTimestamp = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
   };
 
   return (
     <div className="activity-feed">
-      {activities.length === 0 ? (
-        <div className="no-activity">
-          <span className="material-icons">history</span>
-          <p>No recent activity</p>
+      <h2 className="activity-feed-title">Recent Activity</h2>
+      
+      {error && (
+        <div className="activity-feed-error">
+          {error}
         </div>
-      ) : (
+      )}
+      
+      {localLoading ? (
+        <div className="activity-feed-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading activities...</p>
+        </div>
+      ) : activities.length > 0 ? (
         <ul className="activity-list">
           {activities.map((activity) => (
-            <li key={activity.id.toString()} className="activity-item">
-              <div className={`activity-icon ${activity.type}`}>
-                <span className="material-icons">{getActivityIcon(activity.type)}</span>
+            <li key={activity.id} className="activity-item">
+              <div className="activity-icon">
+                <span className="material-icons">
+                  {activity.type === 'draw' ? 'event' : 'notifications'}
+                </span>
               </div>
               <div className="activity-content">
-                <div className="activity-header">
-                  <span className="activity-action">{activity.action || activity.description}</span>
-                  <span className="activity-time">{formatTimestamp(activity.timestamp)}</span>
+                <h3 className="activity-title">{activity.title}</h3>
+                <p className="activity-description">{activity.description}</p>
+                <div className="activity-meta">
+                  <span className="activity-time">{activity.timestamp}</span>
+                  {activity.status && (
+                    <span className={`activity-status ${getStatusClass(activity.status)}`}>
+                      {activity.status}
+                    </span>
+                  )}
                 </div>
-                <div className="activity-user">by {activity.user}</div>
-                {activity.details && <div className="activity-details">{activity.details}</div>}
               </div>
             </li>
           ))}
         </ul>
+      ) : (
+        <div className="activity-feed-empty">
+          <p>No recent activities found.</p>
+        </div>
       )}
-      <div className="view-all-container">
-        <button className="view-all-button">View All Activity</button>
-      </div>
     </div>
   );
 };
