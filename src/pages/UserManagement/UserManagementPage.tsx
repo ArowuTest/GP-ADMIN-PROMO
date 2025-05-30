@@ -109,7 +109,7 @@ const UserManagementPage: React.FC = () => {
       
       {error && (
         <div className="alert alert-danger">
-          <span className="material-icons">error</span>
+          <i className="material-icons">error</i>
           <span>{error}</span>
         </div>
       )}
@@ -118,7 +118,7 @@ const UserManagementPage: React.FC = () => {
         {canManageUsers && (
           <div className="action-bar">
             <button className="btn btn-primary">
-              <span className="material-icons">person_add</span>
+              <i className="material-icons">person_add</i>
               Create New User
             </button>
           </div>
@@ -127,7 +127,7 @@ const UserManagementPage: React.FC = () => {
         <div className="card">
           <div className="card-header">
             <h2>
-              <span className="material-icons">people</span>
+              <i className="material-icons">people</i>
               System Users
             </h2>
           </div>
@@ -170,16 +170,16 @@ const UserManagementPage: React.FC = () => {
                         {canManageUsers && (
                           <td className="action-cell">
                             <button className="btn btn-sm btn-outline-primary">
-                              <span className="material-icons">edit</span>
+                              <i className="material-icons">edit</i>
                               Edit
                             </button>
                             <button className="btn btn-sm btn-outline-warning">
-                              <span className="material-icons">key</span>
+                              <i className="material-icons">key</i>
                               Reset Password
                             </button>
                             {user.id !== currentUser?.id && (
                               <button className={`btn btn-sm ${user.status === 'ACTIVE' ? 'btn-outline-danger' : 'btn-outline-success'}`}>
-                                <span className="material-icons">{user.status === 'ACTIVE' ? 'block' : 'check_circle'}</span>
+                                <i className="material-icons">{user.status === 'ACTIVE' ? 'block' : 'check_circle'}</i>
                                 {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                               </button>
                             )}
@@ -192,7 +192,7 @@ const UserManagementPage: React.FC = () => {
               </div>
             ) : (
               <div className="empty-state">
-                <span className="material-icons empty-icon">people</span>
+                <i className="material-icons empty-icon">people</i>
                 <p>No users found.</p>
                 {canManageUsers && (
                   <p>Click the "Create New User" button to add your first user.</p>
@@ -205,7 +205,7 @@ const UserManagementPage: React.FC = () => {
         <div className="card info-card">
           <div className="card-header">
             <h2>
-              <span className="material-icons">info</span>
+              <i className="material-icons">info</i>
               Implementation Note
             </h2>
           </div>

@@ -152,14 +152,14 @@ const ParticipantManagementPage: React.FC = () => {
       
       {error && (
         <div className="alert alert-danger">
-          <span className="material-icons">error</span>
+          <i className="material-icons">error</i>
           <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
         <div className="alert alert-success">
-          <span className="material-icons">check_circle</span>
+          <i className="material-icons">check_circle</i>
           <span>{successMessage}</span>
         </div>
       )}
@@ -208,7 +208,7 @@ const ParticipantManagementPage: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span className="material-icons">cloud_upload</span>
+                    <i className="material-icons">cloud_upload</i>
                     <span>Upload Participants</span>
                   </>
                 )}
@@ -221,7 +221,7 @@ const ParticipantManagementPage: React.FC = () => {
           <div className="card-header">
             <h2>Upload History</h2>
             <button className="btn-link">
-              <span className="material-icons">refresh</span>
+              <i className="material-icons">refresh</i>
             </button>
           </div>
           
@@ -262,7 +262,7 @@ const ParticipantManagementPage: React.FC = () => {
                             onClick={() => handleDeleteUpload(upload.id)}
                             disabled={loading}
                           >
-                            <span className="material-icons">delete</span>
+                            <i className="material-icons">delete</i>
                             Delete
                           </button>
                         </td>
@@ -273,7 +273,7 @@ const ParticipantManagementPage: React.FC = () => {
               </div>
             ) : (
               <div className="empty-state">
-                <span className="material-icons empty-icon">cloud_upload</span>
+                <i className="material-icons empty-icon">cloud_upload</i>
                 <p>No participant uploads found.</p>
                 <p>Use the upload panel above to add participants.</p>
               </div>
@@ -287,7 +287,7 @@ const ParticipantManagementPage: React.FC = () => {
             <div className="header-actions">
               <span className="participant-count">Total: {totalParticipants}</span>
               <button className="btn-link">
-                <span className="material-icons">refresh</span>
+                <i className="material-icons">refresh</i>
               </button>
             </div>
           </div>
@@ -327,7 +327,7 @@ const ParticipantManagementPage: React.FC = () => {
                     onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                     disabled={page === 1 || loading}
                   >
-                    <span className="material-icons">navigate_before</span>
+                    <i className="material-icons">navigate_before</i>
                     Previous
                   </button>
                   <span className="page-info">Page {page} of {Math.ceil(totalParticipants / limit)}</span>
@@ -337,13 +337,13 @@ const ParticipantManagementPage: React.FC = () => {
                     disabled={page >= Math.ceil(totalParticipants / limit) || loading}
                   >
                     Next
-                    <span className="material-icons">navigate_next</span>
+                    <i className="material-icons">navigate_next</i>
                   </button>
                 </div>
               </>
             ) : (
               <div className="empty-state">
-                <span className="material-icons empty-icon">people</span>
+                <i className="material-icons empty-icon">people</i>
                 <p>No MTN Mega Billion participants found.</p>
                 <p>Upload a CSV file to add participants to the promotion.</p>
               </div>

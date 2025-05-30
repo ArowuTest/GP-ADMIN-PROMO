@@ -65,8 +65,8 @@ apiClient.interceptors.request.use(
       // Create a new headers object to avoid modifying read-only properties
       config.headers = {
         ...config.headers,
-        // Use just the token without 'Bearer ' prefix to match backend expectations
-        'Authorization': token
+        // Add 'Bearer ' prefix to match standard backend expectations
+        'Authorization': `Bearer ${token}`
       } as any;
       
       // Debug logging
@@ -269,7 +269,7 @@ const getAuthHeaders = (): Record<string, string> => {
   
   if (token) {
     return {
-      'Authorization': token // Removed 'Bearer ' prefix to match backend expectations
+      'Authorization': `Bearer ${token}` // Added 'Bearer ' prefix to match standard backend expectations
     };
   }
   

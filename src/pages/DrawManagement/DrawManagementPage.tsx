@@ -50,6 +50,7 @@ const DrawManagementPage: React.FC = () => {
   const [executing, setExecuting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showAnimation, setShowAnimation] = useState<boolean>(false);
 
   // Check if user has permission to execute draws
   const canExecuteDraws = user?.role === 'SUPER_ADMIN';
@@ -96,17 +97,32 @@ const DrawManagementPage: React.FC = () => {
       setError(null);
       setSuccessMessage(null);
       
-      // Execute the draw
-      const result = await drawService.executeDraw(drawDate, selectedPrizeStructure, token);
+      // Show animation for 5 seconds
+      setShowAnimation(true);
       
-      // Update the draws list with the new draw
-      setDraws(prevDraws => [result, ...prevDraws]);
+      // Wait for animation to complete
+      setTimeout(async () => {
+        try {
+          // Execute the draw
+          const result = await drawService.executeDraw(drawDate, selectedPrizeStructure, token);
+          
+          // Update the draws list with the new draw
+          setDraws(prevDraws => [result, ...prevDraws]);
+          
+          setSuccessMessage(`MTN Mega Billion Draw executed successfully with ${result.winners?.length || 0} winners`);
+        } catch (err: any) {
+          console.error('Error executing draw:', err);
+          setError(`Failed to execute draw: ${err.message}`);
+        } finally {
+          setShowAnimation(false);
+          setExecuting(false);
+        }
+      }, 5000);
       
-      setSuccessMessage(`MTN Mega Billion Draw executed successfully with ${result.winners?.length || 0} winners`);
     } catch (err: any) {
       console.error('Error executing draw:', err);
       setError(`Failed to execute draw: ${err.message}`);
-    } finally {
+      setShowAnimation(false);
       setExecuting(false);
     }
   };
@@ -120,19 +136,31 @@ const DrawManagementPage: React.FC = () => {
       
       {error && (
         <div className="alert alert-danger">
-          <span className="material-icons">error</span>
+          <i className="material-icons">error</i>
           <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
         <div className="alert alert-success">
-          <span className="material-icons">check_circle</span>
+          <i className="material-icons">check_circle</i>
           <span>{successMessage}</span>
         </div>
       )}
       
       <div className="page-content">
+        {showAnimation && (
+          <div className="draw-animation-overlay">
+            <div className="draw-animation-container">
+              <div className="draw-animation">
+                <div className="draw-spinner"></div>
+                <h2>Executing MTN Mega Billion Draw</h2>
+                <p>Selecting winners from eligible participants...</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {canExecuteDraws && (
           <div className="card draw-execution-panel">
             <div className="card-header">
@@ -179,7 +207,7 @@ const DrawManagementPage: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span className="material-icons">shuffle</span>
+                    <i className="material-icons">shuffle</i>
                     <span>Execute MTN Mega Billion Draw</span>
                   </>
                 )}
@@ -192,7 +220,7 @@ const DrawManagementPage: React.FC = () => {
           <div className="card-header">
             <h2>Previous MTN Mega Billion Draws</h2>
             <button className="btn-link">
-              <span className="material-icons">refresh</span>
+              <i className="material-icons">refresh</i>
             </button>
           </div>
           
@@ -229,7 +257,7 @@ const DrawManagementPage: React.FC = () => {
                         <td>{draw.winners?.length || 0}</td>
                         <td>
                           <button className="btn btn-sm btn-outline-primary">
-                            <span className="material-icons">visibility</span>
+                            <i className="material-icons">visibility</i>
                             View Details
                           </button>
                         </td>
@@ -240,7 +268,7 @@ const DrawManagementPage: React.FC = () => {
               </div>
             ) : (
               <div className="empty-state">
-                <span className="material-icons empty-icon">event_busy</span>
+                <i className="material-icons empty-icon">event_busy</i>
                 <p>No MTN Mega Billion draws have been executed yet.</p>
                 {canExecuteDraws && (
                   <p>Use the panel above to execute your first draw.</p>

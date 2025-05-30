@@ -29,9 +29,9 @@ const Header: React.FC = () => {
           {user && (
             <div className="user-profile">
               <div className="user-avatar" onClick={toggleDropdown}>
-                <span className="material-icons">account_circle</span>
+                <i className="material-icons">account_circle</i>
                 <span className="user-name">{user.fullName || user.username}</span>
-                <span className="material-icons dropdown-icon">arrow_drop_down</span>
+                <i className="material-icons dropdown-icon">arrow_drop_down</i>
               </div>
               
               {showDropdown && (
@@ -44,19 +44,19 @@ const Header: React.FC = () => {
                   <ul className="dropdown-menu">
                     <li>
                       <button className="dropdown-item">
-                        <span className="material-icons">person</span>
+                        <i className="material-icons">person</i>
                         My Profile
                       </button>
                     </li>
                     <li>
                       <button className="dropdown-item">
-                        <span className="material-icons">settings</span>
+                        <i className="material-icons">settings</i>
                         Settings
                       </button>
                     </li>
                     <li>
                       <button className="dropdown-item" onClick={handleLogout}>
-                        <span className="material-icons">logout</span>
+                        <i className="material-icons">logout</i>
                         Logout
                       </button>
                     </li>

@@ -56,14 +56,14 @@ const PrizeStructurePage: React.FC = () => {
       
       {error && (
         <div className="alert alert-danger">
-          <span className="material-icons">error</span>
+          <i className="material-icons">error</i>
           <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
         <div className="alert alert-success">
-          <span className="material-icons">check_circle</span>
+          <i className="material-icons">check_circle</i>
           <span>{successMessage}</span>
         </div>
       )}
@@ -72,7 +72,7 @@ const PrizeStructurePage: React.FC = () => {
         {canManagePrizeStructures && (
           <div className="action-bar">
             <button className="btn btn-primary">
-              <span className="material-icons">add</span>
+              <i className="material-icons">add</i>
               Create New Prize Structure
             </button>
           </div>
@@ -117,7 +117,7 @@ const PrizeStructurePage: React.FC = () => {
                     
                     <div className="prize-tiers-section">
                       <h4 className="section-title">
-                        <span className="material-icons">card_giftcard</span>
+                        <i className="material-icons">card_giftcard</i>
                         Prize Tiers
                       </h4>
                       <div className="table-responsive">
@@ -150,11 +150,11 @@ const PrizeStructurePage: React.FC = () => {
                   {canManagePrizeStructures && (
                     <div className="card-footer">
                       <button className="btn btn-sm btn-outline-primary">
-                        <span className="material-icons">edit</span>
+                        <i className="material-icons">edit</i>
                         Edit
                       </button>
                       <button className="btn btn-sm btn-outline-danger">
-                        <span className="material-icons">delete</span>
+                        <i className="material-icons">delete</i>
                         Delete
                       </button>
                     </div>
@@ -164,7 +164,7 @@ const PrizeStructurePage: React.FC = () => {
             </div>
           ) : (
             <div className="empty-state">
-              <span className="material-icons empty-icon">card_giftcard</span>
+              <i className="material-icons empty-icon">card_giftcard</i>
               <p>No MTN Mega Billion prize structures found.</p>
               {canManagePrizeStructures && (
                 <p>Click the "Create New Prize Structure" button to add your first prize structure.</p>
