@@ -38,8 +38,8 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ loading = false }) => {
         const drawActivities: ActivityItem[] = draws.slice(0, 10).map(draw => ({
           id: draw.id,
           type: 'draw',
-          title: `Draw ${draw.id.substring(0, 8)}`,
-          description: `Draw executed with ${draw.winners?.length || 0} winners`,
+          title: `MTN Mega Billion Draw #${draw.id.substring(0, 6)}`,
+          description: `Draw executed with ${draw.winners?.length || 0} winners selected`,
           timestamp: new Date(draw.createdAt).toLocaleString(),
           status: draw.status
         }));
@@ -75,50 +75,84 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ loading = false }) => {
     }
   };
 
+  const getStatusIcon = (status?: string) => {
+    if (!status) return 'help';
+    
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+      case 'SUCCESS':
+        return 'check_circle';
+      case 'PENDING':
+      case 'IN_PROGRESS':
+        return 'pending';
+      case 'FAILED':
+      case 'ERROR':
+        return 'error';
+      default:
+        return 'help';
+    }
+  };
+
   return (
-    <div className="activity-feed">
-      <h2 className="activity-feed-title">Recent Activity</h2>
+    <div className="activity-feed card">
+      <div className="card-header">
+        <h3>MTN Mega Billion Activity</h3>
+        <button className="btn-link">
+          <span className="material-icons">refresh</span>
+        </button>
+      </div>
       
-      {error && (
-        <div className="activity-feed-error">
-          {error}
-        </div>
-      )}
-      
-      {localLoading ? (
-        <div className="activity-feed-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading activities...</p>
-        </div>
-      ) : activities.length > 0 ? (
-        <ul className="activity-list">
-          {activities.map((activity) => (
-            <li key={activity.id} className="activity-item">
-              <div className="activity-icon">
-                <span className="material-icons">
-                  {activity.type === 'draw' ? 'event' : 'notifications'}
-                </span>
-              </div>
-              <div className="activity-content">
-                <h3 className="activity-title">{activity.title}</h3>
-                <p className="activity-description">{activity.description}</p>
-                <div className="activity-meta">
-                  <span className="activity-time">{activity.timestamp}</span>
-                  {activity.status && (
-                    <span className={`activity-status ${getStatusClass(activity.status)}`}>
-                      {activity.status}
-                    </span>
-                  )}
+      <div className="card-body">
+        {error && (
+          <div className="error-message">
+            <span className="material-icons">error</span>
+            <span>{error}</span>
+          </div>
+        )}
+        
+        {localLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading activities...</p>
+          </div>
+        ) : activities.length > 0 ? (
+          <ul className="activity-list">
+            {activities.map((activity) => (
+              <li key={activity.id} className="activity-item">
+                <div className="activity-icon">
+                  <span className="material-icons">
+                    {activity.type === 'draw' ? 'shuffle' : 'notifications'}
+                  </span>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="activity-feed-empty">
-          <p>No recent activities found.</p>
-        </div>
-      )}
+                <div className="activity-content">
+                  <div className="activity-header">
+                    <h4 className="activity-title">{activity.title}</h4>
+                    {activity.status && (
+                      <span className={`activity-status ${getStatusClass(activity.status)}`}>
+                        <span className="material-icons status-icon">{getStatusIcon(activity.status)}</span>
+                        {activity.status}
+                      </span>
+                    )}
+                  </div>
+                  <p className="activity-description">{activity.description}</p>
+                  <div className="activity-meta">
+                    <span className="activity-time">
+                      <span className="material-icons">schedule</span>
+                      {activity.timestamp}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="empty-state">
+            <span className="material-icons empty-icon">event_busy</span>
+            <p>No recent MTN Mega Billion activities found.</p>
+            <button className="btn btn-primary">Refresh</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

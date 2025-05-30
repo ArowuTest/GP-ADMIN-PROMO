@@ -1,4 +1,4 @@
-// src/components/dashboard/QuickActionButton.tsx
+// src/components/dashboard/QuickActionsPanel/QuickActionButton.tsx
 import React from 'react';
 import './QuickActionButton.css';
 
@@ -7,17 +7,19 @@ interface QuickActionButtonProps {
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  color?: 'primary' | 'success' | 'warning' | 'info' | 'danger';
 }
 
 const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   icon,
   label,
   onClick,
-  disabled = false
+  disabled = false,
+  color = 'primary'
 }) => {
   return (
     <button 
-      className="quick-action-button" 
+      className={`quick-action-button quick-action-${color}`} 
       onClick={onClick}
       disabled={disabled}
     >

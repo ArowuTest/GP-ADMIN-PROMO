@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { UserResponse } from '../types/api';
@@ -15,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
   hasRole: (role: UserRole | UserRole[]) => boolean;
+  refreshToken: () => Promise<boolean>;
 }
 
 // Create the context with a default value
@@ -26,7 +27,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: () => {},
   hasPermission: () => false,
-  hasRole: () => false
+  hasRole: () => false,
+  refreshToken: async () => false
 });
 
 // Custom hook to use the auth context
@@ -43,6 +45,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Logout function - defined with useCallback to avoid dependency issues
+  const logout = useCallback(() => {
+    console.log('[AUTH_CONTEXT] Logging out');
+    authService.logout();
+    setUser(null);
+    setToken(null);
+    navigate('/login');
+  }, [navigate]);
+
   // Check authentication state on mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -53,18 +64,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Get current user from auth manager
           const currentUser = authService.getCurrentUser();
           const currentToken = authService.getToken();
-          setUser(currentUser);
-          setToken(currentToken);
+          
+          if (currentUser && currentToken) {
+            setUser(currentUser);
+            setToken(currentToken);
+            console.log('[AUTH_CONTEXT] User authenticated:', currentUser.username);
+          } else {
+            console.warn('[AUTH_CONTEXT] Auth state check: Missing user or token');
+            // Force logout if we have inconsistent state
+            authService.logout();
+          }
+        } else {
+          console.log('[AUTH_CONTEXT] User not authenticated');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('[AUTH_CONTEXT] Auth check error:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
     checkAuth();
-  }, []);
+    
+    // Listen for auth error events
+    const handleAuthError = () => {
+      console.log('[AUTH_CONTEXT] Auth error event received, attempting token refresh');
+      refreshToken().catch(() => {
+        console.log('[AUTH_CONTEXT] Token refresh failed, logging out');
+        logout();
+      });
+    };
+    
+    window.addEventListener('auth-error', handleAuthError);
+    
+    // Listen for logout events
+    const handleLogout = () => {
+      console.log('[AUTH_CONTEXT] Logout event received');
+      setUser(null);
+      setToken(null);
+    };
+    
+    window.addEventListener('auth-logout', handleLogout);
+    
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('auth-error', handleAuthError);
+      window.removeEventListener('auth-logout', handleLogout);
+    };
+  }, [logout]); // Added logout to dependency array to fix ESLint warning
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -72,22 +119,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       const response = await authService.login({ username: email, password });
-      setUser(response.user);
-      setToken(response.token);
+      
+      if (response && response.token && response.user) {
+        setUser(response.user);
+        setToken(response.token);
+        console.log('[AUTH_CONTEXT] Login successful:', response.user.username);
+      } else {
+        throw new Error('Invalid login response');
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AUTH_CONTEXT] Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logout function
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-    setToken(null);
-    navigate('/login');
+  // Refresh token function
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const refreshed = await authService.refreshTokenIfNeeded();
+      
+      if (refreshed) {
+        // Update token in state
+        const newToken = authService.getToken();
+        if (newToken) {
+          setToken(newToken);
+          console.log('[AUTH_CONTEXT] Token refreshed successfully');
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('[AUTH_CONTEXT] Token refresh error:', error);
+      return false;
+    }
   };
 
   // Check if user has a specific permission
@@ -101,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Compute authentication state
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user && !!token;
 
   // Context value
   const value = {
@@ -112,7 +179,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     hasPermission,
-    hasRole
+    hasRole,
+    refreshToken
   };
 
   return (

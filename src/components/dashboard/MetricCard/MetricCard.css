@@ -1,4 +1,4 @@
-/* src/components/dashboard/MetricCard.css */
+/* src/components/dashboard/MetricCard/MetricCard.css */
 .metric-card {
   background-color: #ffffff;
   border-radius: 8px;
@@ -6,7 +6,10 @@
   padding: 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .metric-card:hover {
@@ -14,61 +17,126 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.metric-icon {
-  background-color: rgba(52, 152, 219, 0.1);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--mtn-yellow);
 }
 
-.metric-icon .material-icons {
-  color: #3498db;
-  font-size: 24px;
+.metric-card-primary::before {
+  background-color: var(--mtn-yellow);
 }
 
-.metric-content {
+.metric-card-success::before {
+  background-color: var(--mtn-success);
+}
+
+.metric-card-warning::before {
+  background-color: var(--mtn-warning);
+}
+
+.metric-card-info::before {
+  background-color: var(--mtn-info);
+}
+
+.metric-card-danger::before {
+  background-color: var(--mtn-danger);
+}
+
+.metric-card-content {
   flex: 1;
 }
 
-.metric-title {
-  margin: 0 0 4px 0;
+.metric-card-title {
+  margin: 0 0 8px 0;
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: #666666;
   font-weight: 500;
 }
 
-.metric-value {
+.metric-card-value {
   font-size: 1.8rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 4px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
 }
 
-.metric-trend {
+.metric-card-icon {
   display: flex;
   align-items: center;
-  font-size: 0.8rem;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  margin-left: 16px;
 }
 
-.metric-trend.up {
-  color: #2ecc71;
+.metric-card-primary .metric-card-icon {
+  background-color: rgba(255, 204, 0, 0.15);
 }
 
-.metric-trend.down {
-  color: #e74c3c;
+.metric-card-success .metric-card-icon {
+  background-color: rgba(40, 167, 69, 0.15);
 }
 
-.metric-trend.same {
-  color: #7f8c8d;
+.metric-card-warning .metric-card-icon {
+  background-color: rgba(255, 193, 7, 0.15);
 }
 
-.metric-trend .material-icons {
-  font-size: 16px;
-  margin-right: 4px;
+.metric-card-info .metric-card-icon {
+  background-color: rgba(23, 162, 184, 0.15);
+}
+
+.metric-card-danger .metric-card-icon {
+  background-color: rgba(220, 53, 69, 0.15);
+}
+
+.metric-card-primary .metric-card-icon .material-icons {
+  color: var(--mtn-yellow);
+}
+
+.metric-card-success .metric-card-icon .material-icons {
+  color: var(--mtn-success);
+}
+
+.metric-card-warning .metric-card-icon .material-icons {
+  color: var(--mtn-warning);
+}
+
+.metric-card-info .metric-card-icon .material-icons {
+  color: var(--mtn-info);
+}
+
+.metric-card-danger .metric-card-icon .material-icons {
+  color: var(--mtn-danger);
+}
+
+.metric-card-loading {
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.loading-pulse {
+  width: 60px;
+  height: 24px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: pulse 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @media (max-width: 768px) {
@@ -76,12 +144,12 @@
     padding: 16px;
   }
   
-  .metric-icon {
-    width: 40px;
-    height: 40px;
+  .metric-card-value {
+    font-size: 1.5rem;
   }
   
-  .metric-value {
-    font-size: 1.5rem;
+  .metric-card-icon {
+    width: 40px;
+    height: 40px;
   }
 }

@@ -1,10 +1,10 @@
-/* src/pages/NotFoundPage.css */
+/* src/pages/NotFound/NotFoundPage.css */
 .not-found-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: #f8f9fa;
   padding: 20px;
 }
 
@@ -24,39 +24,40 @@
 
 .not-found-icon .material-icons {
   font-size: 64px;
-  color: #e74c3c;
+  color: var(--mtn-danger);
 }
 
 .not-found-content h1 {
   font-size: 4rem;
-  color: #2c3e50;
+  color: var(--mtn-dark-gray);
   margin: 0 0 16px 0;
 }
 
 .not-found-content h2 {
   font-size: 1.5rem;
-  color: #2c3e50;
+  color: var(--mtn-dark-gray);
   margin: 0 0 16px 0;
 }
 
 .not-found-content p {
-  color: #7f8c8d;
+  color: #666;
   margin-bottom: 24px;
 }
 
 .back-button {
   display: inline-flex;
   align-items: center;
-  background-color: #3498db;
-  color: white;
+  background-color: var(--mtn-yellow);
+  color: #000;
   text-decoration: none;
   padding: 12px 20px;
   border-radius: 6px;
+  font-weight: 500;
   transition: background-color 0.2s ease;
 }
 
 .back-button:hover {
-  background-color: #2980b9;
+  background-color: #e6b800;
 }
 
 .back-button .material-icons {

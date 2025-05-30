@@ -1,40 +1,78 @@
-/* src/components/dashboard/QuickActionButton.css */
+/* src/components/dashboard/QuickActionsPanel/QuickActionButton.css */
 .quick-action-button {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background-color: white;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 8px;
-  padding: 16px;
-  min-width: 120px;
+  padding: 20px;
   transition: all 0.2s ease;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
 .quick-action-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: #3498db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .quick-action-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.quick-action-primary {
+  background-color: rgba(255, 204, 0, 0.1);
+}
+
+.quick-action-success {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.quick-action-warning {
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.quick-action-info {
+  background-color: rgba(23, 162, 184, 0.1);
+}
+
+.quick-action-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.quick-action-primary .material-icons {
+  color: var(--mtn-yellow);
+}
+
+.quick-action-success .material-icons {
+  color: var(--mtn-success);
+}
+
+.quick-action-warning .material-icons {
+  color: var(--mtn-warning);
+}
+
+.quick-action-info .material-icons {
+  color: var(--mtn-info);
+}
+
+.quick-action-danger .material-icons {
+  color: var(--mtn-danger);
 }
 
 .quick-action-button .material-icons {
-  font-size: 24px;
-  color: #3498db;
-  margin-bottom: 8px;
+  font-size: 28px;
+  margin-bottom: 12px;
 }
 
 .quick-action-label {
   font-size: 0.9rem;
-  font-weight: 500;
-  color: #2c3e50;
+  font-weight: 600;
+  color: var(--mtn-dark-gray);
   text-align: center;
 }
 
@@ -47,15 +85,14 @@
 
 @media (max-width: 768px) {
   .quick-action-button {
-    min-width: 100px;
-    padding: 12px;
+    padding: 16px;
   }
   
   .quick-action-button .material-icons {
-    font-size: 20px;
+    font-size: 24px;
   }
   
   .quick-action-label {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 }

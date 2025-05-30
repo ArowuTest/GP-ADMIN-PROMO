@@ -47,9 +47,29 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
     }
   };
 
+  const getStatusIcon = () => {
+    switch (status.toLowerCase()) {
+      case 'operational':
+      case 'active':
+      case 'success':
+      case 'completed':
+        return 'check_circle';
+      case 'warning':
+      case 'pending':
+      case 'in_progress':
+        return 'pending';
+      case 'error':
+      case 'failed':
+      case 'down':
+        return 'error';
+      default:
+        return 'help';
+    }
+  };
+
   return (
     <div className={`status-indicator ${getStatusClass()}`}>
-      <div className="status-dot"></div>
+      <span className="material-icons status-icon">{getStatusIcon()}</span>
       <span className="status-text">{getStatusText()}</span>
     </div>
   );

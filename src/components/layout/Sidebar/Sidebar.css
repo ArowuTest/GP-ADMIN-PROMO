@@ -1,14 +1,37 @@
-/* src/components/layout/Sidebar.css */
+/* src/components/layout/Sidebar/Sidebar.css */
 .app-sidebar {
-  width: 250px;
-  background-color: #ffffff;
-  box-shadow: 1px 0 5px rgba(0, 0, 0, 0.05);
+  width: 280px;
+  background-color: #ffcc00; /* MTN Yellow */
   height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header .mtn-logo {
+  height: 60px;
+  margin-bottom: 16px;
+}
+
+.sidebar-header h3 {
+  color: #000000;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
 }
 
 .sidebar-nav {
-  padding: 16px 0;
+  padding: 24px 0;
+  flex-grow: 1;
 }
 
 .sidebar-nav ul {
@@ -18,52 +41,75 @@
 }
 
 .sidebar-nav li {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
-  color: #5a6474;
+  padding: 14px 24px;
+  color: #000000;
   text-decoration: none;
   transition: all 0.2s ease;
-  border-left: 3px solid transparent;
-}
-
-.nav-link:hover {
-  background-color: rgba(44, 62, 80, 0.05);
-  color: #2c3e50;
-}
-
-.nav-link.active {
-  background-color: rgba(44, 62, 80, 0.1);
-  color: #2c3e50;
-  border-left: 3px solid #3498db;
+  border-left: 4px solid transparent;
   font-weight: 500;
 }
 
+.nav-link:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.nav-link.active {
+  background-color: #000000;
+  color: #ffcc00;
+  border-left: 4px solid #ffffff;
+}
+
 .material-icons {
-  margin-right: 12px;
-  font-size: 20px;
+  margin-right: 16px;
+  font-size: 22px;
 }
 
 .nav-label {
-  font-size: 0.9rem;
+  font-size: 1rem;
+}
+
+.sidebar-footer {
+  padding: 20px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.sidebar-footer p {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  color: #000000;
+}
+
+.sidebar-footer small {
+  color: rgba(0, 0, 0, 0.7);
 }
 
 @media (max-width: 768px) {
   .app-sidebar {
     width: 100%;
     height: auto;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   }
   
   .sidebar-nav {
-    padding: 8px 0;
+    padding: 12px 0;
   }
   
   .nav-link {
-    padding: 10px 16px;
+    padding: 12px 16px;
+  }
+  
+  .sidebar-header {
+    padding: 16px;
+  }
+  
+  .sidebar-header .mtn-logo {
+    height: 40px;
+    margin-bottom: 8px;
   }
 }

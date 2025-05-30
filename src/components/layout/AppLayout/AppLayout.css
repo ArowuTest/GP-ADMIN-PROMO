@@ -1,9 +1,9 @@
-/* src/components/layout/AppLayout.css */
+/* src/components/layout/AppLayout/AppLayout.css */
 .app-layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: #f8f8f8;
   color: #333;
   font-family: 'Roboto', 'Segoe UI', sans-serif;
 }
@@ -11,16 +11,99 @@
 .app-container {
   display: flex;
   flex: 1;
+  height: calc(100vh - 70px);
 }
 
 .app-content {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  background-color: #ffffff;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+/* MTN Brand Colors */
+:root {
+  --mtn-yellow: #ffcc00;
+  --mtn-black: #000000;
+  --mtn-gray: #f2f2f2;
+  --mtn-dark-gray: #333333;
+  --mtn-light-gray: #f8f8f8;
+  --mtn-success: #28a745;
+  --mtn-danger: #dc3545;
+  --mtn-warning: #ffc107;
+  --mtn-info: #17a2b8;
+}
+
+/* Global styles for consistent branding */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--mtn-dark-gray);
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 16px 20px;
+  background-color: var(--mtn-light-gray);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--mtn-yellow);
+  color: var(--mtn-black);
+}
+
+.btn-primary:hover {
+  background-color: #e6b800;
+}
+
+.btn-secondary {
+  background-color: var(--mtn-black);
+  color: var(--mtn-yellow);
+}
+
+.btn-secondary:hover {
+  background-color: #333333;
+}
+
+.btn .material-icons {
+  margin-right: 8px;
+  font-size: 18px;
 }
 
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
+    height: auto;
+  }
+  
+  .app-content {
+    padding: 16px;
   }
 }

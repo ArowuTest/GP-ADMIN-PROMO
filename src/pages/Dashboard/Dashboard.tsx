@@ -5,6 +5,7 @@ import MetricCard from '../../components/dashboard/MetricCard/MetricCard';
 import ActivityFeed from '../../components/dashboard/ActivityFeed/ActivityFeed';
 import RecentActivityPanel from '../../components/dashboard/RecentActivityPanel/RecentActivityPanel';
 import SystemStatusPanel from '../../components/dashboard/SystemStatusPanel/SystemStatusPanel';
+import QuickActionsPanel from '../../components/dashboard/QuickActionsPanel/QuickActionsPanel';
 import { drawService } from '../../services/drawService';
 import { participantService } from '../../services/participantService';
 import './Dashboard.css';
@@ -19,7 +20,7 @@ interface DashboardMetrics {
 }
 
 const Dashboard: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,49 +72,64 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, [token]);
 
+  // Check if user can execute draws
+  const canExecuteDraws = user?.role === 'SUPER_ADMIN';
+
   return (
     <div className="dashboard-container">
-      <h1 className="dashboard-title">MTN Mega Billion Promo Dashboard</h1>
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">MTN Mega Billion Dashboard</h1>
+        <div className="dashboard-date">
+          <span className="material-icons">today</span>
+          <span>{new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        </div>
+      </div>
       
       {error && (
-        <div className="error-message">
-          {error}
+        <div className="error-alert">
+          <span className="material-icons">error</span>
+          <span>{error}</span>
         </div>
       )}
       
-      <div className="metrics-container">
+      <div className="metrics-grid">
         <MetricCard 
           title="Total Draws" 
           value={metrics?.totalDraws || 0} 
           icon="event" 
           loading={loading} 
+          color="primary"
         />
         <MetricCard 
           title="Active Draws" 
           value={metrics?.activeDraws || 0} 
           icon="event_available" 
           loading={loading} 
+          color="success"
         />
         <MetricCard 
           title="Total Participants" 
           value={metrics?.totalParticipants || 0} 
           icon="people" 
           loading={loading} 
+          color="info"
         />
         <MetricCard 
           title="Total Winners" 
           value={metrics?.totalWinners || 0} 
           icon="emoji_events" 
           loading={loading} 
+          color="warning"
         />
       </div>
       
       <div className="dashboard-panels">
-        <div className="panel-left">
+        <div className="panel-column main-column">
           <SystemStatusPanel status={metrics?.systemStatus || 'loading'} loading={loading} />
           <RecentActivityPanel loading={loading} />
         </div>
-        <div className="panel-right">
+        <div className="panel-column side-column">
+          {canExecuteDraws && <QuickActionsPanel />}
           <ActivityFeed loading={loading} />
         </div>
       </div>

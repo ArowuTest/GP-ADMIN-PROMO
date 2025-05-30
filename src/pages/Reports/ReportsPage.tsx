@@ -84,7 +84,7 @@ const ReportsPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `winners-report-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `mtn-mega-billion-winners-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -92,102 +92,125 @@ const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="reports-page">
-      <h1>Reports</h1>
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">MTN Mega Billion Reports</h1>
+        <p className="page-description">View and export reports for the MTN Mega Billion promotion</p>
+      </div>
       
       {error && (
-        <div className="error-message">
-          {error}
+        <div className="alert alert-danger">
+          <span className="material-icons">error</span>
+          <span>{error}</span>
         </div>
       )}
       
-      <div className="winners-report-panel">
-        <h2>Winners Report</h2>
-        
-        <div className="report-controls">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Search by MSISDN or prize..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <div className="page-content">
+        <div className="card winners-report-card">
+          <div className="card-header">
+            <h2>
+              <span className="material-icons">emoji_events</span>
+              Winners Report
+            </h2>
+            
+            <div className="header-actions">
+              <button 
+                className="btn btn-sm btn-outline-primary"
+                onClick={handleExportCSV}
+                disabled={loading || filteredWinners.length === 0}
+              >
+                <span className="material-icons">download</span>
+                Export CSV
+              </button>
+            </div>
           </div>
           
-          <div className="filter-dropdown">
-            <label htmlFor="status-filter">Status:</label>
-            <select
-              id="status-filter"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="claimed">Claimed</option>
-              <option value="forfeited">Forfeited</option>
-            </select>
+          <div className="card-body">
+            <div className="filter-controls">
+              <div className="search-control">
+                <span className="material-icons search-icon">search</span>
+                <input
+                  type="text"
+                  className="form-control search-input"
+                  placeholder="Search by MSISDN or prize..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <div className="filter-control">
+                <label htmlFor="status-filter">Status:</label>
+                <select
+                  id="status-filter"
+                  className="form-control"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="claimed">Claimed</option>
+                  <option value="forfeited">Forfeited</option>
+                </select>
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading winners data...</p>
+              </div>
+            ) : filteredWinners.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table winners-table">
+                  <thead>
+                    <tr>
+                      <th>MSISDN</th>
+                      <th>Prize</th>
+                      <th>Value</th>
+                      <th>Draw Date</th>
+                      <th>Status</th>
+                      <th>Payment Status</th>
+                      <th>Runner-up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredWinners.map(winner => (
+                      <tr key={winner.id}>
+                        <td>{formatMSISDN(winner.msisdn)}</td>
+                        <td>{winner.prizeTierName}</td>
+                        <td>{winner.prizeValue}</td>
+                        <td>{new Date(winner.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <span className={`status-badge status-${winner.status.toLowerCase()}`}>
+                            {winner.status}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge status-${winner.paymentStatus.toLowerCase()}`}>
+                            {winner.paymentStatus}
+                          </span>
+                        </td>
+                        <td>
+                          {winner.isRunnerUp ? (
+                            <span className="status-badge status-success">Yes</span>
+                          ) : (
+                            <span className="status-badge status-neutral">No</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <span className="material-icons empty-icon">search_off</span>
+                <p>No winners found matching the current filters.</p>
+                <p>Try adjusting your search criteria or check back later.</p>
+              </div>
+            )}
           </div>
-          
-          <button 
-            className="export-button"
-            onClick={handleExportCSV}
-            disabled={loading || filteredWinners.length === 0}
-          >
-            Export CSV
-          </button>
         </div>
-        
-        {loading ? (
-          <div className="loading-indicator">
-            <div className="loading-spinner"></div>
-            <p>Loading winners data...</p>
-          </div>
-        ) : filteredWinners.length > 0 ? (
-          <table className="winners-table">
-            <thead>
-              <tr>
-                <th>MSISDN</th>
-                <th>Prize</th>
-                <th>Value</th>
-                <th>Draw Date</th>
-                <th>Status</th>
-                <th>Payment Status</th>
-                <th>Runner-up</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredWinners.map(winner => (
-                <tr key={winner.id}>
-                  <td>{formatMSISDN(winner.msisdn)}</td>
-                  <td>{winner.prizeTierName}</td>
-                  <td>{winner.prizeValue}</td>
-                  <td>{new Date(winner.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <span className={`status-badge status-${winner.status.toLowerCase()}`}>
-                      {winner.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${winner.paymentStatus.toLowerCase()}`}>
-                      {winner.paymentStatus}
-                    </span>
-                  </td>
-                  <td>
-                    {winner.isRunnerUp ? (
-                      <span className="runner-up-badge">Yes</span>
-                    ) : (
-                      <span>No</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="no-winners-message">
-            <p>No winners found matching the current filters.</p>
-          </div>
-        )}
       </div>
     </div>
   );

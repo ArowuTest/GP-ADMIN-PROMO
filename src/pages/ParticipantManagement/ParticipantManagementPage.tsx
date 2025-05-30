@@ -25,7 +25,7 @@ interface UploadAudit {
 }
 
 const ParticipantManagementPage: React.FC = () => {
-  const { token } = useAuth(); // Removed unused 'user' variable
+  const { token } = useAuth();
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [uploads, setUploads] = useState<UploadAudit[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -144,149 +144,212 @@ const ParticipantManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="participant-management-page">
-      <h1>Participant Management</h1>
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">MTN Mega Billion Participant Management</h1>
+        <p className="page-description">Upload and manage participants for the MTN Mega Billion promotion</p>
+      </div>
       
       {error && (
-        <div className="error-message">
-          {error}
+        <div className="alert alert-danger">
+          <span className="material-icons">error</span>
+          <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
-        <div className="success-message">
-          {successMessage}
+        <div className="alert alert-success">
+          <span className="material-icons">check_circle</span>
+          <span>{successMessage}</span>
         </div>
       )}
       
-      <div className="upload-panel">
-        <h2>Upload Participants</h2>
-        <p>Upload a CSV file with participant data. The file should have the following columns: MSISDN, Points</p>
-        
-        <div className="upload-form">
-          <div className="form-group">
-            <label htmlFor="file-upload">Select CSV File:</label>
-            <input 
-              type="file" 
-              id="file-upload" 
-              accept=".csv" 
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
+      <div className="page-content">
+        <div className="card upload-panel">
+          <div className="card-header">
+            <h2>Upload MTN Mega Billion Participants</h2>
           </div>
-          
-          <button 
-            className="upload-button"
-            onClick={handleUpload}
-            disabled={!selectedFile || uploading}
-          >
-            {uploading ? 'Uploading...' : 'Upload'}
-          </button>
-        </div>
-      </div>
-      
-      <div className="uploads-panel">
-        <h2>Upload History</h2>
-        
-        {loading ? (
-          <div className="loading-indicator">
-            <div className="loading-spinner"></div>
-            <p>Loading upload history...</p>
-          </div>
-        ) : uploads.length > 0 ? (
-          <table className="uploads-table">
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>Uploaded By</th>
-                <th>Date</th>
-                <th>Records</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploads.map(upload => (
-                <tr key={upload.id}>
-                  <td>{upload.fileName}</td>
-                  <td>{upload.userName}</td>
-                  <td>{new Date(upload.createdAt).toLocaleString()}</td>
-                  <td>{upload.recordCount}</td>
-                  <td>
-                    <span className={`status-badge status-${upload.status.toLowerCase()}`}>
-                      {upload.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="delete-button"
-                      onClick={() => handleDeleteUpload(upload.id)}
-                      disabled={loading}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="no-uploads-message">
-            <p>No uploads found.</p>
-          </div>
-        )}
-      </div>
-      
-      <div className="participants-panel">
-        <h2>Participants List</h2>
-        
-        {loading ? (
-          <div className="loading-indicator">
-            <div className="loading-spinner"></div>
-            <p>Loading participants...</p>
-          </div>
-        ) : participants.length > 0 ? (
-          <>
-            <table className="participants-table">
-              <thead>
-                <tr>
-                  <th>MSISDN</th>
-                  <th>Points</th>
-                  <th>Date Added</th>
-                </tr>
-              </thead>
-              <tbody>
-                {participants.map(participant => (
-                  <tr key={participant.id}>
-                    <td>{formatMSISDN(participant.msisdn)}</td>
-                    <td>{participant.points}</td>
-                    <td>{new Date(participant.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="card-body">
+            <p className="upload-instructions">
+              Upload a CSV file with participant data. The file should have the following columns:
+            </p>
+            <div className="csv-format">
+              <code>MSISDN,Points</code>
+              <p className="format-example">Example: 2347012345678,50</p>
+            </div>
             
-            <div className="pagination">
+            <div className="upload-form">
+              <div className="form-group">
+                <label htmlFor="file-upload">Select CSV File:</label>
+                <div className="file-input-container">
+                  <input 
+                    type="file" 
+                    id="file-upload" 
+                    className="form-control"
+                    accept=".csv" 
+                    onChange={handleFileChange}
+                    disabled={uploading}
+                  />
+                  <span className="selected-file">
+                    {selectedFile ? selectedFile.name : 'No file selected'}
+                  </span>
+                </div>
+              </div>
+              
               <button 
-                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                disabled={page === 1 || loading}
+                className="btn btn-primary"
+                onClick={handleUpload}
+                disabled={!selectedFile || uploading}
               >
-                Previous
-              </button>
-              <span>Page {page} of {Math.ceil(totalParticipants / limit)}</span>
-              <button 
-                onClick={() => setPage(prev => prev + 1)}
-                disabled={page >= Math.ceil(totalParticipants / limit) || loading}
-              >
-                Next
+                {uploading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-icons">cloud_upload</span>
+                    <span>Upload Participants</span>
+                  </>
+                )}
               </button>
             </div>
-          </>
-        ) : (
-          <div className="no-participants-message">
-            <p>No participants found.</p>
           </div>
-        )}
+        </div>
+        
+        <div className="card uploads-panel">
+          <div className="card-header">
+            <h2>Upload History</h2>
+            <button className="btn-link">
+              <span className="material-icons">refresh</span>
+            </button>
+          </div>
+          
+          <div className="card-body">
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading upload history...</p>
+              </div>
+            ) : uploads.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table uploads-table">
+                  <thead>
+                    <tr>
+                      <th>File Name</th>
+                      <th>Uploaded By</th>
+                      <th>Date</th>
+                      <th>Records</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {uploads.map(upload => (
+                      <tr key={upload.id}>
+                        <td>{upload.fileName}</td>
+                        <td>{upload.userName}</td>
+                        <td>{new Date(upload.createdAt).toLocaleString()}</td>
+                        <td>{upload.recordCount}</td>
+                        <td>
+                          <span className={`status-badge status-${upload.status.toLowerCase()}`}>
+                            {upload.status}
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleDeleteUpload(upload.id)}
+                            disabled={loading}
+                          >
+                            <span className="material-icons">delete</span>
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <span className="material-icons empty-icon">cloud_upload</span>
+                <p>No participant uploads found.</p>
+                <p>Use the upload panel above to add participants.</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="card participants-panel">
+          <div className="card-header">
+            <h2>MTN Mega Billion Participants</h2>
+            <div className="header-actions">
+              <span className="participant-count">Total: {totalParticipants}</span>
+              <button className="btn-link">
+                <span className="material-icons">refresh</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="card-body">
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading participants...</p>
+              </div>
+            ) : participants.length > 0 ? (
+              <>
+                <div className="table-responsive">
+                  <table className="table participants-table">
+                    <thead>
+                      <tr>
+                        <th>MSISDN</th>
+                        <th>Points</th>
+                        <th>Date Added</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {participants.map(participant => (
+                        <tr key={participant.id}>
+                          <td>{formatMSISDN(participant.msisdn)}</td>
+                          <td>{participant.points}</td>
+                          <td>{new Date(participant.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="pagination">
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                    disabled={page === 1 || loading}
+                  >
+                    <span className="material-icons">navigate_before</span>
+                    Previous
+                  </button>
+                  <span className="page-info">Page {page} of {Math.ceil(totalParticipants / limit)}</span>
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setPage(prev => prev + 1)}
+                    disabled={page >= Math.ceil(totalParticipants / limit) || loading}
+                  >
+                    Next
+                    <span className="material-icons">navigate_next</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">
+                <span className="material-icons empty-icon">people</span>
+                <p>No MTN Mega Billion participants found.</p>
+                <p>Upload a CSV file to add participants to the promotion.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

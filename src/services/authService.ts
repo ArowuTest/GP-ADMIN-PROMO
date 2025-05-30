@@ -32,7 +32,18 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
       authManager.storeUser(response.user);
       if (response.expiry) {
         authManager.storeTokenExpiry(response.expiry);
+      } else {
+        // If no expiry provided, set default expiry to 24 hours from now
+        const defaultExpiry = new Date();
+        defaultExpiry.setHours(defaultExpiry.getHours() + 24);
+        authManager.storeTokenExpiry(defaultExpiry.toISOString());
       }
+      if (response.refreshToken) {
+        authManager.storeRefreshToken(response.refreshToken);
+      }
+    } else {
+      console.error('[AUTH_SERVICE] Login response missing token');
+      throw new Error('Invalid login response: missing token');
     }
     
     return response;
@@ -49,7 +60,7 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
 // Check if token needs refresh (within 5 minutes of expiry)
 const needsTokenRefresh = (): boolean => {
   const expiryTime = authManager.getTokenExpiry();
-  if (!expiryTime) return false;
+  if (!expiryTime) return true;
   
   try {
     const expiryDate = new Date(expiryTime);
@@ -60,35 +71,74 @@ const needsTokenRefresh = (): boolean => {
     return expiryDate.getTime() - now.getTime() < fiveMinutes;
   } catch (error) {
     console.error('[AUTH_SERVICE] Error checking token refresh:', error);
-    return false;
+    return true;
   }
 };
 
 // Refresh token if needed
 const refreshTokenIfNeeded = async (): Promise<boolean> => {
-  if (needsTokenRefresh()) {
-    try {
-      const refreshToken = authManager.getRefreshToken();
-      if (!refreshToken) return false;
-      
-      const response = await enhancedApiClient.post<LoginResponse>('/auth/refresh', { refreshToken });
-      
-      if (response.token) {
-        authManager.storeToken(response.token);
-        if (response.expiry) {
-          authManager.storeTokenExpiry(response.expiry);
-        }
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('[AUTH_SERVICE] Token refresh error:', error);
-      authManager.clearAuthData(); // Clear invalid auth data
-      return false;
-    }
+  if (!needsTokenRefresh()) {
+    // Token is still valid, no need to refresh
+    return true;
   }
   
-  return true;
+  try {
+    // For now, we'll implement a workaround since the backend refresh endpoint
+    // may not be fully implemented yet
+    
+    // Option 1: Try to use the refresh token if available
+    const refreshToken = authManager.getRefreshToken();
+    if (refreshToken) {
+      try {
+        console.log('[AUTH_SERVICE] Attempting to refresh token');
+        const response = await enhancedApiClient.post<LoginResponse>('/auth/refresh', { refreshToken });
+        
+        if (response && response.token) {
+          authManager.storeToken(response.token);
+          if (response.expiry) {
+            authManager.storeTokenExpiry(response.expiry);
+          } else {
+            // If no expiry provided, set default expiry to 24 hours from now
+            const defaultExpiry = new Date();
+            defaultExpiry.setHours(defaultExpiry.getHours() + 24);
+            authManager.storeTokenExpiry(defaultExpiry.toISOString());
+          }
+          if (response.refreshToken) {
+            authManager.storeRefreshToken(response.refreshToken);
+          }
+          console.log('[AUTH_SERVICE] Token refreshed successfully');
+          return true;
+        }
+      } catch (error) {
+        console.warn('[AUTH_SERVICE] Token refresh failed, will try re-login:', error);
+      }
+    }
+    
+    // Option 2: If refresh token is not available or refresh failed,
+    // try to re-login with stored credentials if available
+    const storedCredentials = authManager.getStoredCredentials();
+    if (storedCredentials) {
+      try {
+        console.log('[AUTH_SERVICE] Attempting re-login with stored credentials');
+        const response = await login(storedCredentials);
+        if (response && response.token) {
+          console.log('[AUTH_SERVICE] Re-login successful');
+          return true;
+        }
+      } catch (error) {
+        console.error('[AUTH_SERVICE] Re-login failed:', error);
+      }
+    }
+    
+    // If all refresh attempts fail, clear auth data and return false
+    console.error('[AUTH_SERVICE] All token refresh attempts failed');
+    authManager.clearAuthData();
+    return false;
+  } catch (error) {
+    console.error('[AUTH_SERVICE] Token refresh error:', error);
+    authManager.clearAuthData();
+    return false;
+  }
 };
 
 // Check authentication state

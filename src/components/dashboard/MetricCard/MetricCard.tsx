@@ -7,17 +7,21 @@ interface MetricCardProps {
   value: number | string;
   icon: string;
   loading?: boolean;
+  color?: 'primary' | 'success' | 'warning' | 'info' | 'danger';
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, loading = false }) => {
+const MetricCard: React.FC<MetricCardProps> = ({ 
+  title, 
+  value, 
+  icon, 
+  loading = false,
+  color = 'primary'
+}) => {
   // Format large numbers with commas
   const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
   
   return (
-    <div className="metric-card">
-      <div className="metric-card-icon">
-        <span className="material-icons">{icon}</span>
-      </div>
+    <div className={`metric-card metric-card-${color}`}>
       <div className="metric-card-content">
         <h3 className="metric-card-title">{title}</h3>
         {loading ? (
@@ -27,6 +31,9 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, loading = f
         ) : (
           <p className="metric-card-value">{formattedValue}</p>
         )}
+      </div>
+      <div className="metric-card-icon">
+        <span className="material-icons">{icon}</span>
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
-// src/pages/LoginPage.tsx
+// src/pages/Login/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './LoginPage.css';
+import { authManager } from '../../services/authManager';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -32,6 +34,11 @@ const LoginPage: React.FC = () => {
       
       // Call login function from auth context
       await login(email, password);
+      
+      // Store credentials if remember me is checked
+      if (rememberMe) {
+        authManager.storeCredentials({ username: email, password });
+      }
       
       // Redirect to dashboard on successful login
       navigate('/dashboard');
@@ -76,6 +83,17 @@ const LoginPage: React.FC = () => {
               placeholder="Enter your password"
               disabled={loading}
             />
+          </div>
+          
+          <div className="form-group checkbox-group">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={loading}
+            />
+            <label htmlFor="rememberMe">Remember me</label>
           </div>
           
           <button 

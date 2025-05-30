@@ -237,6 +237,7 @@ export interface LoginResponse {
   token: string;
   user: UserResponse;
   expiry: string;
+  refreshToken?: string; // Added as optional to match frontend code expectations
 }
 
 export interface WinnerPaymentUpdateRequest {

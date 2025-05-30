@@ -1,4 +1,4 @@
-// src/pages/NotFoundPage.tsx
+// src/pages/NotFound/NotFoundPage.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './NotFoundPage.css';
@@ -15,7 +15,7 @@ const NotFoundPage: React.FC = () => {
         <p>The page you are looking for doesn't exist or has been moved.</p>
         <Link to="/dashboard" className="back-button">
           <span className="material-icons">arrow_back</span>
-          Back to Dashboard
+          Back to MTN Mega Billion Dashboard
         </Link>
       </div>
     </div>

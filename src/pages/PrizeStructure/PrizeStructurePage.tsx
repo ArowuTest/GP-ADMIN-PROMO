@@ -9,7 +9,7 @@ const PrizeStructurePage: React.FC = () => {
   const [prizeStructures, setPrizeStructures] = useState<PrizeStructureResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage] = useState<string | null>(null); // Removed unused setter function
+  const [successMessage] = useState<string | null>(null);
   
   // Check if user has permission to manage prize structures
   const canManagePrizeStructures = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role || '');
@@ -48,105 +48,130 @@ const PrizeStructurePage: React.FC = () => {
   };
 
   return (
-    <div className="prize-structure-page">
-      <h1>Prize Structure Management</h1>
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">MTN Mega Billion Prize Structure</h1>
+        <p className="page-description">Manage prize structures for the MTN Mega Billion promotion</p>
+      </div>
       
       {error && (
-        <div className="error-message">
-          {error}
+        <div className="alert alert-danger">
+          <span className="material-icons">error</span>
+          <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
-        <div className="success-message">
-          {successMessage}
+        <div className="alert alert-success">
+          <span className="material-icons">check_circle</span>
+          <span>{successMessage}</span>
         </div>
       )}
       
-      {canManagePrizeStructures && (
-        <div className="action-buttons">
-          <button className="create-button">Create New Prize Structure</button>
-        </div>
-      )}
-      
-      <div className="prize-structures-panel">
-        <h2>Prize Structures</h2>
-        
-        {loading ? (
-          <div className="loading-indicator">
-            <div className="loading-spinner"></div>
-            <p>Loading prize structures...</p>
-          </div>
-        ) : prizeStructures.length > 0 ? (
-          <div className="prize-structures-list">
-            {prizeStructures.map(structure => (
-              <div key={structure.id} className="prize-structure-card">
-                <div className="prize-structure-header">
-                  <h3>{structure.name}</h3>
-                  <span className={`status-badge ${structure.isActive ? 'status-active' : 'status-inactive'}`}>
-                    {structure.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                
-                <div className="prize-structure-details">
-                  <p className="description">{structure.description}</p>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Valid From:</span>
-                    <span className="detail-value">{formatDate(structure.validFrom)}</span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Valid To:</span>
-                    <span className="detail-value">{formatDate(structure.validTo)}</span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Applicable Days:</span>
-                    <span className="detail-value">{formatDaysList(structure.applicableDays)}</span>
-                  </div>
-                </div>
-                
-                <div className="prize-tiers">
-                  <h4>Prize Tiers</h4>
-                  <table className="prize-tiers-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Value</th>
-                        <th>Quantity</th>
-                        <th>Runner-ups</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {structure.prizes.map(prize => (
-                        <tr key={prize.id}>
-                          <td>{prize.name}</td>
-                          <td>{prize.prizeType}</td>
-                          <td>{prize.value}</td>
-                          <td>{prize.quantity}</td>
-                          <td>{prize.numberOfRunnerUps}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {canManagePrizeStructures && (
-                  <div className="prize-structure-actions">
-                    <button className="edit-button">Edit</button>
-                    <button className="delete-button">Delete</button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-prize-structures">
-            <p>No prize structures found.</p>
+      <div className="page-content">
+        {canManagePrizeStructures && (
+          <div className="action-bar">
+            <button className="btn btn-primary">
+              <span className="material-icons">add</span>
+              Create New Prize Structure
+            </button>
           </div>
         )}
+        
+        <div className="prize-structures-container">
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading prize structures...</p>
+            </div>
+          ) : prizeStructures.length > 0 ? (
+            <div className="prize-structures-grid">
+              {prizeStructures.map(structure => (
+                <div key={structure.id} className="card prize-structure-card">
+                  <div className="card-header">
+                    <h3>{structure.name}</h3>
+                    <span className={`status-badge ${structure.isActive ? 'status-active' : 'status-inactive'}`}>
+                      {structure.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  
+                  <div className="card-body">
+                    <p className="prize-structure-description">{structure.description}</p>
+                    
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <span className="detail-label">Valid From:</span>
+                        <span className="detail-value">{formatDate(structure.validFrom)}</span>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <span className="detail-label">Valid To:</span>
+                        <span className="detail-value">{formatDate(structure.validTo)}</span>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <span className="detail-label">Applicable Days:</span>
+                        <span className="detail-value">{formatDaysList(structure.applicableDays)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="prize-tiers-section">
+                      <h4 className="section-title">
+                        <span className="material-icons">card_giftcard</span>
+                        Prize Tiers
+                      </h4>
+                      <div className="table-responsive">
+                        <table className="table prize-tiers-table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Type</th>
+                              <th>Value</th>
+                              <th>Quantity</th>
+                              <th>Runner-ups</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {structure.prizes.map(prize => (
+                              <tr key={prize.id}>
+                                <td>{prize.name}</td>
+                                <td>{prize.prizeType}</td>
+                                <td>{prize.value}</td>
+                                <td>{prize.quantity}</td>
+                                <td>{prize.numberOfRunnerUps}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {canManagePrizeStructures && (
+                    <div className="card-footer">
+                      <button className="btn btn-sm btn-outline-primary">
+                        <span className="material-icons">edit</span>
+                        Edit
+                      </button>
+                      <button className="btn btn-sm btn-outline-danger">
+                        <span className="material-icons">delete</span>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span className="material-icons empty-icon">card_giftcard</span>
+              <p>No MTN Mega Billion prize structures found.</p>
+              {canManagePrizeStructures && (
+                <p>Click the "Create New Prize Structure" button to add your first prize structure.</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

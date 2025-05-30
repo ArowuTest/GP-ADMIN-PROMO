@@ -1,4 +1,4 @@
-// src/components/dashboard/QuickActionsPanel.tsx
+// src/components/dashboard/QuickActionsPanel/QuickActionsPanel.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import QuickActionButton from './QuickActionButton';
@@ -8,29 +8,38 @@ const QuickActionsPanel: React.FC = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="quick-actions-panel">
-      <h3 className="panel-title">Quick Actions</h3>
-      <div className="quick-actions-grid">
-        <QuickActionButton 
-          icon="casino"
-          label="New Draw"
-          onClick={() => navigate('/draw-management')}
-        />
-        <QuickActionButton 
-          icon="people"
-          label="Upload Participants"
-          onClick={() => navigate('/participant-management')}
-        />
-        <QuickActionButton 
-          icon="emoji_events"
-          label="Prize Structure"
-          onClick={() => navigate('/prize-structure')}
-        />
-        <QuickActionButton 
-          icon="assessment"
-          label="View Reports"
-          onClick={() => navigate('/reports')}
-        />
+    <div className="quick-actions-panel card">
+      <div className="card-header">
+        <h3>Quick Actions</h3>
+      </div>
+      
+      <div className="card-body">
+        <div className="quick-actions-grid">
+          <QuickActionButton 
+            icon="shuffle"
+            label="Execute Draw"
+            onClick={() => navigate('/draw-management')}
+            color="primary"
+          />
+          <QuickActionButton 
+            icon="people"
+            label="Manage Participants"
+            onClick={() => navigate('/participant-management')}
+            color="success"
+          />
+          <QuickActionButton 
+            icon="emoji_events"
+            label="Prize Structure"
+            onClick={() => navigate('/prize-structure')}
+            color="warning"
+          />
+          <QuickActionButton 
+            icon="assessment"
+            label="View Reports"
+            onClick={() => navigate('/reports')}
+            color="info"
+          />
+        </div>
       </div>
     </div>
   );

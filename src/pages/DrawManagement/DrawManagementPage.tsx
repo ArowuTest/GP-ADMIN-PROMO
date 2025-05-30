@@ -102,7 +102,7 @@ const DrawManagementPage: React.FC = () => {
       // Update the draws list with the new draw
       setDraws(prevDraws => [result, ...prevDraws]);
       
-      setSuccessMessage(`Draw executed successfully with ${result.winners?.length || 0} winners`);
+      setSuccessMessage(`MTN Mega Billion Draw executed successfully with ${result.winners?.length || 0} winners`);
     } catch (err: any) {
       console.error('Error executing draw:', err);
       setError(`Failed to execute draw: ${err.message}`);
@@ -111,107 +111,144 @@ const DrawManagementPage: React.FC = () => {
     }
   };
 
-  // Removed unused formatMSISDN function
-
   return (
-    <div className="draw-management-page">
-      <h1>Draw Management</h1>
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">MTN Mega Billion Draw Management</h1>
+        <p className="page-description">Execute and manage draws for the MTN Mega Billion promotion</p>
+      </div>
       
       {error && (
-        <div className="error-message">
-          {error}
+        <div className="alert alert-danger">
+          <span className="material-icons">error</span>
+          <span>{error}</span>
         </div>
       )}
       
       {successMessage && (
-        <div className="success-message">
-          {successMessage}
+        <div className="alert alert-success">
+          <span className="material-icons">check_circle</span>
+          <span>{successMessage}</span>
         </div>
       )}
       
-      {canExecuteDraws && (
-        <div className="draw-execution-panel">
-          <h2>Execute New Draw</h2>
-          <div className="form-group">
-            <label htmlFor="prizeStructure">Prize Structure:</label>
-            <select 
-              id="prizeStructure"
-              value={selectedPrizeStructure}
-              onChange={(e) => setSelectedPrizeStructure(e.target.value)}
-              disabled={loading || executing}
-            >
-              <option value="">Select Prize Structure</option>
-              {prizeStructures.map(ps => (
-                <option key={ps.id} value={ps.id}>{ps.name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="drawDate">Draw Date:</label>
-            <input 
-              type="date"
-              id="drawDate"
-              value={drawDate}
-              onChange={(e) => setDrawDate(e.target.value)}
-              disabled={loading || executing}
-            />
-          </div>
-          
-          <button 
-            className="execute-draw-button"
-            onClick={handleExecuteDraw}
-            disabled={loading || executing || !selectedPrizeStructure || !drawDate}
-          >
-            {executing ? 'Executing...' : 'Execute Draw'}
-          </button>
-        </div>
-      )}
-      
-      <div className="draws-list-panel">
-        <h2>Previous Draws</h2>
-        
-        {loading ? (
-          <div className="loading-indicator">
-            <div className="loading-spinner"></div>
-            <p>Loading draws...</p>
-          </div>
-        ) : draws.length > 0 ? (
-          <table className="draws-table">
-            <thead>
-              <tr>
-                <th>Draw ID</th>
-                <th>Date</th>
-                <th>Prize Structure</th>
-                <th>Status</th>
-                <th>Winners</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {draws.map(draw => (
-                <tr key={draw.id}>
-                  <td>{draw.id.substring(0, 8)}...</td>
-                  <td>{new Date(draw.drawDate).toLocaleDateString()}</td>
-                  <td>{draw.prizeStructureName}</td>
-                  <td>
-                    <span className={`status-badge status-${draw.status.toLowerCase()}`}>
-                      {draw.status}
-                    </span>
-                  </td>
-                  <td>{draw.winners?.length || 0}</td>
-                  <td>
-                    <button className="view-details-button">View Details</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="no-draws-message">
-            <p>No draws have been executed yet.</p>
+      <div className="page-content">
+        {canExecuteDraws && (
+          <div className="card draw-execution-panel">
+            <div className="card-header">
+              <h2>Execute New MTN Mega Billion Draw</h2>
+            </div>
+            <div className="card-body">
+              <div className="form-group">
+                <label htmlFor="prizeStructure">Prize Structure:</label>
+                <select 
+                  id="prizeStructure"
+                  className="form-control"
+                  value={selectedPrizeStructure}
+                  onChange={(e) => setSelectedPrizeStructure(e.target.value)}
+                  disabled={loading || executing}
+                >
+                  <option value="">Select Prize Structure</option>
+                  {prizeStructures.map(ps => (
+                    <option key={ps.id} value={ps.id}>{ps.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="drawDate">Draw Date:</label>
+                <input 
+                  type="date"
+                  id="drawDate"
+                  className="form-control"
+                  value={drawDate}
+                  onChange={(e) => setDrawDate(e.target.value)}
+                  disabled={loading || executing}
+                />
+              </div>
+              
+              <button 
+                className="btn btn-primary btn-lg"
+                onClick={handleExecuteDraw}
+                disabled={loading || executing || !selectedPrizeStructure || !drawDate}
+              >
+                {executing ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Executing Draw...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-icons">shuffle</span>
+                    <span>Execute MTN Mega Billion Draw</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
+        
+        <div className="card draws-list-panel">
+          <div className="card-header">
+            <h2>Previous MTN Mega Billion Draws</h2>
+            <button className="btn-link">
+              <span className="material-icons">refresh</span>
+            </button>
+          </div>
+          
+          <div className="card-body">
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading draws...</p>
+              </div>
+            ) : draws.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table draws-table">
+                  <thead>
+                    <tr>
+                      <th>Draw ID</th>
+                      <th>Date</th>
+                      <th>Prize Structure</th>
+                      <th>Status</th>
+                      <th>Winners</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draws.map(draw => (
+                      <tr key={draw.id}>
+                        <td><span className="id-badge">{draw.id.substring(0, 8)}...</span></td>
+                        <td>{new Date(draw.drawDate).toLocaleDateString()}</td>
+                        <td>{draw.prizeStructureName}</td>
+                        <td>
+                          <span className={`status-badge status-${draw.status.toLowerCase()}`}>
+                            {draw.status}
+                          </span>
+                        </td>
+                        <td>{draw.winners?.length || 0}</td>
+                        <td>
+                          <button className="btn btn-sm btn-outline-primary">
+                            <span className="material-icons">visibility</span>
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <span className="material-icons empty-icon">event_busy</span>
+                <p>No MTN Mega Billion draws have been executed yet.</p>
+                {canExecuteDraws && (
+                  <p>Use the panel above to execute your first draw.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

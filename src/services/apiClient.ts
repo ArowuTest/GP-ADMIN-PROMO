@@ -36,8 +36,28 @@ const cancelPreviousRequests = (config: AxiosRequestConfig): void => {
 
 // Request interceptor for adding auth token and handling cancellation
 apiClient.interceptors.request.use(
-  (config) => {
-    // Get token from auth manager
+  async (config) => {
+    // Check if token is expired and needs refresh before making the request
+    if (authManager.isTokenExpired() && config.url && !config.url.includes('/auth/login') && !config.url.includes('/auth/refresh')) {
+      // Attempt to refresh the token
+      try {
+        // Import dynamically to avoid circular dependency
+        const { authService } = await import('./authService');
+        const refreshed = await authService.refreshTokenIfNeeded();
+        if (!refreshed) {
+          console.warn('[API_CLIENT] Token refresh failed, request may fail with 401');
+          // Emit an event for auth error handling
+          const authErrorEvent = new CustomEvent('auth-error', {
+            detail: { status: 401, message: 'Token expired and refresh failed' }
+          });
+          window.dispatchEvent(authErrorEvent);
+        }
+      } catch (error) {
+        console.error('[API_CLIENT] Error refreshing token:', error);
+      }
+    }
+    
+    // Get token from auth manager (potentially refreshed)
     const token = authManager.getToken();
     
     // If token exists, add it to the Authorization header
@@ -52,6 +72,17 @@ apiClient.interceptors.request.use(
       console.log(`[API_CLIENT] Adding token to request: ${config.method?.toUpperCase()} ${config.url}`);
     } else {
       console.warn(`[API_CLIENT] No token available for request: ${config.method?.toUpperCase()} ${config.url}`);
+      
+      // If this is not a login request, emit an auth error event
+      if (config.url && !config.url.includes('/auth/login')) {
+        console.warn('[API_CLIENT] Attempting request without token, may fail with 401');
+        
+        // Emit an event for auth error handling
+        const authErrorEvent = new CustomEvent('auth-error', {
+          detail: { status: 401, message: 'No authentication token available' }
+        });
+        window.dispatchEvent(authErrorEvent);
+      }
     }
     
     // Enable credentials for CORS
@@ -94,10 +125,10 @@ apiClient.interceptors.response.use(
       // Check if the response follows the standard API response format
       if (typeof response.data.success === 'boolean') {
         // Already in the expected format, return as is
-        return response;
+        return response.data;
       } else {
         // Wrap in standard format
-        response.data = {
+        return {
           success: true,
           data: response.data
         };
@@ -178,28 +209,57 @@ apiClient.interceptors.response.use(
 
 // Type-safe request methods
 const get = async <T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> => {
-  const response = await apiClient.get<ApiResponse<T>>(url, { ...config, params });
-  return response.data.data as T;
+  try {
+    const response = await apiClient.get<ApiResponse<T>>(url, { ...config, params });
+    return response.data as T;
+  } catch (error) {
+    console.error(`[API_CLIENT] Error in GET ${url}:`, error);
+    throw error;
+  }
 };
 
 const getPaginated = async <T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<PaginatedResponse<T>> => {
-  const response = await apiClient.get<ApiResponse<PaginatedResponse<T>>>(url, { ...config, params });
-  return response.data.data;
+  try {
+    const response = await apiClient.get<ApiResponse<PaginatedResponse<T>>>(url, { ...config, params });
+    // Fix for TypeScript error - properly extract the data from the ApiResponse
+    if (response && response.data && typeof response.data === 'object') {
+      return response.data as unknown as PaginatedResponse<T>;
+    }
+    throw new Error('Invalid paginated response format');
+  } catch (error) {
+    console.error(`[API_CLIENT] Error in GET (paginated) ${url}:`, error);
+    throw error;
+  }
 };
 
 const post = async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-  const response = await apiClient.post<ApiResponse<T>>(url, data, config);
-  return response.data.data as T;
+  try {
+    const response = await apiClient.post<ApiResponse<T>>(url, data, config);
+    return response.data as T;
+  } catch (error) {
+    console.error(`[API_CLIENT] Error in POST ${url}:`, error);
+    throw error;
+  }
 };
 
 const put = async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-  const response = await apiClient.put<ApiResponse<T>>(url, data, config);
-  return response.data.data as T;
+  try {
+    const response = await apiClient.put<ApiResponse<T>>(url, data, config);
+    return response.data as T;
+  } catch (error) {
+    console.error(`[API_CLIENT] Error in PUT ${url}:`, error);
+    throw error;
+  }
 };
 
 const del = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  const response = await apiClient.delete<ApiResponse<T>>(url, config);
-  return response.data.data as T;
+  try {
+    const response = await apiClient.delete<ApiResponse<T>>(url, config);
+    return response.data as T;
+  } catch (error) {
+    console.error(`[API_CLIENT] Error in DELETE ${url}:`, error);
+    throw error;
+  }
 };
 
 // Helper function to get auth headers

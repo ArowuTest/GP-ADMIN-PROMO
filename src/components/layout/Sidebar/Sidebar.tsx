@@ -20,31 +20,31 @@ const Sidebar: React.FC = () => {
     { 
       path: '/draw-management', 
       label: 'Draw Management', 
-      icon: 'casino',
+      icon: 'shuffle',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] 
     },
     { 
       path: '/participant-management', 
       label: 'Participant Management', 
-      icon: 'people',
+      icon: 'groups',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER] 
     },
     { 
       path: '/prize-structure', 
       label: 'Prize Structure', 
-      icon: 'emoji_events',
+      icon: 'card_giftcard',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER] 
     },
     { 
       path: '/user-management', 
       label: 'User Management', 
-      icon: 'manage_accounts',
+      icon: 'admin_panel_settings',
       roles: [UserRole.SUPER_ADMIN] 
     },
     { 
       path: '/reports', 
       label: 'Reports', 
-      icon: 'assessment',
+      icon: 'summarize',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER, UserRole.WINNERS_REPORT_USER, UserRole.ALL_REPORT_USER] 
     }
   ];
@@ -56,6 +56,10 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="app-sidebar">
+      <div className="sidebar-header">
+        <img src="/mtn-logo.png" alt="MTN Logo" className="mtn-logo" />
+        <h3>MTN Mega Billion</h3>
+      </div>
       <nav className="sidebar-nav">
         <ul>
           {filteredNavItems.map((item) => (
@@ -71,6 +75,10 @@ const Sidebar: React.FC = () => {
           ))}
         </ul>
       </nav>
+      <div className="sidebar-footer">
+        <p>MTN Mega Billion Promo</p>
+        <small>© {new Date().getFullYear()} MTN Nigeria</small>
+      </div>
     </aside>
   );
 };

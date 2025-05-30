@@ -1,6 +1,7 @@
 // src/services/authManager.ts
 import { UserResponse } from '../types/api';
 import { UserRole, Permission } from '../types/common';
+import { LoginCredentials } from './authService';
 
 // Local storage keys
 const TOKEN_KEY = 'mtn_mega_billion_token';
@@ -8,6 +9,7 @@ const USER_KEY = 'mtn_mega_billion_user';
 const TOKEN_EXPIRY_KEY = 'mtn_mega_billion_token_expiry';
 const REFRESH_TOKEN_KEY = 'mtn_mega_billion_refresh_token';
 const PERMISSIONS_KEY = 'mtn_mega_billion_permissions';
+const CREDENTIALS_KEY = 'mtn_mega_billion_credentials';
 
 // Store token in local storage
 const storeToken = (token: string): void => {
@@ -110,6 +112,29 @@ const getPermissions = (): Permission[] => {
   return [];
 };
 
+// Store login credentials (encrypted would be better in production)
+const storeCredentials = (credentials: LoginCredentials): void => {
+  try {
+    // In a production environment, these should be encrypted
+    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(credentials));
+  } catch (error) {
+    console.error('Error storing credentials:', error);
+  }
+};
+
+// Get stored credentials
+const getStoredCredentials = (): LoginCredentials | null => {
+  try {
+    const credentialsData = localStorage.getItem(CREDENTIALS_KEY);
+    if (credentialsData) {
+      return JSON.parse(credentialsData);
+    }
+  } catch (error) {
+    console.error('Error parsing credentials data:', error);
+  }
+  return null;
+};
+
 // Check if token is expired
 const isTokenExpired = (): boolean => {
   const expiryTime = getTokenExpiry();
@@ -132,6 +157,7 @@ const clearAuthData = (): void => {
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(PERMISSIONS_KEY);
+    localStorage.removeItem(CREDENTIALS_KEY);
   } catch (error) {
     console.error('Error clearing auth data:', error);
   }
@@ -219,6 +245,8 @@ export const authManager = {
   getTokenExpiry,
   storePermissions,
   getPermissions,
+  storeCredentials,
+  getStoredCredentials,
   isTokenExpired,
   clearAuthData,
   hasRole,
