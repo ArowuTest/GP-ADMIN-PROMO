@@ -1,6 +1,6 @@
 // src/services/apiClient.ts
 import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, CancelTokenSource } from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, CancelTokenSource } from 'axios';
 import { authManager } from './authManager';
 import { ApiResponse, PaginatedResponse } from '../types/api';
 
