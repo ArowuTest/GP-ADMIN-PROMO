@@ -16,9 +16,10 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     console.log('[AUTH_SERVICE] Sending login request');
     
     // Transform frontend credentials to match backend API contract
-    const loginPayload: LoginRequest = {
-      Email: credentials.username,
-      Password: credentials.password
+    // Using lowercase 'email' and 'password' to match backend expectations
+    const loginPayload: any = {
+      email: credentials.username,
+      password: credentials.password
     };
     
     // Use the enhanced API client for better error handling
@@ -30,6 +31,10 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     if (response.token) {
       authManager.storeToken(response.token);
       authManager.storeUser(response.user);
+      
+      // Store credentials for potential re-login if "remember me" is checked
+      authManager.storeCredentials(credentials);
+      
       if (response.expiry) {
         authManager.storeTokenExpiry(response.expiry);
       } else {
@@ -91,7 +96,8 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
     if (refreshToken) {
       try {
         console.log('[AUTH_SERVICE] Attempting to refresh token');
-        const response = await enhancedApiClient.post<LoginResponse>('/auth/refresh', { refreshToken });
+        // Use the correct payload format for token refresh
+        const response = await enhancedApiClient.post<LoginResponse>('/auth/refresh', { token: refreshToken });
         
         if (response && response.token) {
           authManager.storeToken(response.token);

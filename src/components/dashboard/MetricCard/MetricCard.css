@@ -1,155 +1,67 @@
 /* src/components/dashboard/MetricCard/MetricCard.css */
 .metric-card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
 }
 
-.metric-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background-color: var(--mtn-yellow);
+.metric-card.primary {
+  border-top: 4px solid var(--mtn-primary);
 }
 
-.metric-card-primary::before {
-  background-color: var(--mtn-yellow);
+.metric-card.success {
+  border-top: 4px solid var(--mtn-success);
 }
 
-.metric-card-success::before {
-  background-color: var(--mtn-success);
+.metric-card.warning {
+  border-top: 4px solid var(--mtn-warning);
 }
 
-.metric-card-warning::before {
-  background-color: var(--mtn-warning);
+.metric-card.danger {
+  border-top: 4px solid var(--mtn-danger);
 }
 
-.metric-card-info::before {
-  background-color: var(--mtn-info);
+.metric-card.info {
+  border-top: 4px solid var(--mtn-info);
 }
 
-.metric-card-danger::before {
-  background-color: var(--mtn-danger);
+.metric-card.accent {
+  border-top: 4px solid var(--mtn-accent);
 }
 
 .metric-card-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.metric-card-title {
-  margin: 0 0 8px 0;
-  font-size: 0.9rem;
-  color: #666666;
+.metric-title {
+  font-size: var(--font-size-md);
+  color: var(--mtn-text);
+  margin: 0 0 var(--spacing-md) 0;
   font-weight: 500;
 }
 
-.metric-card-value {
-  font-size: 1.8rem;
+.metric-value {
+  font-size: var(--font-size-xxl);
   font-weight: 700;
-  color: #000000;
-  margin: 0;
+  color: var(--mtn-primary);
+  margin-top: auto;
 }
 
-.metric-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  margin-left: 16px;
-}
-
-.metric-card-primary .metric-card-icon {
-  background-color: rgba(255, 204, 0, 0.15);
-}
-
-.metric-card-success .metric-card-icon {
-  background-color: rgba(40, 167, 69, 0.15);
-}
-
-.metric-card-warning .metric-card-icon {
-  background-color: rgba(255, 193, 7, 0.15);
-}
-
-.metric-card-info .metric-card-icon {
-  background-color: rgba(23, 162, 184, 0.15);
-}
-
-.metric-card-danger .metric-card-icon {
-  background-color: rgba(220, 53, 69, 0.15);
-}
-
-.metric-card-primary .metric-card-icon .material-icons {
-  color: var(--mtn-yellow);
-}
-
-.metric-card-success .metric-card-icon .material-icons {
-  color: var(--mtn-success);
-}
-
-.metric-card-warning .metric-card-icon .material-icons {
-  color: var(--mtn-warning);
-}
-
-.metric-card-info .metric-card-icon .material-icons {
-  color: var(--mtn-info);
-}
-
-.metric-card-danger .metric-card-icon .material-icons {
-  color: var(--mtn-danger);
-}
-
-.metric-card-loading {
-  height: 24px;
-  display: flex;
-  align-items: center;
-}
-
-.loading-pulse {
-  width: 60px;
-  height: 24px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: pulse 1.5s infinite;
-  border-radius: 4px;
-}
-
-@keyframes pulse {
-  0% {
-    background-position: 0% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .metric-card {
-    padding: 16px;
-  }
-  
-  .metric-card-value {
-    font-size: 1.5rem;
-  }
-  
-  .metric-card-icon {
-    width: 40px;
-    height: 40px;
-  }
+.metric-loading {
+  font-size: var(--font-size-md);
+  color: var(--mtn-text);
+  opacity: 0.7;
+  margin-top: auto;
 }

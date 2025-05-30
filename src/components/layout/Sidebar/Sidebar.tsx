@@ -14,37 +14,31 @@ const Sidebar: React.FC = () => {
     { 
       path: '/dashboard', 
       label: 'Dashboard', 
-      icon: 'dashboard',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER, UserRole.WINNERS_REPORT_USER, UserRole.ALL_REPORT_USER] 
     },
     { 
       path: '/draw-management', 
       label: 'Draw Management', 
-      icon: 'shuffle',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] 
     },
     { 
       path: '/participant-management', 
       label: 'Participant Management', 
-      icon: 'groups',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER] 
     },
     { 
       path: '/prize-structure', 
       label: 'Prize Structure', 
-      icon: 'card_giftcard',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER] 
     },
     { 
       path: '/user-management', 
       label: 'User Management', 
-      icon: 'admin_panel_settings',
       roles: [UserRole.SUPER_ADMIN] 
     },
     { 
       path: '/reports', 
       label: 'Reports', 
-      icon: 'summarize',
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SENIOR_USER, UserRole.WINNERS_REPORT_USER, UserRole.ALL_REPORT_USER] 
     }
   ];
@@ -57,7 +51,6 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="app-sidebar">
       <div className="sidebar-header">
-        <img src="/mtn-logo.png" alt="MTN Logo" className="mtn-logo" />
         <h3>MTN Mega Billion</h3>
       </div>
       <nav className="sidebar-nav">
@@ -68,7 +61,6 @@ const Sidebar: React.FC = () => {
                 to={item.path} 
                 className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
               >
-                <span className="material-icons">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
               </NavLink>
             </li>

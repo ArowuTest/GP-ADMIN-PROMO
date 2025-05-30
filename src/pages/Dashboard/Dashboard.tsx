@@ -80,14 +80,12 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-header">
         <h1 className="dashboard-title">MTN Mega Billion Dashboard</h1>
         <div className="dashboard-date">
-          <span className="material-icons">today</span>
           <span>{new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
       </div>
       
       {error && (
         <div className="error-alert">
-          <span className="material-icons">error</span>
           <span>{error}</span>
         </div>
       )}
@@ -96,30 +94,26 @@ const Dashboard: React.FC = () => {
         <MetricCard 
           title="Total Draws" 
           value={metrics?.totalDraws || 0} 
-          icon="event" 
           loading={loading} 
           color="primary"
         />
         <MetricCard 
           title="Active Draws" 
           value={metrics?.activeDraws || 0} 
-          icon="event_available" 
           loading={loading} 
           color="success"
         />
         <MetricCard 
           title="Total Participants" 
           value={metrics?.totalParticipants || 0} 
-          icon="people" 
           loading={loading} 
           color="info"
         />
         <MetricCard 
           title="Total Winners" 
           value={metrics?.totalWinners || 0} 
-          icon="emoji_events" 
           loading={loading} 
-          color="warning"
+          color="accent"
         />
       </div>
       
