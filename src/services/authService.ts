@@ -1,7 +1,7 @@
 // src/services/authService.ts
 import { enhancedApiClient } from './apiClient';
 import { authManager } from './authManager';
-import { LoginRequest, LoginResponse, UserResponse } from '../types/api';
+import { LoginResponse, UserResponse } from '../types/api';
 import { Permission, UserRole } from '../types/common';
 
 // Define login credentials interface
