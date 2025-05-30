@@ -46,9 +46,10 @@ export interface UploadResponse {
 // Upload participants from CSV file
 const uploadParticipants = async (file: File, token: string): Promise<UploadResponse> => {
   try {
+    console.log('[PARTICIPANT_SERVICE] Uploading participants file:', file.name);
     const formData = new FormData();
     formData.append('file', file);
-
+    
     const response = await apiClient.post('/admin/participants/upload', formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -56,6 +57,7 @@ const uploadParticipants = async (file: File, token: string): Promise<UploadResp
       }
     });
     
+    console.log('[PARTICIPANT_SERVICE] Upload response:', response.data);
     return response.data.data;
   } catch (error) {
     console.error('Error uploading participants:', error);

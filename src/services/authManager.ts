@@ -14,18 +14,21 @@ const CREDENTIALS_KEY = 'mtn_mega_billion_credentials';
 // Store token in local storage
 const storeToken = (token: string): void => {
   try {
+    console.log('[AUTH_MANAGER] Storing token:', token ? `${token.substring(0, 10)}...` : 'empty');
     localStorage.setItem(TOKEN_KEY, token);
   } catch (error) {
-    console.error('Error storing token:', error);
+    console.error('[AUTH_MANAGER] Error storing token:', error);
   }
 };
 
 // Get token from local storage
 const getToken = (): string | null => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    console.log('[AUTH_MANAGER] Retrieved token:', token ? `${token.substring(0, 10)}...` : 'null');
+    return token;
   } catch (error) {
-    console.error('Error retrieving token:', error);
+    console.error('[AUTH_MANAGER] Error retrieving token:', error);
     return null;
   }
 };
@@ -33,18 +36,21 @@ const getToken = (): string | null => {
 // Store refresh token in local storage
 const storeRefreshToken = (refreshToken: string): void => {
   try {
+    console.log('[AUTH_MANAGER] Storing refresh token:', refreshToken ? `${refreshToken.substring(0, 10)}...` : 'empty');
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   } catch (error) {
-    console.error('Error storing refresh token:', error);
+    console.error('[AUTH_MANAGER] Error storing refresh token:', error);
   }
 };
 
 // Get refresh token from local storage
 const getRefreshToken = (): string | null => {
   try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    console.log('[AUTH_MANAGER] Retrieved refresh token:', refreshToken ? `${refreshToken.substring(0, 10)}...` : 'null');
+    return refreshToken;
   } catch (error) {
-    console.error('Error retrieving refresh token:', error);
+    console.error('[AUTH_MANAGER] Error retrieving refresh token:', error);
     return null;
   }
 };
@@ -52,9 +58,10 @@ const getRefreshToken = (): string | null => {
 // Store user data in local storage
 const storeUser = (user: UserResponse): void => {
   try {
+    console.log('[AUTH_MANAGER] Storing user data:', user);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   } catch (error) {
-    console.error('Error storing user data:', error);
+    console.error('[AUTH_MANAGER] Error storing user data:', error);
   }
 };
 
@@ -63,29 +70,36 @@ const getUser = (): UserResponse | null => {
   try {
     const userData = localStorage.getItem(USER_KEY);
     if (userData) {
-      return JSON.parse(userData);
+      const user = JSON.parse(userData);
+      console.log('[AUTH_MANAGER] Retrieved user data:', user);
+      return user;
     }
+    console.log('[AUTH_MANAGER] No user data found');
+    return null;
   } catch (error) {
-    console.error('Error parsing user data:', error);
+    console.error('[AUTH_MANAGER] Error parsing user data:', error);
+    return null;
   }
-  return null;
 };
 
 // Store token expiry time
 const storeTokenExpiry = (expiryTime: string): void => {
   try {
+    console.log('[AUTH_MANAGER] Storing token expiry:', expiryTime);
     localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime);
   } catch (error) {
-    console.error('Error storing token expiry:', error);
+    console.error('[AUTH_MANAGER] Error storing token expiry:', error);
   }
 };
 
 // Get token expiry time
 const getTokenExpiry = (): string | null => {
   try {
-    return localStorage.getItem(TOKEN_EXPIRY_KEY);
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    console.log('[AUTH_MANAGER] Retrieved token expiry:', expiry);
+    return expiry;
   } catch (error) {
-    console.error('Error retrieving token expiry:', error);
+    console.error('[AUTH_MANAGER] Error retrieving token expiry:', error);
     return null;
   }
 };
@@ -93,9 +107,10 @@ const getTokenExpiry = (): string | null => {
 // Store user permissions
 const storePermissions = (permissions: Permission[]): void => {
   try {
+    console.log('[AUTH_MANAGER] Storing permissions:', permissions);
     localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(permissions));
   } catch (error) {
-    console.error('Error storing permissions data:', error);
+    console.error('[AUTH_MANAGER] Error storing permissions data:', error);
   }
 };
 
@@ -104,21 +119,26 @@ const getPermissions = (): Permission[] => {
   try {
     const permissionsData = localStorage.getItem(PERMISSIONS_KEY);
     if (permissionsData) {
-      return JSON.parse(permissionsData);
+      const permissions = JSON.parse(permissionsData);
+      console.log('[AUTH_MANAGER] Retrieved permissions:', permissions);
+      return permissions;
     }
+    console.log('[AUTH_MANAGER] No permissions found');
+    return [];
   } catch (error) {
-    console.error('Error parsing permissions data:', error);
+    console.error('[AUTH_MANAGER] Error parsing permissions data:', error);
+    return [];
   }
-  return [];
 };
 
 // Store login credentials (encrypted would be better in production)
 const storeCredentials = (credentials: LoginCredentials): void => {
   try {
     // In a production environment, these should be encrypted
+    console.log('[AUTH_MANAGER] Storing credentials for username:', credentials.username);
     localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(credentials));
   } catch (error) {
-    console.error('Error storing credentials:', error);
+    console.error('[AUTH_MANAGER] Error storing credentials:', error);
   }
 };
 
@@ -127,24 +147,35 @@ const getStoredCredentials = (): LoginCredentials | null => {
   try {
     const credentialsData = localStorage.getItem(CREDENTIALS_KEY);
     if (credentialsData) {
-      return JSON.parse(credentialsData);
+      const credentials = JSON.parse(credentialsData);
+      console.log('[AUTH_MANAGER] Retrieved credentials for username:', credentials.username);
+      return credentials;
     }
+    console.log('[AUTH_MANAGER] No stored credentials found');
+    return null;
   } catch (error) {
-    console.error('Error parsing credentials data:', error);
+    console.error('[AUTH_MANAGER] Error parsing credentials data:', error);
+    return null;
   }
-  return null;
 };
 
 // Check if token is expired
 const isTokenExpired = (): boolean => {
   const expiryTime = getTokenExpiry();
-  if (!expiryTime) return true;
+  if (!expiryTime) {
+    console.log('[AUTH_MANAGER] No token expiry found, considering token expired');
+    return true;
+  }
   
   try {
     const expiryDate = new Date(expiryTime);
-    return expiryDate <= new Date();
+    const now = new Date();
+    const isExpired = expiryDate <= now;
+    
+    console.log(`[AUTH_MANAGER] Token expiry check: expiry=${expiryDate.toISOString()}, now=${now.toISOString()}, isExpired=${isExpired}`);
+    return isExpired;
   } catch (error) {
-    console.error('Error parsing token expiry:', error);
+    console.error('[AUTH_MANAGER] Error parsing token expiry:', error);
     return true;
   }
 };
@@ -152,6 +183,7 @@ const isTokenExpired = (): boolean => {
 // Clear all auth data from local storage
 const clearAuthData = (): void => {
   try {
+    console.log('[AUTH_MANAGER] Clearing all auth data');
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
@@ -159,14 +191,17 @@ const clearAuthData = (): void => {
     localStorage.removeItem(PERMISSIONS_KEY);
     localStorage.removeItem(CREDENTIALS_KEY);
   } catch (error) {
-    console.error('Error clearing auth data:', error);
+    console.error('[AUTH_MANAGER] Error clearing auth data:', error);
   }
 };
 
 // Check if user has specific role
 const hasRole = (requiredRole: UserRole | UserRole[]): boolean => {
   const user = getUser();
-  if (!user) return false;
+  if (!user) {
+    console.log('[AUTH_MANAGER] No user data found for role check');
+    return false;
+  }
   
   // Convert to array for consistent handling
   const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
@@ -175,10 +210,15 @@ const hasRole = (requiredRole: UserRole | UserRole[]): boolean => {
   const userRole = user.role as UserRole;
   
   // Super admin has access to everything
-  if (userRole === UserRole.SUPER_ADMIN) return true;
+  if (userRole === UserRole.SUPER_ADMIN) {
+    console.log('[AUTH_MANAGER] User has SUPER_ADMIN role, granting access');
+    return true;
+  }
   
   // Check if user's role is in the required roles
-  return requiredRoles.includes(userRole);
+  const hasRequiredRole = requiredRoles.includes(userRole);
+  console.log(`[AUTH_MANAGER] Role check: userRole=${userRole}, requiredRoles=[${requiredRoles.join(', ')}], hasAccess=${hasRequiredRole}`);
+  return hasRequiredRole;
 };
 
 // Check specific permissions based on role
@@ -186,11 +226,16 @@ const hasPermission = (permission: Permission): boolean => {
   // First try to use stored permissions
   const permissions = getPermissions();
   if (permissions.length > 0) {
-    return permissions.includes(permission);
+    const hasStoredPermission = permissions.includes(permission);
+    console.log(`[AUTH_MANAGER] Permission check from stored permissions: permission=${permission}, hasPermission=${hasStoredPermission}`);
+    return hasStoredPermission;
   }
   
   const user = getUser();
-  if (!user) return false;
+  if (!user) {
+    console.log('[AUTH_MANAGER] No user data found for permission check');
+    return false;
+  }
   
   // Role-based permission mapping
   const rolePermissions: Record<string, Permission[]> = {
@@ -220,17 +265,9 @@ const hasPermission = (permission: Permission): boolean => {
   const userPermissions = rolePermissions[user.role] || [];
   
   // Check if user has the required permission
-  return userPermissions.includes(permission);
-};
-
-// Check and refresh token if needed
-const checkAndRefreshTokenIfNeeded = async (): Promise<boolean> => {
-  if (isTokenExpired()) {
-    // This would need to be implemented in coordination with authService
-    // For now, just return false to indicate refresh is needed
-    return false;
-  }
-  return true;
+  const hasRequiredPermission = userPermissions.includes(permission);
+  console.log(`[AUTH_MANAGER] Permission check from role: role=${user.role}, permission=${permission}, hasPermission=${hasRequiredPermission}`);
+  return hasRequiredPermission;
 };
 
 // Export the auth manager
@@ -250,8 +287,7 @@ export const authManager = {
   isTokenExpired,
   clearAuthData,
   hasRole,
-  hasPermission,
-  checkAndRefreshTokenIfNeeded
+  hasPermission
 };
 
 export default authManager;

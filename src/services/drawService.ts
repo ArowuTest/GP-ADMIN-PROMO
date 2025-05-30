@@ -120,14 +120,16 @@ const getDrawWinners = async (drawId: string, token: string): Promise<WinnerResp
 // Execute a new draw
 const executeDraw = async (drawDate: string, prizeStructureId: string, token: string): Promise<DrawData> => {
   try {
+    console.log('[DRAW_SERVICE] Executing draw with date:', drawDate, 'and prize structure:', prizeStructureId);
     const response = await apiClient.post('/admin/draws/execute', {
-      draw_date: drawDate,
-      prize_structure_id: prizeStructureId
+      drawDate: drawDate,
+      prizeStructureId: prizeStructureId
     }, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
+    console.log('[DRAW_SERVICE] Draw execution response:', response.data);
     return response.data.data;
   } catch (error) {
     console.error('Error executing draw:', error);

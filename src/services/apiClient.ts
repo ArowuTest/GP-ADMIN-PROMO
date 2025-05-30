@@ -28,61 +28,52 @@ const cancelPreviousRequests = (config: AxiosRequestConfig): void => {
   if (activeRequests.has(requestKey)) {
     const source = activeRequests.get(requestKey);
     if (source) {
+      console.log(`[API_CLIENT] Canceling duplicate request: ${requestKey}`);
       source.cancel(`Request canceled due to duplicate: ${requestKey}`);
       activeRequests.delete(requestKey);
     }
   }
 };
 
+// Create a temporary axios instance without interceptors
+const createTempClient = (): AxiosInstance => {
+  return axios.create({
+    baseURL: process.env.REACT_APP_API_BASE_URL || 'https://gp-backend-promo.onrender.com/api/v1',
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  });
+};
+
 // Request interceptor for adding auth token and handling cancellation
 apiClient.interceptors.request.use(
   async (config) => {
-    // Check if token is expired and needs refresh before making the request
-    if (authManager.isTokenExpired() && config.url && !config.url.includes('/auth/login') && !config.url.includes('/auth/refresh')) {
-      // Attempt to refresh the token
-      try {
-        // Import dynamically to avoid circular dependency
-        const { authService } = await import('./authService');
-        const refreshed = await authService.refreshTokenIfNeeded();
-        if (!refreshed) {
-          console.warn('[API_CLIENT] Token refresh failed, request may fail with 401');
-          // Emit an event for auth error handling
-          const authErrorEvent = new CustomEvent('auth-error', {
-            detail: { status: 401, message: 'Token expired and refresh failed' }
-          });
-          window.dispatchEvent(authErrorEvent);
-        }
-      } catch (error) {
-        console.error('[API_CLIENT] Error refreshing token:', error);
-      }
-    }
+    // Skip token check for login and refresh endpoints
+    const isAuthEndpoint = config.url && (
+      config.url.includes('/auth/login') || 
+      config.url.includes('/auth/refresh') ||
+      config.url.includes('/auth/register')
+    );
     
-    // Get token from auth manager (potentially refreshed)
-    const token = authManager.getToken();
-    
-    // If token exists, add it to the Authorization header
-    if (token) {
-      // Create a new headers object to avoid modifying read-only properties
-      config.headers = {
-        ...config.headers,
-        // Add 'Bearer ' prefix to match standard backend expectations
-        'Authorization': `Bearer ${token}`
-      } as any;
+    if (!isAuthEndpoint) {
+      // Get token from auth manager
+      const token = authManager.getToken();
       
-      // Debug logging
-      console.log(`[API_CLIENT] Adding token to request: ${config.method?.toUpperCase()} ${config.url}`);
-    } else {
-      console.warn(`[API_CLIENT] No token available for request: ${config.method?.toUpperCase()} ${config.url}`);
-      
-      // If this is not a login request, emit an auth error event
-      if (config.url && !config.url.includes('/auth/login')) {
-        console.warn('[API_CLIENT] Attempting request without token, may fail with 401');
+      // If token exists, add it to the Authorization header
+      if (token) {
+        // Create a new headers object to avoid modifying read-only properties
+        config.headers = {
+          ...config.headers,
+          // Add 'Bearer ' prefix to match standard backend expectations
+          'Authorization': `Bearer ${token}`
+        } as any;
         
-        // Emit an event for auth error handling
-        const authErrorEvent = new CustomEvent('auth-error', {
-          detail: { status: 401, message: 'No authentication token available' }
-        });
-        window.dispatchEvent(authErrorEvent);
+        // Debug logging
+        console.log(`[API_CLIENT] Adding token to request: ${config.method?.toUpperCase()} ${config.url}`);
+      } else {
+        console.warn(`[API_CLIENT] No token available for request: ${config.method?.toUpperCase()} ${config.url}`);
       }
     }
     
@@ -90,7 +81,7 @@ apiClient.interceptors.request.use(
     config.withCredentials = true;
     
     // Handle request cancellation for duplicate requests
-    if (config.url && !config.url.includes('/auth/login')) {
+    if (config.url && !isAuthEndpoint) {
       cancelPreviousRequests(config);
       
       // Create a new cancel token source
@@ -161,11 +152,25 @@ apiClient.interceptors.response.use(
       // Handle 401 Unauthorized errors
       if (error.response.status === 401) {
         console.warn('[API_CLIENT] Authentication error - token may be invalid or expired');
-        // Emit an event for auth error handling
-        const authErrorEvent = new CustomEvent('auth-error', {
-          detail: { status: error.response.status, message: 'Authentication failed' }
-        });
-        window.dispatchEvent(authErrorEvent);
+        
+        // Skip auth error event for auth endpoints to prevent infinite loops
+        const isAuthEndpoint = error.config?.url && (
+          error.config.url.includes('/auth/login') || 
+          error.config.url.includes('/auth/refresh') ||
+          error.config.url.includes('/auth/register')
+        );
+        
+        if (!isAuthEndpoint) {
+          // Emit an event for auth error handling
+          const authErrorEvent = new CustomEvent('auth-error', {
+            detail: { 
+              status: error.response.status, 
+              message: 'Authentication failed',
+              url: error.config?.url
+            }
+          });
+          window.dispatchEvent(authErrorEvent);
+        }
       }
       
       // Transform error response to standard format if needed
@@ -228,7 +233,7 @@ const getPaginated = async <T>(url: string, params?: any, config?: AxiosRequestC
     }
     throw new Error('Invalid paginated response format');
   } catch (error) {
-    console.error(`[API_CLIENT] Error in GET (paginated) ${url}:`, error);
+    console.error(`[API_CLIENT] Error in GET paginated ${url}:`, error);
     throw error;
   }
 };
@@ -293,6 +298,7 @@ export const enhancedApiClient = {
   delete: del,
   getAuthHeaders,
   cancelAllRequests,
+  createTempClient,
   instance: apiClient
 };
 

@@ -25,6 +25,9 @@ export interface CreatePrizeStructurePayload {
   applicable_days: DayOfWeek[];
 }
 
+// Define PrizeStructureCreateRequest as an alias of CreatePrizeStructurePayload
+export type PrizeStructureCreateRequest = CreatePrizeStructurePayload;
+
 export interface PrizeStructureResponse {
   id: string;
   name: string;
@@ -91,13 +94,16 @@ const getPrizeStructure = async (id: string, token: string): Promise<PrizeStruct
 };
 
 // Create a new prize structure
-const createPrizeStructure = async (payload: CreatePrizeStructurePayload, token: string): Promise<PrizeStructureResponse> => {
+const createPrizeStructure = async (data: PrizeStructureCreateRequest, token: string): Promise<PrizeStructureResponse> => {
   try {
-    const response = await apiClient.post('/admin/prize-structures', payload, {
+    console.log('[PRIZE_SERVICE] Creating prize structure:', data);
+    const response = await apiClient.post('/admin/prize-structures', data, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
+    
+    console.log('[PRIZE_SERVICE] Create prize structure response:', response.data);
     return response.data.data;
   } catch (error) {
     console.error('Error creating prize structure:', error);

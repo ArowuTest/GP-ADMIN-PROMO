@@ -71,7 +71,14 @@ const PrizeStructurePage: React.FC = () => {
       <div className="page-content">
         {canManagePrizeStructures && (
           <div className="action-bar">
-            <button className="btn btn-primary">
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                // Implement create prize structure functionality
+                console.log('Create prize structure button clicked');
+                // TODO: Open create prize structure modal or navigate to create page
+              }}
+            >
               <i className="material-icons">add</i>
               Create New Prize Structure
             </button>
