@@ -1,3 +1,31 @@
+// src/App.tsx
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AppLayout from './components/layout/AppLayout/AppLayout';
+
+// Import all page components
+import Dashboard from './pages/Dashboard/Dashboard';
+import DrawManagement from './pages/DrawManagement/DrawManagementPage';
+import Login from './pages/Login/LoginPage';
+import NotFound from './pages/NotFound/NotFoundPage';
+import ParticipantManagement from './pages/ParticipantManagement/ParticipantManagementPage';
+import PrizeStructure from './pages/PrizeStructure/PrizeStructurePage';
+import Reports from './pages/Reports/ReportsPage';
+import UserManagement from './pages/UserManagement/UserManagementPage';
+import './App.css';
+
+// Protected route component
+const ProtectedRoute: React.FC<{ element: React.ReactNode }> = ({ element }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+  
+  return isAuthenticated ? <>{element}</> : <Navigate to="/login" />;
+};
+
 const App: React.FC = () => {
   return (
     <Router>
@@ -21,3 +49,5 @@ const App: React.FC = () => {
     </Router>
   );
 };
+
+export default App;  // Critical line that must be included
